@@ -13,7 +13,7 @@
 
   "loginTheme": "pnc-ssms",
   "internationalizationEnabled": true,
-  "supportedLocales": ["en", "km"],
+  "supportedLocales": ["en"],
   "defaultLocale": "en",
 
   "smtpServer": {

@@ -124,12 +124,16 @@ body#keycloak-bg {
    without this override it would be auto-placed by the grid into the
    unclaimed "header" cell (top-right of the card) on any viewport >= 1200px
    - which includes both the 1366x768 and 1920x1080 cases this was tested
-   against. Force one predictable block column at every width instead, sized
-   to the ~380-440px comfortable reading width instead of PatternFly's
-   default (500px below 1200px, unconstrained at/above it). */
+   against. Force one predictable column flow at every width instead.
+   Wider than the card itself (.pf-v5-c-login__main, capped separately
+   below) - this is also what gives the footer's copyright/links row below
+   the card room to lay out on one line instead of wrapping to three, since
+   the footer lives in this same container, not inside .pf-v5-c-login__main. */
 .pf-v5-c-login__container {
-  display: block;
-  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 760px;
   width: 100%;
   padding-inline: 1.25rem;
 }
@@ -301,49 +305,6 @@ body#keycloak-bg {
    so their later `display: flex` silently won at every width, including
    mobile, defeating the hide and cramming the whole feature list into the
    compact branding bar instead.) */
-@media (max-width: 991px) {
-  .pnc-shell {
-    flex-direction: column;
-  }
-
-  .pnc-branding {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.5rem 1.25rem;
-    background-color: var(--pnc-blue);
-    background-image: linear-gradient(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.22));
-    color: #ffffff;
-  }
-
-  .pnc-branding__shape,
-  .pnc-branding__dots {
-    display: none;
-  }
-
-  .pnc-branding__content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .pnc-branding__eyebrow {
-    margin-bottom: 0;
-  }
-
-  .pnc-branding__badge,
-  .pnc-branding__description,
-  .pnc-branding__features {
-    display: none;
-  }
-
-  .pnc-branding__title {
-    font-size: 1rem;
-    margin: 0;
-  }
-}
-
 /* ---- The login card itself ---- */
 
 /* Keycloak's own realm-brand header (renders realm.displayNameHtml, which
@@ -356,6 +317,10 @@ body#keycloak-bg {
 
 .pf-v5-c-login__main {
   background-color: #ffffff;
+  /* The card's own width - .pf-v5-c-login__container (above) is wider than
+     this so the footer below can use that extra room to stay in one row. */
+  max-width: 380px;
+  width: 100%;
 }
 
 /* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). It's a
@@ -507,6 +472,28 @@ label {
 @media (prefers-reduced-motion: reduce) {
   .pnc-button--loading::before {
     animation: none;
+  }
+}
+
+/* Mobile/tablet: show only the login card itself - no branding bar above
+   it, no copyright footer below it. Both exist to orient/reassure a visitor
+   on a spacious desktop screen; on a small screen they just push the actual
+   form further down, which matters more than the branding here.
+   .pnc-branding is already display:none by default (see its base rule
+   near the top of this file) below the 992px breakpoint that turns it on -
+   only the footer needs an explicit override here. This block must come
+   AFTER .pnc-footer's own base rule above - same equal-specificity,
+   source-order issue already hit once in this file with the feature list:
+   a later unconditional `display: flex` always beats an earlier media-scoped
+   `display: none`, regardless of which one the media query matches. */
+@media (max-width: 991px) {
+  .pnc-shell {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .pnc-footer {
+    display: none;
   }
 }
 

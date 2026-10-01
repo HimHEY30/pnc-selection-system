@@ -491,3 +491,44 @@ only caught that way): logo/title/input left edges match exactly (848px at
 1366 width, 1158px at 1920px, 262px at tablet, 52px on both mobile sizes);
 title renders as one line (~29px tall) at all five checked viewports; no
 language `<select>` in the DOM; zero horizontal overflow.
+
+## English-only locale, one-row footer, header/footer-free mobile
+
+Three more follow-up requests, all CSS/config-only:
+
+- **Locale pinned to English.** `realm-export.json` / the live realm's
+  `supportedLocales` narrowed from `["en", "km"]` to `["en"]`.
+  `internationalizationEnabled` stays `true` (not disabled outright) -
+  stock `template.ftl` only renders `<html lang="...">` when that flag is
+  on, so turning it off would have dropped the page's language attribute
+  entirely (an accessibility regression, SC 3.1.1). With only one supported
+  locale there's nothing left to auto-detect or switch to, so the page
+  always renders English while keeping a well-formed `lang="en"`.
+  `messages_km.properties` is untouched, so Khmer support comes back by
+  just re-adding `"km"` to `supportedLocales` and restoring the switcher
+  markup (see the PNC-CUSTOM comment in `template.ftl`).
+- **Footer back to one row on large screens.** The footer lived inside
+  `.pf-v5-c-login__container`, which was capped at the same 380px as the
+  card - nowhere near enough width for copyright text plus two links, so it
+  wrapped to three lines even on a 1920px desktop. Split the width cap: the
+  container (holding both the card and the footer) now allows up to 760px,
+  while `.pf-v5-c-login__main` (the card itself) gets its own 380px cap
+  independently. The footer, unconstrained by the card's width, now lays
+  out in one row whenever there's room - confirmed via
+  `getBoundingClientRect()` at 1366 and 1920px widths (588px wide, not
+  wrapped).
+- **Mobile/tablet shows only the card.** Below 992px, the branding bar and
+  the copyright footer are now `display: none` - just the centered white
+  card remains. (Hit the same equal-specificity/source-order bug as the
+  earlier feature-list fix while making this change: the media-scoped
+  `.pnc-footer { display: none }` has to come *after* `.pnc-footer`'s own
+  unconditional base rule in the file, or the later one silently wins at
+  every width. Now correctly ordered.) `.pnc-shell` also gets
+  `justify-content: center` in this range so the lone remaining card sits
+  vertically centered rather than pinned to the top.
+
+Verified live via `getComputedStyle`/`getBoundingClientRect` and real
+screenshots at all five non-"large-mobile" required viewports: `lang="en"`
+everywhere; branding/footer both `display: none` at 320/375/768px widths;
+both `display: flex` (one row, not wrapped) at 1366/1920px; zero horizontal
+overflow at every size.
