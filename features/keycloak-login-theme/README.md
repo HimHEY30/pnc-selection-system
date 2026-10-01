@@ -378,15 +378,63 @@ render in Khmer); served `login.css` brace-balance and rule presence; served
 `loginState.js` parses as valid JS and contains `aria-busy`;
 `docker compose config`/`ps` clean.
 
-**Not verified — no browser automation tool was available in this
-environment.** Everything above was checked via curl against the live
-container plus manual/scripted WCAG contrast computation, not a rendered
-browser. Specifically unverified: actual pixel-level rendering at the
-320/375/430/768/1366/1920 viewport matrix, real keyboard-navigation
-tab order and focus-visible appearance, real screen-reader output (NVDA/
-VoiceOver), the on-screen-keyboard-obscuring-the-field concern on a real
-phone, and the `:has()` CSS support note below in an actual old browser.
-These should be spot-checked in a real browser before sign-off.
+**Not verified at the time:** no browser automation tool was available in
+this environment during this pass - everything above was checked via curl
+plus manual/scripted WCAG contrast computation, not a rendered browser. A
+follow-up pass (see below) got real browser access and used it to verify
+actual rendering.
+
+## Real-browser responsive pass
+
+The audit above had no way to actually render the page, and it showed: a
+later pass with real screenshots (`npx playwright screenshot --channel
+chromium`, against the live container, Chromium downloaded on demand) found
+two more defects the curl-only audit couldn't have caught, both now fixed
+and re-verified with fresh screenshots plus `getBoundingClientRect()`/
+`getComputedStyle()` checks, not just a visual read:
+
+1. **The feature list wasn't actually hidden below 992px.** The CSS rule
+   that hides `.pnc-branding__features` lived inside
+   `@media (max-width: 991px)`, but the *unconditional* rule that styles it
+   (`display: flex`, among others) was declared further down the file. Same
+   selector, same specificity, later source position wins regardless of the
+   media query - so the unconditional `display: flex` always beat the
+   media-scoped `display: none`, even on phones. The result, confirmed in a
+   real 375×812 screenshot: all four feature items crammed into the compact
+   mobile branding bar next to the title, wrapping to two lines each and
+   pushing the form (on a 320×568 screen, the sign-in button) toward or past
+   the fold. Fixed by reordering the CSS: the unconditional styles now come
+   first, the responsive override last, so it correctly wins at small
+   widths. Re-verified via `getComputedStyle(...).display` at all six
+   required viewports: `none` at 320/375/430/768, `flex` at 1366/1920.
+2. **The title wrapped to two lines next to the language dropdown.**
+   PatternFly lays the page title and the language switcher out as one
+   wrapping flex row. At this card's width, "Welcome back" (and every Khmer
+   translation, which runs longer) didn't fit beside the dropdown, so it
+   wrapped - but only the title wrapped, leaving the dropdown pinned beside
+   just the first line, reading as a layout bug rather than an intentional
+   two-line title (confirmed in real desktop/laptop/tablet screenshots).
+   Fixed by stacking `.pf-v5-c-login__main-header` into a column: title gets
+   the full line, the switcher sits on its own line below. Re-verified via
+   `getBoundingClientRect()` on `#kc-page-title` - height now matches one
+   line (~28px for 22px bold text, not ~57px for two) - and visually in a
+   fresh screenshot.
+
+Also checked and confirmed clean in this pass, not just assumed: zero
+horizontal overflow (`document.documentElement.scrollWidth` ===
+`clientWidth`) at all six required viewports (320/375/430/768/1366/1920);
+the vertical-centering of the card on desktop (suspected broken from an
+earlier compressed screenshot thumbnail, disproven by
+`getBoundingClientRect()` - the ~165px top/bottom margins at 1920×1080 were
+already symmetric and correct, not a bug - an explicit `align-items: center`
+was added anyway for robustness, but the earlier code comment claiming it
+fixed a visible top-anchoring bug was inaccurate and has been corrected).
+
+**Still not done:** real keyboard-navigation tab order and focus-visible
+appearance, real screen-reader output (NVDA/VoiceOver), the on-screen-
+keyboard-obscuring-the-field concern on an actual physical phone, and the
+`:has()` CSS support note below in an actual old browser - Playwright
+scripting covered rendering/layout, not these.
 
 ## Known limitations / not yet done
 

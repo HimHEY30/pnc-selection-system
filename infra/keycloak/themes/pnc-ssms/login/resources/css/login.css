@@ -109,6 +109,11 @@ body#keycloak-bg {
    automatically, so dropping this is safe at every width, not just mobile. */
 .pf-v5-c-login {
   min-height: 0;
+  /* Explicit, not just relying on PatternFly's own default here - verified
+     via computed styles that vertical centering was already correct, but
+     stating it directly keeps it correct even if that default ever changes
+     along with the __container override above. */
+  align-items: center;
 }
 
 /* PatternFly's .pf-v5-c-login__container switches to a 2-column CSS grid
@@ -246,7 +251,47 @@ body#keycloak-bg {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Compact branding bar above the form on phones/tablets. */
+/* ---- Branding-panel feature list ---- */
+
+.pnc-branding__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+}
+
+.pnc-branding__features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.925rem;
+  font-weight: 500;
+  /* Solid white, same contrast reasoning as .pnc-branding__description. */
+  color: #ffffff;
+}
+
+.pnc-branding__feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.85rem;
+}
+
+/* Compact branding bar above the form on phones/tablets. This must come
+   AFTER the unconditional .pnc-branding__features rules above - both set
+   `display` on the same selector at equal specificity, so with this block
+   second, its `display: none` correctly wins below 992px. (This was
+   previously reversed: the base rules were declared after this media query,
+   so their later `display: flex` silently won at every width, including
+   mobile, defeating the hide and cramming the whole feature list into the
+   compact branding bar instead.) */
 @media (max-width: 991px) {
   .pnc-shell {
     flex-direction: column;
@@ -290,39 +335,6 @@ body#keycloak-bg {
   }
 }
 
-/* ---- Branding-panel feature list ---- */
-
-.pnc-branding__features {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin: 2rem 0 0;
-  padding: 0;
-}
-
-.pnc-branding__features li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.925rem;
-  font-weight: 500;
-  /* Solid white, same contrast reasoning as .pnc-branding__description. */
-  color: #ffffff;
-}
-
-.pnc-branding__feature-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 0.85rem;
-}
-
 /* ---- The login card itself ---- */
 
 /* Keycloak's own realm-brand header (renders realm.displayNameHtml, which
@@ -358,6 +370,23 @@ body#keycloak-bg {
   margin: 0.25rem 0 1.25rem;
   color: var(--pnc-text-secondary);
   font-size: 0.875rem;
+}
+
+/* PatternFly lays the title and the language switcher out as a single
+   wrapping row by default. At this card's width, "Welcome back" (and every
+   Khmer translation, which runs longer) doesn't fit next to the dropdown on
+   one line - it wraps to two lines while the dropdown stays pinned beside
+   only the first line, reading as broken/misaligned rather than as an
+   intentional two-line title. Stack them instead: title gets the full
+   width, the switcher sits on its own line below it. */
+.pf-v5-c-login__main-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.pf-v5-c-login__main-header-utilities {
+  margin-top: 0.75rem;
 }
 
 .pf-v5-c-form__label-text,
