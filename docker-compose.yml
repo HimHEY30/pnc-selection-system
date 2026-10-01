@@ -23,6 +23,16 @@ services:
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Pin the issuer identity to the address the BROWSER uses, no matter
+      # which address actually reached Keycloak to ask - otherwise the
+      # browser-facing login (public URL) and the server-to-server token
+      # exchange (internal Docker URL) would mint tokens with two different
+      # `iss` values and Auth.js would reject the mismatch. Dynamic lets the
+      # token/userinfo/jwks *service* URLs still adapt per-caller so internal
+      # callers get a reachable address instead of the (unreachable from
+      # inside a container) public one.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports:
       - "${KEYCLOAK_PORT}:8080"
     volumes:
@@ -38,10 +48,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_URLS: http://+:8080
-      # Internal address: the backend only ever validates bearer tokens
-      # server-to-server, it never redirects a browser to Keycloak, so it
-      # can always use the Docker-internal hostname.
+      # Authority: where the backend actually reaches Keycloak to fetch JWKS -
+      # the internal Docker address, since this is a pure server-to-server call.
+      # Issuer: what every token's `iss` claim actually says - pinned to the
+      # public address by KC_HOSTNAME on the keycloak service below, regardless
+      # of which address was used to reach it.
       Keycloak__Authority: ${KEYCLOAK_INTERNAL_URL}/realms/${KEYCLOAK_REALM}
+      Keycloak__Issuer: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
       Keycloak__Audience: ${KEYCLOAK_API_CLIENT_ID}
       Keycloak__RequireHttpsMetadata: "false"
       Frontend__Origin: ${FRONTEND_ORIGIN}
@@ -59,12 +72,14 @@ services:
       AUTH_URL: ${AUTH_URL}
       AUTH_KEYCLOAK_ID: ${KEYCLOAK_WEB_CLIENT_ID}
       AUTH_KEYCLOAK_SECRET: ${KEYCLOAK_WEB_CLIENT_SECRET}
-      # Internal address: this server performs the token/userinfo/jwks calls
-      # itself, so it reaches Keycloak over the Docker network.
-      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_INTERNAL_URL}/realms/${KEYCLOAK_REALM}
-      # Public address: the browser is redirected here to log in, so it must
-      # be the address published on the host, not the Docker-internal one.
-      AUTH_KEYCLOAK_PUBLIC_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      # The issuer identity (matches every token's `iss` claim, pinned to this
+      # public address by KC_HOSTNAME below) - NOT necessarily where this
+      # server actually connects to reach Keycloak.
+      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      # Only set inside Docker: auth.ts rewrites requests that would otherwise
+      # target the (unreachable-from-a-container) public address above to this
+      # internal one instead, without changing what issuer it expects back.
+      AUTH_KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_URL}/realms/${KEYCLOAK_REALM}
     ports:
       - "${FRONTEND_PORT}:3000"
     depends_on:

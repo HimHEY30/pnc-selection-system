@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { customFetch } from "next-auth";
 import Keycloak from "next-auth/providers/keycloak";
 
 export const GROUPS = {
@@ -22,18 +22,37 @@ declare module "@auth/core/jwt" {
   }
 }
 
+// AUTH_KEYCLOAK_ISSUER is the issuer IDENTITY: Keycloak's KC_HOSTNAME pins
+// every token's `iss` claim to this address regardless of how Keycloak was
+// actually reached, so the browser's login (public address) and this
+// server's token exchange (internal address, inside Docker) agree on one
+// issuer. AUTH_KEYCLOAK_INTERNAL_ISSUER is only set inside Docker — when
+// present, it's where this server should actually connect instead of the
+// (unreachable-from-a-container) public address, without changing what
+// issuer Auth.js expects back. Outside Docker there's no second var, so
+// nothing is rewritten.
+const internalIssuer = process.env.AUTH_KEYCLOAK_INTERNAL_ISSUER;
+
+function dockerAwareFetch(publicOrigin: string, internalOrigin: string): typeof fetch {
+  return (input, init) => {
+    const requestUrl = input instanceof Request ? input.url : input;
+    const url = new URL(requestUrl);
+    if (url.origin === publicOrigin) {
+      return fetch(`${internalOrigin}${url.pathname}${url.search}`, init);
+    }
+    return fetch(input, init);
+  };
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Keycloak({
-      // AUTH_KEYCLOAK_ISSUER drives the token/userinfo/jwks exchange, which
-      // this server performs itself — when running in Docker that's the
-      // internal service address (http://keycloak:8080/...), unreachable
-      // from outside the Docker network. The authorization endpoint, by
-      // contrast, is a redirect the BROWSER must follow, so it needs the
-      // publicly published address even when everything else here uses the
-      // internal one. Outside Docker both env vars point at the same
-      // localhost address, so this override is a no-op.
-      authorization: `${process.env.AUTH_KEYCLOAK_PUBLIC_ISSUER ?? process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/auth`,
+      ...(internalIssuer && {
+        [customFetch]: dockerAwareFetch(
+          new URL(process.env.AUTH_KEYCLOAK_ISSUER!).origin,
+          new URL(internalIssuer).origin,
+        ),
+      }),
     }),
   ],
   session: { strategy: "jwt" },

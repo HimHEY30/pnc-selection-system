@@ -23,16 +23,27 @@ public static class DependencyInjection
     {
         var keycloak = configuration.GetSection("Keycloak");
 
+        // Authority is where THIS process actually reaches Keycloak to fetch JWKS
+        // (the Docker-internal address when containerized). Issuer is the identity
+        // Keycloak puts in every token's `iss` claim - fixed to the publicly
+        // published address via KC_HOSTNAME regardless of who's asking, so the
+        // browser's login and this server's validation agree on one issuer even
+        // though they reach Keycloak through two different addresses. They're the
+        // same value outside Docker, where there's no internal/public split.
+        var authority = keycloak["Authority"];
+        var issuer = keycloak["Issuer"] ?? authority;
+
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.Authority = keycloak["Authority"];
+                options.Authority = authority;
                 options.Audience = keycloak["Audience"];
                 options.RequireHttpsMetadata = keycloak.GetValue<bool>("RequireHttpsMetadata");
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
+                    ValidIssuer = issuer,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     NameClaimType = "preferred_username",
