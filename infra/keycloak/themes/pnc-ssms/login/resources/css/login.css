@@ -18,6 +18,9 @@
   --pnc-text-secondary: #6b7280;
   --pnc-bg: #f5f9fc;
   --pnc-border: #e5e7eb;
+  /* Lighter than the shared --pnc-border token above, for form inputs only
+     (the footer divider and other uses keep the standard brand border). */
+  --pnc-border-light: #eef0f2;
   --pnc-error: #dc2626;
   --pnc-success: #16a34a;
 
@@ -72,10 +75,10 @@
      set as component-variable overrides, same mechanism as the rest of this
      file, rather than a blunt `border` override that the pseudo-elements would
      just paint over). */
-  --pf-v5-c-form-control--before--BorderTopColor: var(--pnc-border);
-  --pf-v5-c-form-control--before--BorderRightColor: var(--pnc-border);
-  --pf-v5-c-form-control--before--BorderLeftColor: var(--pnc-border);
-  --pf-v5-c-form-control--after--BorderBottomColor: var(--pnc-border);
+  --pf-v5-c-form-control--before--BorderTopColor: var(--pnc-border-light);
+  --pf-v5-c-form-control--before--BorderRightColor: var(--pnc-border-light);
+  --pf-v5-c-form-control--before--BorderLeftColor: var(--pnc-border-light);
+  --pf-v5-c-form-control--after--BorderBottomColor: var(--pnc-border-light);
   --pf-v5-c-form-control--BackgroundColor: #ffffff;
   --pf-v5-c-form-control--PaddingTop: 0.55rem;
   --pf-v5-c-form-control--PaddingBottom: 0.55rem;
@@ -324,7 +327,7 @@ body#keycloak-bg {
   background-color: #ffffff;
   /* The card's own width - .pf-v5-c-login__container (above) is wider than
      this so the footer below can use that extra room to stay in one row. */
-  max-width: 380px;
+  max-width: 460px;
   width: 100%;
   /* PatternFly sets align-self:start here directly (for its own grid-based
      layout, already disabled above), which overrides the container's
@@ -348,7 +351,7 @@ body#keycloak-bg {
 
 .pnc-card-logo img {
   display: block;
-  height: 32px;
+  height: 48px;
   width: auto;
 }
 
