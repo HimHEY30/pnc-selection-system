@@ -1,2 +1,11 @@
 # Claude Code local, machine-specific state — never shared across the team
 .claude/settings.local.json
+
+# .NET build output
+backend/**/bin/
+backend/**/obj/
+*.user
+
+# Editor / IDE files
+.vs/
+.idea/
