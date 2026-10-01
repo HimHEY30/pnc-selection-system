@@ -532,3 +532,44 @@ screenshots at all five non-"large-mobile" required viewports: `lang="en"`
 everywhere; branding/footer both `display: none` at 320/375/768px widths;
 both `display: flex` (one row, not wrapped) at 1366/1920px; zero horizontal
 overflow at every size.
+
+## Logo size, card width, input borders, and the browser-tab favicon
+
+Three CSS tweaks plus a real fix found along the way:
+
+- `.pnc-card-logo img` height `32px` → `48px`.
+- `.pf-v5-c-login__main` (the card) `max-width` `380px` → `460px` (the
+  wider `.pf-v5-c-login__container` from the footer fix above already had
+  the room).
+- Form-control borders now use a new `--pnc-border-light` (`#eef0f2`)
+  instead of the shared `--pnc-border` (`#e5e7eb`) brand token - scoped to
+  inputs only, so the footer divider and any other use of the official
+  border token are unaffected.
+- **`template.ftl` has always linked `<link rel="icon"
+  href="${url.resourcesPath}/img/favicon.ico" />`, but
+  `resources/img/favicon.ico` never actually existed** - the login page's
+  browser-tab icon has been a silent 404 since this theme was first built.
+  Generated a real one from `resources/img/pnc-logo-circle.png` (the
+  circular PNC mark - `images.png`'s wide wordmark isn't icon-shaped) via
+  `sharp`, hand-assembling a minimal valid ICO container (6-byte
+  `ICONDIR` + 16-byte `ICONDIRENTRY` + an embedded 64x64 PNG) since no ICO
+  encoder was available. Verified by decoding the embedded PNG back out and
+  confirming it parses cleanly, then confirmed live: `GET
+  .../img/favicon.ico` now returns `200`, 4480 bytes, matching what was
+  generated.
+- The frontend's own tab icon (`apps/web/app/favicon.ico` and a new
+  `apps/web/app/icon.png`, Next.js's App Router icon convention) was
+  updated the same way - see `features/keycloak-authentication/README.md`
+  if that ever needs revisiting, since it also required a Next.js
+  **middleware matcher fix**: `proxy.ts`'s matcher excluded `favicon.ico`
+  by name but not the new `icon.png`, so an unauthenticated browser's
+  favicon request was being caught by the auth middleware and redirected to
+  `/login`'s HTML instead of the actual image (caught via a real `curl`
+  check returning `307`, not assumed). Added `icon.png` to the matcher's
+  exclusion list; re-verified `200` after the fix.
+- First attempt at the ICO generation **failed the frontend's production
+  build**: `npm run build` (inside `docker compose build frontend`) rejects
+  a `favicon.ico` whose embedded PNG has no alpha channel
+  (`The PNG is not in RGBA format!`) - the source logo's opaque background
+  had none. Fixed with sharp's `.ensureAlpha()` before encoding; rebuild
+  succeeded.

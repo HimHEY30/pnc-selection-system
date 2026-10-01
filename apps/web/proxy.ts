@@ -32,5 +32,8 @@ export default auth((req) => {
 export const config = {
   // Protect everything except static assets, the Next.js internals, and the
   // auth routes themselves (those must stay reachable to sign in at all).
-  matcher: ["/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)"],
+  // icon.png is Next's file-based favicon convention (app/icon.png) - without
+  // excluding it, an unauthenticated browser's favicon request gets caught by
+  // this same middleware and redirected to /login's HTML instead of the image.
+  matcher: ["/((?!api/auth|login|_next/static|_next/image|favicon.ico|icon.png).*)"],
 };
