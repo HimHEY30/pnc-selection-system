@@ -190,6 +190,51 @@ server-rendered HTML (the actual click-free submit itself needs a real
 browser to exercise the `useEffect` — not re-tested here, same curl-only
 caveat as the rest of this doc).
 
+## Sign-out also ends the Keycloak SSO session, not just this app's
+
+`signOut()` (Auth.js) only deletes this app's own session cookie. Keycloak
+keeps a separate SSO session alive on its own domain (its `KEYCLOAK_SESSION`
+cookie), so without more, clicking "Sign out" and then revisiting the app
+would bounce to `/login`, which auto-submits `signIn("keycloak")` — and
+since Keycloak still considered the browser logged in, it would silently
+re-issue a code with no login form ever shown. The user would appear signed
+out for one page load and then immediately be signed back in, with no way
+to actually log out or switch accounts. This was found and fixed, not
+reported by request, but the request to "make logout work" implied this
+was already broken.
+
+Fix (`auth.ts`, `app/page.tsx`): proper OIDC **RP-Initiated Logout**.
+1. The Keycloak provider's `account.id_token` is captured in the `jwt`
+   callback and threaded onto the session as `session.idToken` — needed
+   because the sign-out action has to hand it back to Keycloak as proof of
+   which SSO session to end (`id_token_hint`).
+2. `keycloakLogoutUrl()` builds Keycloak's
+   `/protocol/openid-connect/logout` URL with that `id_token_hint`, plus
+   `post_logout_redirect_uri` (`AUTH_URL`, the app's own public origin) and
+   `client_id`.
+3. The sign-out Server Action in `app/page.tsx` calls
+   `signOut({ redirect: false })` (clears our cookie, doesn't redirect
+   itself), then `redirect(keycloakLogoutUrl(idToken))` — sending the
+   *browser* to Keycloak so it's Keycloak's own cookie that gets cleared,
+   not a server-to-server call that couldn't touch it.
+
+`post_logout_redirect_uri` needed no realm config change: Keycloak already
+defaults a client's `post.logout.redirect.uris` attribute to `"+"` (same as
+its `redirectUris`) when none is set explicitly — confirmed by reading the
+live client's representation via the Admin REST API rather than assuming.
+
+**Verified locally** with Playwright driving a real browser against the
+full Docker stack (not curl — this round-trip depends on real browser
+cookies on two different origins): signed in as `admin.demo`, clicked
+"Sign out", captured the actual network request fired and confirmed it hit
+`http://localhost:8080/realms/pnc-selection/protocol/openid-connect/logout`
+with both `id_token_hint` and `post_logout_redirect_uri` set, got back a
+`302` from Keycloak. Then revisited `http://localhost:3000/` in the same
+browser context: it bounced through `/login` to Keycloak's real,
+interactive login form again (a `#username` field actually present in the
+page) rather than silently re-authenticating — proof the Keycloak-side SSO
+session was genuinely cleared, not just this app's own cookie.
+
 ## Local setup
 
 **Option A — everything in Docker (recommended, one command):**
@@ -250,7 +295,9 @@ live containers (not just inspected or unit-tested in isolation):
 - The login round-trip above was driven with curl, not an actual browser —
   worth a quick manual click-through at `http://localhost:3000` to catch
   anything curl wouldn't (cookie `SameSite`/`Secure` behavior in a real
-  browser, the `/admin` and `/committee` route guards in `proxy.ts`, sign-out).
+  browser, the `/admin` and `/committee` route guards in `proxy.ts`). Sign-in
+  and sign-out specifically have since been verified with a real browser
+  (Playwright) — see "Sign-out also ends the Keycloak SSO session" above.
 - `security-architect` and `identity-access-expert` deep review (token
   lifetime/refresh strategy, session fixation, CSRF on the Next.js side,
   secrets management for `AUTH_KEYCLOAK_SECRET` in real environments) has

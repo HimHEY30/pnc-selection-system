@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { auth, signOut, keycloakLogoutUrl } from "@/auth";
 
 export default async function Home() {
   const session = await auth();
@@ -20,7 +20,12 @@ export default async function Home() {
         <form
           action={async () => {
             "use server";
-            await signOut();
+            // Clearing our own cookie isn't enough on its own - see
+            // keycloakLogoutUrl's comment in auth.ts for why the browser
+            // also has to be sent to Keycloak's end_session_endpoint.
+            const idToken = session.idToken;
+            await signOut({ redirect: false });
+            redirect(keycloakLogoutUrl(idToken));
           }}
         >
           <button

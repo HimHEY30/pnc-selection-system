@@ -13,12 +13,18 @@ export type Group = (typeof GROUPS)[keyof typeof GROUPS];
 declare module "next-auth" {
   interface Session {
     roles: Group[];
+    // Needed server-side to build the Keycloak RP-initiated-logout URL (see
+    // keycloakLogoutUrl below) - signOut() only clears our own cookie, not
+    // Keycloak's SSO session, so logging out for real means sending the
+    // browser to Keycloak's own end_session_endpoint with this as a hint.
+    idToken?: string;
   }
 }
 
 declare module "@auth/core/jwt" {
   interface JWT {
     roles?: Group[];
+    idToken?: string;
   }
 }
 
@@ -68,11 +74,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           (role: string): role is Group =>
             Object.values(GROUPS).includes(role as Group),
         );
+        token.idToken = account.id_token;
       }
       return token;
     },
     async session({ session, token }) {
       session.roles = token.roles ?? [];
+      session.idToken = token.idToken;
       return session;
     },
   },
@@ -85,4 +93,25 @@ function decodeJwtPayload(jwt: string): { realm_access?: { roles?: string[] } } 
   } catch {
     return null;
   }
+}
+
+// signOut() by itself only deletes this app's own session cookie. Keycloak
+// keeps its own SSO session alive (its KEYCLOAK_SESSION cookie, on
+// Keycloak's own origin), so a user who "signs out" and then hits /login
+// again gets silently re-authenticated with no login form - Keycloak still
+// thinks they're logged in. RP-Initiated Logout is the OIDC mechanism for
+// ending that session too: redirect the browser (not a server-to-server
+// call - this has to happen in the browser, since it's Keycloak's cookie
+// that needs clearing) to its end_session_endpoint. AUTH_KEYCLOAK_ISSUER is
+// deliberately used here (not AUTH_KEYCLOAK_INTERNAL_ISSUER) since this URL
+// is for the browser, which can't resolve the internal Docker address.
+export function keycloakLogoutUrl(idToken: string | undefined): string {
+  const params = new URLSearchParams({
+    client_id: process.env.AUTH_KEYCLOAK_ID!,
+    post_logout_redirect_uri: process.env.AUTH_URL!,
+  });
+  if (idToken) {
+    params.set("id_token_hint", idToken);
+  }
+  return `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/logout?${params.toString()}`;
 }
