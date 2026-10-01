@@ -453,3 +453,41 @@ scripting covered rendering/layout, not these.
 - No browser automation tool was available to validate actual rendering,
   keyboard navigation, or screen-reader output — see the audit section above
   for exactly what was and wasn't checked.
+
+## Language switcher removed, logo aligned to the content column
+
+Follow-up request: disable the login page's language picker, and left-align
+the logo with the title/inputs below it (it was measurably ~48px further
+left than everything else - `.pnc-card-logo` is a sibling of
+`.pf-v5-c-login__main-header`/`-main-body`, not a descendant, so it never
+got their PatternFly-driven left padding).
+
+- **Language switcher**: `template.ftl` no longer renders the `<select>`
+  block (removed, not just hidden - see the PNC-CUSTOM comment in its place
+  for how to restore it). `realm.internationalizationEnabled` and
+  `messages_km.properties` are untouched, so this only affects the login
+  page's own UI, not the underlying localization data or other flows.
+- **Logo alignment**: `.pnc-card-logo` now reuses
+  `var(--pf-v5-c-login__main-body--PaddingLeft)` - the same variable
+  PatternFly itself uses for the title/input left padding - instead of a
+  hardcoded px value, so it tracks PatternFly's own responsive breakpoint
+  (the value changes around 768px) instead of silently drifting out of
+  alignment again at some other width.
+- **A real regression found and fixed in the same pass**: removing the
+  language switcher's markup broke `.pf-v5-c-login__main-header`, which
+  turned out to be a PatternFly CSS **grid** (not flex) sized for exactly
+  two children (title column + switcher column). With only the title left,
+  grid auto-placement collapsed its column to ~20px, wrapping "Welcome back"
+  to one character per line - confirmed via `getComputedStyle` showing
+  `display: grid` and a `20.375px 207.625px` column template, and visually
+  in a real screenshot. Fixed by forcing `.pf-v5-c-login__main-header` to
+  `display: block`, the same "stop relying on PatternFly's N-child grid
+  assumptions" fix already applied to `.pf-v5-c-login__container` earlier in
+  this file.
+
+Verified with real Playwright screenshots and `getBoundingClientRect()`
+measurements (not just a visual read, given the grid regression above was
+only caught that way): logo/title/input left edges match exactly (848px at
+1366 width, 1158px at 1920px, 262px at tablet, 52px on both mobile sizes);
+title renders as one line (~29px tall) at all five checked viewports; no
+language `<select>` in the DOM; zero horizontal overflow.

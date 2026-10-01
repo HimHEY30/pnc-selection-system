@@ -11,8 +11,11 @@
        the white card than over the blue panel, and avoids rendering it twice.
     4. role="alert" is added to the server-provided auth-message div so
        screen readers announce it (missing in the stock template).
-  Everything else - every #nested section, the form markup, scripts, dark-mode
-  toggle, language switcher - is untouched, so CSRF handling, required-field
+    5. The language-switcher <select> is not rendered (removed, not just
+       hidden) - see the PNC-CUSTOM comment where it used to sit, further
+       down, for how to restore it.
+  Everything else - every #nested section, the form markup, scripts and
+  dark-mode toggle - is untouched, so CSRF handling, required-field
   validation, password-reset flow and accessibility attributes all behave exactly
   as they do in the stock keycloak.v2 theme.
 -->
@@ -159,44 +162,13 @@
         <#if bodyClass == "login">
           <p class="pnc-login-subtitle">${msg("pncLoginSubtitle")}</p>
         </#if>
-        <#if realm.internationalizationEnabled  && locale.supported?size gt 1>
-        <div class="${properties.kcLoginMainHeaderUtilities!}">
-          <div class="${properties.kcInputClass!}">
-            <select
-              aria-label="${msg("languages")}"
-              id="login-select-toggle"
-              onchange="if (this.value) window.location.href=this.value"
-            >
-              <#list locale.supported?sort_by("label") as l>
-                <option
-                  value="${l.url}"
-                  ${(l.languageTag == locale.currentLanguageTag)?then('selected','')}
-                >
-                  ${l.label}
-                </option>
-              </#list>
-            </select>
-            <span class="${properties.kcFormControlUtilClass}">
-              <span class="${properties.kcFormControlToggleIcon!}">
-                <svg
-                  class="pf-v5-svg"
-                  viewBox="0 0 320 512"
-                  fill="currentColor"
-                  aria-hidden="true"
-                  role="img"
-                  width="1em"
-                  height="1em"
-                >
-                  <path
-                    d="M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"
-                  >
-                  </path>
-                </svg>
-              </span>
-            </span>
-          </div>
-        </div>
-        </#if>
+        <#-- PNC-CUSTOM: language switcher intentionally disabled on the login
+             page. realm.internationalizationEnabled / messages_km.properties
+             are untouched - this only stops the picker from rendering here,
+             so other flows (account console, etc.) are unaffected. Remove
+             this comment and restore the `<#if realm.internationalizationEnabled
+             && locale.supported?size gt 1>...select...</#if>` block (see git
+             history) to bring it back. -->
       </div>
       <div class="${properties.kcLoginMainBody!}">
         <#if !(auth?has_content && auth.showUsername() && !auth.showResetCredentials())>

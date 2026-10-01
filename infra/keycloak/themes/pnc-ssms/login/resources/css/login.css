@@ -137,7 +137,16 @@ body#keycloak-bg {
 /* Tighten PatternFly's own card padding/spacing to match the smaller
    container above - its defaults (spacer--xl/2xl, ~32-48px) were sized for
    the wider 440-500px card this replaced. */
+/* PatternFly lays this out as a 2-column CSS grid (title column + language-
+   switcher-utilities column), sized assuming both children are present. The
+   switcher is no longer rendered (see template.ftl) - with only the title
+   left to auto-place, grid's own column-sizing collapsed the title's track
+   to ~20px (measured), wrapping "Welcome back" to one character per line.
+   Forcing block layout removes PatternFly's grid assumption entirely rather
+   than trying to feed it a 1-column track list that could shift again on a
+   Keycloak upgrade. */
 .pf-v5-c-login__main-header {
+  display: block;
   padding-top: 1.5rem;
   padding-bottom: 0.5rem;
 }
@@ -349,8 +358,15 @@ body#keycloak-bg {
   background-color: #ffffff;
 }
 
-/* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). */
+/* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). It's a
+   direct child of .pf-v5-c-login__main, not of -main-header/-main-body, so
+   it doesn't get their left padding for free - without this it sits flush
+   against the card edge, ~48px left of the title/inputs (measured). Reusing
+   -main-body's own left-padding variable keeps it pixel-aligned at every
+   breakpoint (PatternFly swaps that variable's value around 768px) instead
+   of hardcoding a single px value that would only be right at one width. */
 .pnc-card-logo {
+  padding-left: var(--pf-v5-c-login__main-body--PaddingLeft);
   margin-bottom: 1.25rem;
 }
 
@@ -370,23 +386,6 @@ body#keycloak-bg {
   margin: 0.25rem 0 1.25rem;
   color: var(--pnc-text-secondary);
   font-size: 0.875rem;
-}
-
-/* PatternFly lays the title and the language switcher out as a single
-   wrapping row by default. At this card's width, "Welcome back" (and every
-   Khmer translation, which runs longer) doesn't fit next to the dropdown on
-   one line - it wraps to two lines while the dropdown stays pinned beside
-   only the first line, reading as broken/misaligned rather than as an
-   intentional two-line title. Stack them instead: title gets the full
-   width, the switcher sits on its own line below it. */
-.pf-v5-c-login__main-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.pf-v5-c-login__main-header-utilities {
-  margin-top: 0.75rem;
 }
 
 .pf-v5-c-form__label-text,
