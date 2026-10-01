@@ -128,11 +128,16 @@ body#keycloak-bg {
    Wider than the card itself (.pf-v5-c-login__main, capped separately
    below) - this is also what gives the footer's copyright/links row below
    the card room to lay out on one line instead of wrapping to three, since
-   the footer lives in this same container, not inside .pf-v5-c-login__main. */
+   the footer lives in this same container, not inside .pf-v5-c-login__main.
+   align-items:center (not flex-start) centers the narrower card within
+   this wider container - and so within the white panel, since the
+   container itself is already centered there via .pf-v5-c-login's own
+   justify-content:center - rather than pinning it to the container's left
+   edge, which looked off-center relative to the available white space. */
 .pf-v5-c-login__container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   max-width: 760px;
   width: 100%;
   padding-inline: 1.25rem;
@@ -321,6 +326,12 @@ body#keycloak-bg {
      this so the footer below can use that extra room to stay in one row. */
   max-width: 380px;
   width: 100%;
+  /* PatternFly sets align-self:start here directly (for its own grid-based
+     layout, already disabled above), which overrides the container's
+     align-items:center and pins the card to the container's left edge
+     instead of centering it - confirmed via getComputedStyle before adding
+     this. */
+  align-self: center;
 }
 
 /* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). It's a
