@@ -1,5 +1,6 @@
 {
   "realm": "pnc-selection",
+  "displayName": "PNC Selection System",
   "enabled": true,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,

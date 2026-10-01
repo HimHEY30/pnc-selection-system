@@ -85,27 +85,19 @@
     <script type="text/javascript">
         window.pncSigningInText = "${msg('pncSigningIn')?js_string}";
     </script>
+    <#-- PNC-CUSTOM: stock keycloak.v2 also toggles a .pf-v5-theme-dark class here based
+         on prefers-color-scheme. Dropped: PatternFly's dark variant independently
+         recolors the card/input backgrounds to dark gray, which combined with this
+         theme's own text-color overrides produced illegible near-black-on-dark-gray
+         text. The PNC brand spec defines one light palette, not a second dark one, so
+         this theme renders consistently in it rather than half-supporting a dark mode
+         that breaks contrast. -->
     <script type="module">
         import { startSessionPolling } from "${url.resourcesPath}/js/authChecker.js";
 
         startSessionPolling(
             "${url.ssoLoginInOtherTabsUrl?no_esc}"
         );
-
-        const DARK_MODE_CLASS = "pf-v5-theme-dark";
-        const mediaQuery =window.matchMedia("(prefers-color-scheme: dark)");
-        updateDarkMode(mediaQuery.matches);
-        mediaQuery.addEventListener("change", (event) =>
-          updateDarkMode(event.matches),
-        );
-        function updateDarkMode(isEnabled) {
-          const { classList } = document.documentElement;
-          if (isEnabled) {
-            classList.add(DARK_MODE_CLASS);
-          } else {
-            classList.remove(DARK_MODE_CLASS);
-          }
-        }
     </script>
 </head>
 

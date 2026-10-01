@@ -200,6 +200,46 @@ needed there.
    they were hand-verified against Keycloak 26.0.8, not guaranteed for other
    versions.
 
+## Visual bugs found after a real screenshot review
+
+The first pass was verified only with curl (markup/asset presence), which
+doesn't catch rendering bugs. A real screenshot surfaced three, all now
+fixed:
+
+1. **Illegible title/card in dark mode.** Keycloak's stock `template.ftl`
+   toggles a `.pf-v5-theme-dark` class on `<html>` based on
+   `prefers-color-scheme`, which makes PatternFly swap the card and input
+   backgrounds to dark gray. This theme's CSS forced title/label text to
+   `--pnc-text` (near-black) unconditionally, so on a dark-mode visitor's
+   browser the card rendered dark-gray with near-invisible near-black text.
+   Fixed by dropping the dark-mode-toggle script from `template.ftl`
+   (marked `PNC-CUSTOM`) rather than patching each PatternFly component's
+   dark-mode background individually — the PNC brand spec defines one light
+   palette, not a second dark one, so the theme now renders consistently in
+   it regardless of OS preference.
+2. **Headings silently fell back to the browser's default serif font.** The
+   `--pf-v5-global--FontFamily--heading`/`--text` overrides referenced
+   *themselves* as a fallback (`"Open Sans", var(--pf-v5-global--FontFamily--heading)`)
+   — a CSS custom-property self-reference cycle, which makes the whole
+   property invalid at computed-value time. Fixed by using PatternFly's
+   actual base stack (`RedHatText`/`RedHatDisplay`, helvetica, arial,
+   sans-serif) as the literal fallback instead of trying to extend the
+   variable being defined.
+3. **A raw realm slug ("pnc-selection") floated in the top-right of the
+   page.** That's Keycloak's own realm-brand header
+   (`#kc-header`/`loginTitleHtml`), which falls back to the realm's
+   technical name when `displayName` isn't set, and was never styled by
+   this theme. Fixed two ways: `realm-export.json` now sets
+   `"displayName": "PNC Selection System"` (also fixes the browser tab
+   title, previously "Sign in to pnc-selection"), and `#kc-header` is
+   hidden outright in `login.css` since it's redundant with the branding
+   panel this theme already renders.
+
+Re-verified live after these fixes: `<title>` now reads "Sign in to PNC
+Selection System", the served `login.css` contains the `RedHatDisplay`
+fallback and the `#kc-header { display: none; }` rule, and no
+`pf-v5-theme-dark` references remain in the rendered page.
+
 ## Known limitations / not yet done
 
 - **Khmer translations are a starting point**, not reviewed by a native

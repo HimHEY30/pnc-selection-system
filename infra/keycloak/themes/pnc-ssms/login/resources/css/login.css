@@ -21,9 +21,14 @@
   --pnc-error: #dc2626;
   --pnc-success: #16a34a;
 
-  /* Typography, cascades into every PatternFly component. */
-  --pf-v5-global--FontFamily--text: "Open Sans", var(--pf-v5-global--FontFamily--text);
-  --pf-v5-global--FontFamily--heading: "Open Sans", var(--pf-v5-global--FontFamily--heading);
+  /* Typography, cascades into every PatternFly component. Fallback stacks are
+     PatternFly's own base values (RedHatText/RedHatDisplay, helvetica, arial,
+     sans-serif) copied in directly - referencing the variable being defined
+     via var(--pf-v5-global--FontFamily--text) here would be a self-reference
+     cycle, making the whole property invalid and silently falling back to the
+     browser's default (serif) font if Open Sans hasn't loaded yet. */
+  --pf-v5-global--FontFamily--text: "Open Sans", "RedHatText", helvetica, arial, sans-serif;
+  --pf-v5-global--FontFamily--heading: "Open Sans", "RedHatDisplay", helvetica, arial, sans-serif;
 
   /* Primary action color -> drives the submit button, focus rings and the
      form-control focus underline (all defined in PatternFly as var() chains
@@ -46,20 +51,10 @@
   --pf-v5-global--Color--200: var(--pnc-text-secondary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.pf-v5-theme-dark) {
-    /* The template toggles .pf-v5-theme-dark itself; nothing extra needed here. */
-  }
-}
-
 html,
 body#keycloak-bg {
   background: var(--pnc-bg);
   min-height: 100%;
-}
-
-:where(.pf-v5-theme-dark) body#keycloak-bg {
-  background: #0f172a;
 }
 
 /* ---- Layout shell: branding panel + the untouched Keycloak card ---- */
@@ -201,9 +196,18 @@ body#keycloak-bg {
 
 /* ---- The login card itself ---- */
 
+/* Keycloak's own realm-brand header (renders realm.displayNameHtml, which
+   falls back to the raw technical realm name, e.g. "pnc-selection", when
+   unset) - redundant with and unstyled next to the branding panel this
+   theme already renders on the left, so it's hidden rather than restyled. */
+#kc-header {
+  display: none;
+}
+
 .pf-v5-c-login__main {
   border: 1px solid var(--pnc-border);
   border-radius: 12px;
+  background-color: #ffffff;
 }
 
 .pf-v5-c-login__main-title,
@@ -250,10 +254,6 @@ label {
 .pnc-footer__links a:hover {
   color: var(--pnc-blue);
   text-decoration: underline;
-}
-
-:where(.pf-v5-theme-dark) .pnc-footer {
-  border-top-color: rgba(255, 255, 255, 0.12);
 }
 
 /* ---- Sign-in button loading state (see resources/js/loginState.js) ---- */
