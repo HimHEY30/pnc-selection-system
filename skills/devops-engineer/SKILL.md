@@ -76,11 +76,11 @@ before production release.
 Generated from:
 
 ```text
-02-solution-architect
-05-database-architect
-06-api-architect
-07-security-architect
-08-performance-engineer
+solution-architect
+database-architect
+api-architect
+security-architect
+performance-engineer
 ```
 
 Required documents:

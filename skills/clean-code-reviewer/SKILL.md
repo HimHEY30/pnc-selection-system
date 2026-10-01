@@ -75,9 +75,9 @@ Reject convenience-based coding.
 Generated from:
 
 ```text
-02-solution-architect
-03-modular-monolith-enforcer
-04-domain-driven-design
+solution-architect
+modular-monolith-enforcer
+domain-driven-design
 ```
 
 Review:

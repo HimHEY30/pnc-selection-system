@@ -69,19 +69,19 @@ Only approve production-ready code.
 Required outputs from:
 
 ```text
-00-master-orchestrator
-01-business-analyst
-02-solution-architect
-03-modular-monolith-enforcer
-04-domain-driven-design
-05-database-architect
-06-api-architect
-07-security-architect
-08-performance-engineer
-09-clean-code-reviewer
-10-test-engineer
-11-swagger-expert
-12-devops-engineer
+master-backend-orchestrator
+business-analyst
+solution-architect
+modular-monolith-enforcer
+domain-driven-design
+database-architect
+api-architect
+security-architect
+performance-engineer
+clean-code-reviewer
+test-engineer
+swagger-expert
+devops-engineer
 ```
 
 Required source:
@@ -312,7 +312,7 @@ security-review.md
 Verify implementation matches:
 
 ```text
-07-security-architect
+security-architect
 ```
 
 ---
@@ -364,7 +364,7 @@ performance-review.md
 Verify implementation follows:
 
 ```text
-08-performance-engineer
+performance-engineer
 ```
 
 ---

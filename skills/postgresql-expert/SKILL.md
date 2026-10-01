@@ -73,9 +73,9 @@ without becoming a bottleneck.
 Generated from:
 
 ```text
-05-database-architect
+database-architect
 
-08-performance-engineer
+performance-engineer
 ```
 
 Review:

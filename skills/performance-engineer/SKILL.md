@@ -59,12 +59,12 @@ Ensure the solution can meet business growth targets.
 Generated from:
 
 ```text
-01-business-analyst
-02-solution-architect
-04-domain-driven-design
-05-database-architect
-06-api-architect
-07-security-architect
+business-analyst
+solution-architect
+domain-driven-design
+database-architect
+api-architect
+security-architect
 ```
 
 Required documents:

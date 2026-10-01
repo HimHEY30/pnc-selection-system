@@ -73,8 +73,8 @@ Documentation quality must match enterprise standards.
 Generated from:
 
 ```text
-06-api-architect
-07-security-architect
+api-architect
+security-architect
 ```
 
 Required documents:

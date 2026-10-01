@@ -75,13 +75,13 @@ Authorization must always be server-side.
 Generated from:
 
 ```text
-01-business-analyst
+business-analyst
 
-02-solution-architect
+solution-architect
 
-06-api-architect
+api-architect
 
-07-security-architect
+security-architect
 ```
 
 Required documents:

@@ -76,11 +76,11 @@ Test Cases
 Generated from:
 
 ```text
-03-modular-monolith-enforcer
-04-domain-driven-design
-09-clean-code-reviewer
-10-test-engineer
-13-code-reviewer
+modular-monolith-enforcer
+domain-driven-design
+clean-code-reviewer
+test-engineer
+code-reviewer
 ```
 
 ---

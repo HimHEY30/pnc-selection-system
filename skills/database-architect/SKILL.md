@@ -75,9 +75,9 @@ before implementation begins.
 Generated from:
 
 ```text
-01-business-analyst
-02-solution-architect
-04-domain-driven-design
+business-analyst
+solution-architect
+domain-driven-design
 ```
 
 Required documents:

@@ -81,17 +81,17 @@ Observability must be designed before production deployment.
 Generated from:
 
 ```text
-02-solution-architect
+solution-architect
 
-06-api-architect
+api-architect
 
-07-security-architect
+security-architect
 
-08-performance-engineer
+performance-engineer
 
-12-devops-engineer
+devops-engineer
 
-17-event-driven-architect
+event-driven-architect
 ```
 
 Required documents:

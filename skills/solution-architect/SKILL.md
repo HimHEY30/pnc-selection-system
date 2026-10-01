@@ -54,7 +54,7 @@ before development starts.
 Expected input comes from:
 
 ```text
-01-business-analyst
+business-analyst
 ```
 
 Required documents:

@@ -69,10 +69,10 @@ while preserving business consistency.
 Generated from:
 
 ```text
-01-business-analyst
-02-solution-architect
-03-modular-monolith-enforcer
-04-domain-driven-design
+business-analyst
+solution-architect
+modular-monolith-enforcer
+domain-driven-design
 ```
 
 Required documents:

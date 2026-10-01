@@ -73,10 +73,10 @@ before implementation begins.
 Generated from:
 
 ```text
-01-business-analyst
-02-solution-architect
-04-domain-driven-design
-05-database-architect
+business-analyst
+solution-architect
+domain-driven-design
+database-architect
 ```
 
 Required documents:

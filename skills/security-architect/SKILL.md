@@ -64,11 +64,11 @@ Security cannot be optional.
 Generated from:
 
 ```text
-01-business-analyst
-02-solution-architect
-04-domain-driven-design
-05-database-architect
-06-api-architect
+business-analyst
+solution-architect
+domain-driven-design
+database-architect
+api-architect
 ```
 
 Required documents:

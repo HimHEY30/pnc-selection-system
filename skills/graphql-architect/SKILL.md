@@ -72,19 +72,19 @@ Business rules remain in Domain Layer.
 Generated from:
 
 ```text
-02-solution-architect
+solution-architect
 
-03-modular-monolith-enforcer
+modular-monolith-enforcer
 
-04-domain-driven-design
+domain-driven-design
 
-05-database-architect
+database-architect
 
-06-api-architect
+api-architect
 
-07-security-architect
+security-architect
 
-08-performance-engineer
+performance-engineer
 ```
 
 Required documents:
