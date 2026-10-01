@@ -15,6 +15,16 @@
   "supportedLocales": ["en", "km"],
   "defaultLocale": "en",
 
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@pnc-ssms.local",
+    "fromDisplayName": "PNC Selection System",
+    "ssl": "false",
+    "starttls": "false",
+    "auth": "false"
+  },
+
   "roles": {
     "realm": [
       { "name": "system-admin", "description": "Full administrative access: user/group management, system configuration." },

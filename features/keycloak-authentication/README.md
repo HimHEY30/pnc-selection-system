@@ -76,13 +76,23 @@ TypeScript, Tailwind:
   Decodes the access token once at sign-in to read `realm_access.roles` and
   persists them onto the session as `session.roles`.
 - `proxy.ts` (Next.js 16's replacement for `middleware.ts`) — requires a
-  session for every route except the auth routes, and additionally
-  restricts `/admin` to `system-admin` and `/committee` to `committee-user`
-  / `system-admin`, redirecting elsewhere to `/unauthorized`. Everything not
-  listed in `PROTECTED_ROUTES` just needs *a* session — add a route there
-  when a page needs a narrower group.
+  session for every route except the auth routes and `/login` itself, and
+  additionally restricts `/admin` to `system-admin` and `/committee` to
+  `committee-user` / `system-admin`, redirecting elsewhere to
+  `/unauthorized`. Everything not listed in `PROTECTED_ROUTES` just needs *a*
+  session — add a route there when a page needs a narrower group.
+- `app/login/page.tsx` + `app/login/AutoSubmit.tsx` — where `proxy.ts` sends
+  every unauthenticated request. Renders the same `signIn("keycloak")`
+  Server Action the old `app/page.tsx` button used, but a tiny client
+  component (`AutoSubmit`) calls `form.requestSubmit()` on mount instead of
+  waiting for a click. Still 100% Auth.js's own `signIn()` — no custom OAuth
+  handling — it's just submitted automatically. See "Skip the generic
+  sign-in page" below for why this exists.
 - `app/page.tsx` — sign-in/sign-out, shows the caller's groups, links to the
-  group-gated pages that exist so far (`/admin`, `/committee`).
+  group-gated pages that exist so far (`/admin`, `/committee`). Its own
+  unauthenticated branch was removed since `proxy.ts` now redirects to
+  `/login` before this page ever renders without a session; what's left is a
+  defensive `redirect("/login")` fallback.
 
 ## Why two Keycloak clients instead of one
 
@@ -141,6 +151,44 @@ inspection alone:
 Outside Docker (native `npm run dev` / `dotnet run`), there's only one
 address, so none of this does anything — `Keycloak:Issuer` falls back to
 `Keycloak:Authority`, and `AUTH_KEYCLOAK_INTERNAL_ISSUER` is simply unset.
+
+## Skip the generic sign-in page
+
+By default, visiting `http://localhost:3000` unauthenticated landed on
+Auth.js's own built-in `/api/auth/signin` page — a plain, unbranded card with
+a single "Sign in with Keycloak" button the visitor had to click before ever
+seeing Keycloak's (now PNC-themed, see
+[features/keycloak-login-theme](../keycloak-login-theme/README.md)) login
+form. With only one provider configured, that extra click-through adds
+nothing, so the app now skips it:
+
+1. `proxy.ts` redirects an unauthenticated request to `/login` (our own
+   route) instead of `/api/auth/signin` (Auth.js's generic one).
+2. `app/login/page.tsx` renders a `signIn("keycloak")` Server Action inside a
+   `<form>`, exactly like the old sign-in button did — this is still
+   Auth.js's own, unmodified sign-in flow, nothing OAuth-specific was
+   reimplemented.
+3. `AutoSubmit.tsx`, a client component, calls that form's
+   `requestSubmit()` once on mount, so the POST happens automatically instead
+   of waiting for a click.
+4. The POST runs through Auth.js's normal `signin` action, which redirects
+   straight to Keycloak's `/realms/pnc-selection/protocol/openid-connect/auth`
+   — i.e. the real login form — with the correct PKCE/state cookies already
+   set.
+
+A GET request can't trigger this directly (Auth.js only starts an OAuth
+redirect on a CSRF-token-verified POST, by design, to prevent login-CSRF —
+confirmed by reading `@auth/core`'s `signin` action and reproducing the
+`Configuration` error a bare `GET /api/auth/signin/keycloak` produces), which
+is why this goes through an auto-submitting form rather than a plain
+redirect. `<noscript>` keeps a manual "Continue to sign in" button for
+visitors without JavaScript.
+
+**Verified locally**: `GET /` returns a `307` to `/login?callbackUrl=...`;
+`/login` renders `200` with the auto-submit form and id present in the
+server-rendered HTML (the actual click-free submit itself needs a real
+browser to exercise the `useEffect` — not re-tested here, same curl-only
+caveat as the rest of this doc).
 
 ## Local setup
 

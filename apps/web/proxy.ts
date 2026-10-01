@@ -13,7 +13,10 @@ export default auth((req) => {
   const session = req.auth;
 
   if (!session) {
-    const signInUrl = new URL("/api/auth/signin", nextUrl.origin);
+    // Our own auto-submitting page (app/login), not Auth.js's generic
+    // multi-provider /api/auth/signin page - this app has one provider, so
+    // skip straight to it instead of pausing on an extra button screen.
+    const signInUrl = new URL("/login", nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", nextUrl.href);
     return NextResponse.redirect(signInUrl);
   }
@@ -29,5 +32,5 @@ export default auth((req) => {
 export const config = {
   // Protect everything except static assets, the Next.js internals, and the
   // auth routes themselves (those must stay reachable to sign in at all).
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -1,30 +1,16 @@
 import Link from "next/link";
-import { auth, signIn, signOut } from "@/auth";
+import { redirect } from "next/navigation";
+import { auth, signOut } from "@/auth";
 
 export default async function Home() {
   const session = await auth();
 
   if (!session) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-50 dark:bg-black">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          PNC Selection System
-        </h1>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("keycloak");
-          }}
-        >
-          <button
-            type="submit"
-            className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900"
-          >
-            Sign in with Keycloak
-          </button>
-        </form>
-      </main>
-    );
+    // Unauthenticated requests never actually reach this branch - middleware
+    // (proxy.ts) redirects to /login before this page renders. This is only
+    // a defensive fallback in case this route is ever reached without going
+    // through middleware.
+    redirect("/login?callbackUrl=/");
   }
 
   return (

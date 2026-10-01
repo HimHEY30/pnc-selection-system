@@ -41,6 +41,18 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Local fake SMTP server + web inbox - lets Keycloak's forgot-password flow
+  # actually send an email in dev without a real mail account/secrets. Keycloak
+  # reaches it over the Docker network as "mailpit"; the browser views caught
+  # mail through the published web-UI port.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${MAILPIT_SMTP_PORT}:1025"
+      - "${MAILPIT_UI_PORT}:8025"
 
   backend:
     build:

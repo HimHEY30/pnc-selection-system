@@ -134,12 +134,12 @@ project already runs with), after mounting the theme and recreating the
 
 **Not independently re-verified in this pass** (inherited from
 `keycloak.v2` unchanged, not re-tested here): password-visibility toggle,
-remember-me persistence, forgot-password email delivery (this stack has no
-SMTP configured, so the reset *link* is generated but no email actually
-sends — pre-existing limitation, not introduced by this theme), and an
-actual browser click-through (all verification above was via curl against
-the live container, same caveat as the rest of this project's auth testing
-— see [features/keycloak-authentication/README.md](../keycloak-authentication/README.md)).
+remember-me persistence, and an actual browser click-through (all
+verification above was via curl against the live container, same caveat as
+the rest of this project's auth testing — see
+[features/keycloak-authentication/README.md](../keycloak-authentication/README.md)).
+Forgot-password email delivery itself is now wired up and verified — see
+[features/keycloak-forgot-password-email/README.md](../keycloak-forgot-password-email/README.md).
 
 ## Updating an already-imported realm
 
@@ -208,9 +208,6 @@ needed there.
 - **Footer's Privacy/Help links point at `#`** — there's no real privacy
   policy or support page in this project yet; wire these up once one exists
   (or remove them).
-- **Password-reset emails won't actually send** — `resetPasswordAllowed` is
-  on and the flow works up to generating the reset link, but this stack has
-  no SMTP server configured (out of scope for a login-theme change).
 - A real browser click-through (not curl) of every state listed in the
   original brief — particularly the loading-spinner button state and the
   dark-mode toggle's effect on the branding panel — hasn't been done.
