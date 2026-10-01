@@ -1,0 +1,289 @@
+/*
+ * PNC SSMS login theme.
+ *
+ * Strategy: re-point a small set of PatternFly v5 *global* CSS custom
+ * properties (the ones every component already reads via var(...)) at the PNC
+ * palette, instead of fighting PatternFly's own component-level rules with
+ * !important overrides. This is the mechanism Keycloak's own theming docs
+ * recommend and it survives a Keycloak upgrade as long as the variable names
+ * below still exist in keycloak.v2's vendored PatternFly build.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  --pnc-blue: #009de1;
+  --pnc-blue-secondary: #179bd7;
+  --pnc-text: #1f2937;
+  --pnc-text-secondary: #6b7280;
+  --pnc-bg: #f5f9fc;
+  --pnc-border: #e5e7eb;
+  --pnc-error: #dc2626;
+  --pnc-success: #16a34a;
+
+  /* Typography, cascades into every PatternFly component. */
+  --pf-v5-global--FontFamily--text: "Open Sans", var(--pf-v5-global--FontFamily--text);
+  --pf-v5-global--FontFamily--heading: "Open Sans", var(--pf-v5-global--FontFamily--heading);
+
+  /* Primary action color -> drives the submit button, focus rings and the
+     form-control focus underline (all defined in PatternFly as var() chains
+     off these four tokens). */
+  --pf-v5-global--primary-color--100: var(--pnc-blue);
+  --pf-v5-global--primary-color--200: var(--pnc-blue-secondary);
+  --pf-v5-global--primary-color--300: var(--pnc-blue);
+  --pf-v5-global--primary-color--400: var(--pnc-blue);
+  --pf-v5-global--active-color--100: var(--pnc-blue);
+
+  /* Links: "Forgot password?", language switcher, "Try another way". */
+  --pf-v5-global--link--Color: var(--pnc-blue);
+  --pf-v5-global--link--Color--hover: #006a99;
+  --pf-v5-global--link--Color--dark: var(--pnc-blue);
+
+  --pf-v5-global--danger-color--100: var(--pnc-error);
+  --pf-v5-global--success-color--100: var(--pnc-success);
+
+  --pf-v5-global--Color--100: var(--pnc-text);
+  --pf-v5-global--Color--200: var(--pnc-text-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.pf-v5-theme-dark) {
+    /* The template toggles .pf-v5-theme-dark itself; nothing extra needed here. */
+  }
+}
+
+html,
+body#keycloak-bg {
+  background: var(--pnc-bg);
+  min-height: 100%;
+}
+
+:where(.pf-v5-theme-dark) body#keycloak-bg {
+  background: #0f172a;
+}
+
+/* ---- Layout shell: branding panel + the untouched Keycloak card ---- */
+
+.pnc-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.pnc-branding {
+  display: none; /* shown from 992px up; see mobile header block below for small screens */
+}
+
+@media (min-width: 992px) {
+  .pnc-shell {
+    flex-direction: row;
+  }
+
+  .pnc-branding {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    flex: 0 0 42%;
+    max-width: 640px;
+    padding: 4rem 3.5rem;
+    background: var(--pnc-blue);
+    color: #ffffff;
+  }
+
+  .pnc-branding__content {
+    position: relative;
+    z-index: 1;
+    max-width: 26rem;
+  }
+
+  .pf-v5-c-login {
+    flex: 1 1 auto;
+  }
+}
+
+.pnc-branding__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.pnc-branding__logo img {
+  display: block;
+}
+
+.pnc-branding__badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pnc-branding__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 1rem;
+}
+
+.pnc-branding__description {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0;
+}
+
+/* Restrained decorative geometry - no illustration asset, just soft circles. */
+.pnc-branding__shape {
+  position: absolute;
+  inset: auto -6rem -8rem auto;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.pnc-branding__shape::before {
+  content: "";
+  position: absolute;
+  inset: 3rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Compact branding bar above the form on phones/tablets. */
+@media (max-width: 991px) {
+  .pnc-shell {
+    flex-direction: column;
+  }
+
+  .pnc-branding {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1.25rem;
+    background: var(--pnc-blue);
+    color: #ffffff;
+  }
+
+  .pnc-branding__shape {
+    display: none;
+  }
+
+  .pnc-branding__content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .pnc-branding__logo {
+    margin-bottom: 0;
+  }
+
+  .pnc-branding__badge,
+  .pnc-branding__description {
+    display: none;
+  }
+
+  .pnc-branding__title {
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+/* ---- The login card itself ---- */
+
+.pf-v5-c-login__main {
+  border: 1px solid var(--pnc-border);
+  border-radius: 12px;
+}
+
+.pf-v5-c-login__main-title,
+#kc-page-title {
+  color: var(--pnc-text);
+}
+
+.pnc-login-subtitle {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--pnc-text-secondary);
+  font-size: 0.95rem;
+}
+
+.pf-v5-c-form__label-text,
+label {
+  font-weight: 500;
+}
+
+/* ---- Footer ---- */
+
+.pnc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pnc-border);
+  font-size: 0.8rem;
+  color: var(--pnc-text-secondary);
+}
+
+.pnc-footer__links {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.pnc-footer__links a {
+  color: var(--pnc-text-secondary);
+  text-decoration: none;
+}
+
+.pnc-footer__links a:hover {
+  color: var(--pnc-blue);
+  text-decoration: underline;
+}
+
+:where(.pf-v5-theme-dark) .pnc-footer {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Sign-in button loading state (see resources/js/loginState.js) ---- */
+
+.pnc-button--loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: progress;
+}
+
+.pnc-button--loading::before {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: pnc-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pnc-button--loading::before {
+    animation: none;
+  }
+}
+
+@keyframes pnc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

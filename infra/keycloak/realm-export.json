@@ -3,10 +3,17 @@
   "enabled": true,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
+  "rememberMe": true,
+  "resetPasswordAllowed": true,
   "sslRequired": "external",
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
+
+  "loginTheme": "pnc-ssms",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "km"],
+  "defaultLocale": "en",
 
   "roles": {
     "realm": [

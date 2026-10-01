@@ -37,6 +37,7 @@ services:
       - "${KEYCLOAK_PORT}:8080"
     volumes:
       - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./infra/keycloak/themes/pnc-ssms:/opt/keycloak/themes/pnc-ssms
     depends_on:
       keycloak-db:
         condition: service_healthy
