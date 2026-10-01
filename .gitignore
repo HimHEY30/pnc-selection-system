@@ -1,0 +1,2 @@
+# Claude Code local, machine-specific state — never shared across the team
+.claude/settings.local.json
