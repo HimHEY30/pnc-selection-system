@@ -1,10 +1,14 @@
 <#--
   Copied from keycloak.v2's login/template.ftl (Keycloak 26.0.8, extracted from the
-  actual running image) and modified only in two places, marked PNC-CUSTOM below:
+  actual running image) and modified only in a few places, marked PNC-CUSTOM below:
     1. A branding panel is added as a sibling of the existing .pf-v5-c-login card,
-       inside a new .pnc-shell flex wrapper.
+       inside a new .pnc-shell flex wrapper. It carries a decorative dot pattern,
+       an eyebrow badge, and a short feature list (resources/css/login.css).
     2. A subtitle line is rendered under the page title, only when the calling
        template opts in via bodyClass="login" (see login.ftl).
+    3. The PNC logo (resources/img/images.png) is rendered once, at the top of
+       the card itself, rather than in the branding panel - it reads better on
+       the white card than over the blue panel, and avoids rendering it twice.
   Everything else - every #nested section, the form markup, scripts, dark-mode
   toggle, language switcher - is untouched, so CSRF handling, required-field
   validation, password-reset flow and accessibility attributes all behave exactly
@@ -108,13 +112,31 @@
      is not aria-hidden - only the decorative shape inside it is. -->
 <div class="pnc-shell">
   <aside class="pnc-branding">
+    <div class="pnc-branding__dots" aria-hidden="true"></div>
     <div class="pnc-branding__content">
-      <div class="pnc-branding__logo">
-        <img src="${url.resourcesPath}/img/pnc-logo-circle.png" alt="" width="40" height="40" />
+      <div class="pnc-branding__eyebrow">
         <span class="pnc-branding__badge">${msg("pncPortalLabel")}</span>
       </div>
       <h2 class="pnc-branding__title">${msg("pncAppName")}</h2>
       <p class="pnc-branding__description">${msg("pncAppDescription")}</p>
+      <ul class="pnc-branding__features">
+        <li>
+          <span class="pnc-branding__feature-icon"><i class="fas fa-user-check" aria-hidden="true"></i></span>
+          ${msg("pncFeatureScreeningTitle")}
+        </li>
+        <li>
+          <span class="pnc-branding__feature-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
+          ${msg("pncFeatureEvaluationTitle")}
+        </li>
+        <li>
+          <span class="pnc-branding__feature-icon"><i class="fas fa-shield-alt" aria-hidden="true"></i></span>
+          ${msg("pncFeatureAccessTitle")}
+        </li>
+        <li>
+          <span class="pnc-branding__feature-icon"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
+          ${msg("pncFeatureAnalyticsTitle")}
+        </li>
+      </ul>
     </div>
     <div class="pnc-branding__shape" aria-hidden="true"></div>
   </aside>
@@ -126,6 +148,9 @@
               class="pf-v5-c-brand">${kcSanitize(msg("loginTitleHtml",(realm.displayNameHtml!'')))?no_esc}</div>
     </header>
     <main class="${properties.kcLoginMain!}">
+      <div class="pnc-card-logo">
+        <img src="${url.resourcesPath}/img/images.png" alt="${msg('pncAppName')}" />
+      </div>
       <div class="${properties.kcLoginMainHeader!}">
         <h1 class="${properties.kcLoginMainTitle!}" id="kc-page-title"><#nested "header"></h1>
         <#-- PNC-CUSTOM: supporting line under the title, login page only. -->

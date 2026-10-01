@@ -240,6 +240,61 @@ Selection System", the served `login.css` contains the `RedHatDisplay`
 fallback and the `#kc-header { display: none; }` rule, and no
 `pf-v5-theme-dark` references remain in the rendered page.
 
+## Redesign toward a reference login layout
+
+A second round of feedback pointed at a reference screenshot (a split
+blue/white "Employer Medical Portal" login) and asked for that visual style —
+split layout, boxed/labeled inputs, a gradient button — while keeping PNC's
+own font and palette, and swapping in `resources/img/images.png` (Passerelles
+Numériques logo) as the logo. Changes, all in `template.ftl`/`login.css`
+(`messages_*.properties` gained four new keys for the feature list):
+
+- **Logo moved from the branding panel to the top of the white card.**
+  `images.png` is a wide wordmark lockup, not the small circular mark
+  (`pnc-logo-circle.png`) the branding panel used before — it reads better on
+  white than cramped into the blue panel's small badge row, and matches where
+  the reference puts its logo. `pnc-logo-circle.png` is no longer referenced
+  anywhere in the theme (left in `resources/img/` unused, not deleted).
+- **A decorative dot-grid pattern** (pure CSS `radial-gradient`, no new image
+  asset) in the branding panel's top-left corner, echoing the reference.
+- **A 4-item feature bullet list** added below the branding panel's
+  description (candidate screening, committee evaluation, role-based access,
+  selection analytics — this project's own content, not the reference's
+  medical-portal copy), each with a FontAwesome icon in a translucent circle,
+  matching the reference's icon-list pattern. Icons are from the FontAwesome
+  set PatternFly already vendors (`fa-user-check`/`fa-users`/`fa-shield-alt`/
+  `fa-chart-line`, confirmed present in the extracted theme jar's
+  `_variables.scss` before use) — no new font/asset dependency.
+- **The right-hand panel is now solid white** (`.pf-v5-c-login { background:
+  #fff }`) instead of a bordered card floating on the page background, to
+  match the reference's flat two-panel look. `.pf-v5-c-login__main` dropped
+  its border/radius accordingly.
+- **Inputs restyled** via PatternFly's own `--pf-v5-c-form-control--*`
+  component variables (same re-point-the-variable strategy as the rest of
+  this file — PatternFly draws the input border with its own `:before`/
+  `:after` pseudo-elements, so a blunt `border:` override would've been
+  painted over) for a boxed, rounded, white-background look, plus an explicit
+  `border-radius` on the control and both pseudo-elements.
+- **Primary button** gets a PNC-blue gradient (`--pnc-blue` →
+  `--pnc-blue-secondary`), bold uppercase label, and rounded corners.
+- **"Remember me" / "Forgot password?"** got minor spacing/typography
+  polish, but intentionally were **not** moved into the same row as in the
+  reference: the forgot-password link renders as helper text nested inside
+  the password field's own form-group (`field.ftl`, inherited from
+  `keycloak.v2`, unmodified), not as a sibling of the remember-me checkbox's
+  group — moving it would mean restructuring `login.ftl`'s stock markup, which
+  this project avoids (see "Why not rewrite every screen's FTL" above) for a
+  cosmetic-only gain.
+- **No tab switcher or "Register" button** — the reference's "Business
+  Login / Clinic Login" tabs and top-right "Register" button don't apply:
+  this realm has one login method and `registrationAllowed: false`.
+
+Re-verified live via curl: the rendered login page contains the new
+`pnc-card-logo`, `pnc-branding__features`, `pnc-branding__dots` markup and
+resolves `images.png` (HTTP 200); the served `login.css` contains the new
+button/input/feature-list rules; `pnc-logo-circle`/`pnc-branding__logo` no
+longer appear anywhere in the rendered page.
+
 ## Known limitations / not yet done
 
 - **Khmer translations are a starting point**, not reviewed by a native
@@ -251,3 +306,6 @@ fallback and the `#kc-header { display: none; }` rule, and no
 - A real browser click-through (not curl) of every state listed in the
   original brief — particularly the loading-spinner button state and the
   dark-mode toggle's effect on the branding panel — hasn't been done.
+- `.pf-v5-c-form__helper-text:has(a)` (right-aligning the forgot-password
+  link) relies on `:has()`, unsupported in older browsers; it degrades
+  harmlessly to left-aligned, not broken, if unsupported.

@@ -49,6 +49,19 @@
 
   --pf-v5-global--Color--100: var(--pnc-text);
   --pf-v5-global--Color--200: var(--pnc-text-secondary);
+
+  /* Boxed form inputs (PatternFly draws the border via its own :before/:after
+     pseudo-elements - see the .pf-v5-c-form-control rules below - so these are
+     set as component-variable overrides, same mechanism as the rest of this
+     file, rather than a blunt `border` override that the pseudo-elements would
+     just paint over). */
+  --pf-v5-c-form-control--before--BorderTopColor: var(--pnc-border);
+  --pf-v5-c-form-control--before--BorderRightColor: var(--pnc-border);
+  --pf-v5-c-form-control--before--BorderLeftColor: var(--pnc-border);
+  --pf-v5-c-form-control--after--BorderBottomColor: var(--pnc-border);
+  --pf-v5-c-form-control--BackgroundColor: #ffffff;
+  --pf-v5-c-form-control--PaddingTop: 0.65rem;
+  --pf-v5-c-form-control--PaddingBottom: 0.65rem;
 }
 
 html,
@@ -95,18 +108,26 @@ body#keycloak-bg {
 
   .pf-v5-c-login {
     flex: 1 1 auto;
+    background: #ffffff;
   }
 }
 
-.pnc-branding__logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 2.5rem;
+/* Decorative dot grid, top-left corner - pure CSS, no extra image asset. */
+.pnc-branding__dots {
+  position: absolute;
+  top: 2.5rem;
+  left: 2.5rem;
+  width: 9rem;
+  height: 6rem;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+  pointer-events: none;
 }
 
-.pnc-branding__logo img {
-  display: block;
+.pnc-branding__eyebrow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2.5rem;
 }
 
 .pnc-branding__badge {
@@ -169,7 +190,8 @@ body#keycloak-bg {
     color: #ffffff;
   }
 
-  .pnc-branding__shape {
+  .pnc-branding__shape,
+  .pnc-branding__dots {
     display: none;
   }
 
@@ -179,12 +201,13 @@ body#keycloak-bg {
     gap: 0.75rem;
   }
 
-  .pnc-branding__logo {
+  .pnc-branding__eyebrow {
     margin-bottom: 0;
   }
 
   .pnc-branding__badge,
-  .pnc-branding__description {
+  .pnc-branding__description,
+  .pnc-branding__features {
     display: none;
   }
 
@@ -192,6 +215,38 @@ body#keycloak-bg {
     font-size: 1rem;
     margin: 0;
   }
+}
+
+/* ---- Branding-panel feature list ---- */
+
+.pnc-branding__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+}
+
+.pnc-branding__features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pnc-branding__feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.85rem;
 }
 
 /* ---- The login card itself ---- */
@@ -205,9 +260,18 @@ body#keycloak-bg {
 }
 
 .pf-v5-c-login__main {
-  border: 1px solid var(--pnc-border);
-  border-radius: 12px;
   background-color: #ffffff;
+}
+
+/* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). */
+.pnc-card-logo {
+  margin-bottom: 1.75rem;
+}
+
+.pnc-card-logo img {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 .pf-v5-c-login__main-title,
@@ -224,6 +288,59 @@ body#keycloak-bg {
 .pf-v5-c-form__label-text,
 label {
   font-weight: 500;
+}
+
+/* ---- Inputs ---- */
+
+.pf-v5-c-form-control,
+.pf-v5-c-form-control:before,
+.pf-v5-c-form-control:after {
+  border-radius: 8px;
+}
+
+/* ---- Remember-me checkbox ---- */
+
+.pf-v5-c-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pf-v5-c-check__label {
+  font-size: 0.875rem;
+  color: var(--pnc-text-secondary);
+}
+
+/* ---- "Forgot password?" link. Scoped to the item-text span's own <a> - the
+   same wrapper class is reused for field validation errors (plain <span>
+   text, never a link), so this can't match those by accident. ---- */
+
+.pf-v5-c-helper-text__item-text a {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pf-v5-c-form__helper-text:has(a) {
+  text-align: right;
+}
+
+/* ---- Primary (sign-in) button ---- */
+
+.pf-v5-c-button.pf-m-primary {
+  background-image: linear-gradient(90deg, var(--pnc-blue) 0%, var(--pnc-blue-secondary) 100%);
+  border: none;
+  border-radius: 10px;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pf-v5-c-button.pf-m-primary:hover {
+  filter: brightness(1.05);
 }
 
 /* ---- Footer ---- */
