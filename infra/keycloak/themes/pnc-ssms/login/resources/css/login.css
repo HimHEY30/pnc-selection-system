@@ -77,8 +77,8 @@
   --pf-v5-c-form-control--before--BorderLeftColor: var(--pnc-border);
   --pf-v5-c-form-control--after--BorderBottomColor: var(--pnc-border);
   --pf-v5-c-form-control--BackgroundColor: #ffffff;
-  --pf-v5-c-form-control--PaddingTop: 0.65rem;
-  --pf-v5-c-form-control--PaddingBottom: 0.65rem;
+  --pf-v5-c-form-control--PaddingTop: 0.55rem;
+  --pf-v5-c-form-control--PaddingBottom: 0.55rem;
 }
 
 html,
@@ -124,9 +124,21 @@ body#keycloak-bg {
    default (500px below 1200px, unconstrained at/above it). */
 .pf-v5-c-login__container {
   display: block;
-  max-width: 440px;
+  max-width: 380px;
   width: 100%;
-  padding-inline: 1.5rem;
+  padding-inline: 1.25rem;
+}
+
+/* Tighten PatternFly's own card padding/spacing to match the smaller
+   container above - its defaults (spacer--xl/2xl, ~32-48px) were sized for
+   the wider 440-500px card this replaced. */
+.pf-v5-c-login__main-header {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.pf-v5-c-login__main-body {
+  padding-bottom: 1.5rem;
 }
 
 @media (min-width: 992px) {
@@ -327,24 +339,25 @@ body#keycloak-bg {
 
 /* PNC logo, top of the card (see template.ftl's PNC-CUSTOM note 3). */
 .pnc-card-logo {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .pnc-card-logo img {
   display: block;
-  height: 40px;
+  height: 32px;
   width: auto;
 }
 
 .pf-v5-c-login__main-title,
 #kc-page-title {
   color: var(--pnc-text);
+  font-size: 1.375rem;
 }
 
 .pnc-login-subtitle {
-  margin: 0.25rem 0 1.5rem;
+  margin: 0.25rem 0 1.25rem;
   color: var(--pnc-text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
 .pf-v5-c-form__label-text,
@@ -402,8 +415,8 @@ label {
   background-image: linear-gradient(90deg, var(--pnc-blue-accessible) 0%, var(--pnc-blue-accessible-dark) 100%);
   border: none;
   border-radius: 10px;
-  padding-top: 0.85rem;
-  padding-bottom: 0.85rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
