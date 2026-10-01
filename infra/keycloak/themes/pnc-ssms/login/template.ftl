@@ -9,6 +9,8 @@
     3. The PNC logo (resources/img/images.png) is rendered once, at the top of
        the card itself, rather than in the branding panel - it reads better on
        the white card than over the blue panel, and avoids rendering it twice.
+    4. role="alert" is added to the server-provided auth-message div so
+       screen readers announce it (missing in the stock template).
   Everything else - every #nested section, the form markup, scripts, dark-mode
   toggle, language switcher - is untouched, so CSRF handling, required-field
   validation, password-reset flow and accessibility attributes all behave exactly
@@ -231,7 +233,11 @@
         <#-- App-initiated actions should not see warning messages about the need to complete the action -->
         <#-- during login.                                                                               -->
         <#if displayMessage && message?has_content && (message.type != 'warning' || !isAppInitiatedAction??)>
-            <div class="${properties.kcAlertClass!} pf-m-${(message.type = 'error')?then('danger', message.type)}">
+            <#-- PNC-CUSTOM: role="alert" added to the stock markup below - absent
+                 in keycloak.v2, so screen readers never announced server-provided
+                 auth feedback (invalid credentials, account disabled, etc.)
+                 unless the user happened to be focused right next to it. -->
+            <div role="alert" class="${properties.kcAlertClass!} pf-m-${(message.type = 'error')?then('danger', message.type)}">
                 <div class="${properties.kcAlertIconClass!}">
                     <#if message.type = 'success'><span class="${properties.kcFeedbackSuccessIcon!}"></span></#if>
                     <#if message.type = 'warning'><span class="${properties.kcFeedbackWarningIcon!}"></span></#if>

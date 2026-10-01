@@ -21,6 +21,22 @@
   --pnc-error: #dc2626;
   --pnc-success: #16a34a;
 
+  /* WCAG AA text-contrast accessible variants of the two brand blues above.
+     Verified by computing WCAG relative-luminance contrast ratios directly
+     (not eyeballed): white text on --pnc-blue is 3.04:1 and on
+     --pnc-blue-secondary is 3.13:1 - both fail the 4.5:1 minimum for
+     normal-size text (WCAG 2.2 SC 1.4.3), which matters here because
+     --pnc-blue is literally the sign-in button's background color and the
+     link color. --pnc-blue-accessible (#0077A8) measures 5.00:1 and
+     --pnc-blue-accessible-dark (#005F87) measures 7.03:1 against white - both
+     pass. The original tokens are kept, unchanged, for every use that isn't
+     normal-size text-on-color (large/bold headings already clear the lower
+     3:1 large-text threshold; non-text UI like checkbox fills only needs
+     3:1 per SC 1.4.11) - only the button and link colors below switch to the
+     accessible variant. */
+  --pnc-blue-accessible: #0077a8;
+  --pnc-blue-accessible-dark: #005f87;
+
   /* Typography, cascades into every PatternFly component. Fallback stacks are
      PatternFly's own base values (RedHatText/RedHatDisplay, helvetica, arial,
      sans-serif) copied in directly - referencing the variable being defined
@@ -39,10 +55,11 @@
   --pf-v5-global--primary-color--400: var(--pnc-blue);
   --pf-v5-global--active-color--100: var(--pnc-blue);
 
-  /* Links: "Forgot password?", language switcher, "Try another way". */
-  --pf-v5-global--link--Color: var(--pnc-blue);
+  /* Links: "Forgot password?", language switcher, "Try another way".
+     Accessible variant (see above) - these are normal-size text. */
+  --pf-v5-global--link--Color: var(--pnc-blue-accessible);
   --pf-v5-global--link--Color--hover: #006a99;
-  --pf-v5-global--link--Color--dark: var(--pnc-blue);
+  --pf-v5-global--link--Color--dark: var(--pnc-blue-accessible);
 
   --pf-v5-global--danger-color--100: var(--pnc-error);
   --pf-v5-global--success-color--100: var(--pnc-success);
@@ -82,6 +99,36 @@ body#keycloak-bg {
   display: none; /* shown from 992px up; see mobile header block below for small screens */
 }
 
+/* PatternFly's own .pf-v5-c-login sets an unconditional min-height:100vh.
+   Below 992px, .pnc-shell stacks branding-bar + this block in a column, so
+   that 100vh would add on top of the branding bar's own height and leave
+   ~90px of unnecessary empty scroll on every mobile load. .pnc-shell's own
+   min-height:100vh (above) already covers the "fill the viewport" intent -
+   on desktop, the default flex row stretch (see the 992px rule below, which
+   doesn't set min-height either) makes this match .pnc-branding's height
+   automatically, so dropping this is safe at every width, not just mobile. */
+.pf-v5-c-login {
+  min-height: 0;
+}
+
+/* PatternFly's .pf-v5-c-login__container switches to a 2-column CSS grid
+   (grid-template-areas: "main header" "main footer" "main .") at its own
+   1200px breakpoint - a layout for pairing the card with a second,
+   PatternFly-rendered header/footer column. This theme doesn't use that:
+   #kc-header is hidden and footer.ftl's .pnc-footer carries no grid-area, so
+   without this override it would be auto-placed by the grid into the
+   unclaimed "header" cell (top-right of the card) on any viewport >= 1200px
+   - which includes both the 1366x768 and 1920x1080 cases this was tested
+   against. Force one predictable block column at every width instead, sized
+   to the ~380-440px comfortable reading width instead of PatternFly's
+   default (500px below 1200px, unconstrained at/above it). */
+.pf-v5-c-login__container {
+  display: block;
+  max-width: 440px;
+  width: 100%;
+  padding-inline: 1.5rem;
+}
+
 @media (min-width: 992px) {
   .pnc-shell {
     flex-direction: row;
@@ -96,7 +143,13 @@ body#keycloak-bg {
     flex: 0 0 42%;
     max-width: 640px;
     padding: 4rem 3.5rem;
-    background: var(--pnc-blue);
+    /* Flat scrim over the brand blue, not a color swap: raw --pnc-blue
+       measures 3.04:1 against white (fails the 4.5:1 text minimum - see the
+       --pnc-blue-accessible comment in :root). A uniform 22% black wash
+       brings it to 4.74:1 (verified) while the panel still reads as PNC
+       blue, rather than introducing an unrelated darker brand color. */
+    background-color: var(--pnc-blue);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.22));
     color: #ffffff;
   }
 
@@ -137,7 +190,12 @@ body#keycloak-bg {
   text-transform: uppercase;
   padding: 0.3rem 0.65rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
+  /* A translucent white-on-white-text chip (the original treatment) measures
+     under 4:1 here even with the panel scrim above - solid-ish white with
+     dark text is both more legible and still matches the reference's
+     "chip over a color panel" look. */
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--pnc-text);
 }
 
 .pnc-branding__title {
@@ -151,7 +209,9 @@ body#keycloak-bg {
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.88);
+  /* Solid, not translucent: at 0.88 alpha this measured 4.25:1 against the
+     scrimmed panel background above, just under the 4.5:1 minimum. */
+  color: #ffffff;
   margin: 0;
 }
 
@@ -186,7 +246,8 @@ body#keycloak-bg {
     align-items: center;
     gap: 0.75rem;
     padding: 1.5rem 1.25rem;
-    background: var(--pnc-blue);
+    background-color: var(--pnc-blue);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.22));
     color: #ffffff;
   }
 
@@ -234,7 +295,8 @@ body#keycloak-bg {
   gap: 0.75rem;
   font-size: 0.925rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
+  /* Solid white, same contrast reasoning as .pnc-branding__description. */
+  color: #ffffff;
 }
 
 .pnc-branding__feature-icon {
@@ -304,6 +366,12 @@ label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* The native checkbox itself is ~16px, under WCAG 2.2 SC 2.5.8's 24px
+     target-size guidance; this class is shared by the clickable <label>
+     (see field.ftl's checkbox macro), so padding here enlarges the whole
+     label's hit area rather than just the visual box. */
+  padding-block: 0.375rem;
+  cursor: pointer;
 }
 
 .pf-v5-c-check__label {
@@ -329,7 +397,9 @@ label {
 /* ---- Primary (sign-in) button ---- */
 
 .pf-v5-c-button.pf-m-primary {
-  background-image: linear-gradient(90deg, var(--pnc-blue) 0%, var(--pnc-blue-secondary) 100%);
+  /* Accessible variants (see :root) - this is the primary action's label
+     text (white, bold) sitting directly on this fill. */
+  background-image: linear-gradient(90deg, var(--pnc-blue-accessible) 0%, var(--pnc-blue-accessible-dark) 100%);
   border: none;
   border-radius: 10px;
   padding-top: 0.85rem;
@@ -369,7 +439,7 @@ label {
 }
 
 .pnc-footer__links a:hover {
-  color: var(--pnc-blue);
+  color: var(--pnc-blue-accessible);
   text-decoration: underline;
 }
 

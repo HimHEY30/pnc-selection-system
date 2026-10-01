@@ -295,6 +295,99 @@ resolves `images.png` (HTTP 200); the served `login.css` contains the new
 button/input/feature-list rules; `pnc-logo-circle`/`pnc-branding__logo` no
 longer appear anywhere in the rendered page.
 
+## Production-readiness audit (accessibility, responsive, technical quality)
+
+A full audit against WCAG 2.2 AA, the required-viewport matrix, and technical
+quality found and fixed four real, concrete defects (all verified against the
+live container, not just read from source):
+
+1. **The brand blue fails WCAG AA text contrast.** Computed via actual WCAG
+   relative-luminance math (not eyeballed): white text on `--pnc-blue`
+   (#009DE1) is 3.04:1, and on `--pnc-blue-secondary` (#179BD7) is 3.13:1 —
+   both fail the 4.5:1 minimum for normal-size text (SC 1.4.3), which matters
+   because `--pnc-blue` is literally the sign-in button's fill and the link
+   color. Added `--pnc-blue-accessible` (#0077A8, 5.00:1) and
+   `--pnc-blue-accessible-dark` (#005F87, 7.03:1) — both verified — and
+   switched only the button background and link color to them. The original
+   tokens are untouched everywhere else (large/bold headings already clear
+   the lower 3:1 large-text threshold; non-text UI like checkbox fills only
+   needs 3:1 per SC 1.4.11), per this audit's brief: preserve the existing
+   design tokens unless there's a clear, documented reason to deviate.
+2. **Same failure in the branding panel's body text.** White text at reduced
+   opacity (description 0.88, feature list 0.92) on raw `--pnc-blue`
+   similarly failed. Fixed two ways: a flat 22% black scrim layered behind
+   the panel (`--pnc-blue` → 4.74:1, verified) rather than swapping the brand
+   color, plus making the description/feature-list text solid white instead
+   of translucent. The eyebrow badge chip went from translucent-white-on-
+   white-text (previously the LARGEST shortfall) to a near-solid white chip
+   with dark `--pnc-text`.
+3. **The top-level auth message had no live region.** `message.summary` (used
+   for account-disabled, expired-session, password-reset-confirmation, and
+   other non-field-specific feedback — confirmed live via the actual
+   reset-credentials confirmation page) rendered as a plain `<div>` with no
+   `role`/`aria-live`, so screen readers wouldn't reliably announce it
+   (SC 4.1.3 Status Messages). Added `role="alert"` in `template.ftl`.
+   Per-field errors (e.g. invalid username/password) were already correctly
+   wrapped in `aria-live="polite"` by stock `field.ftl` — unchanged, no fix
+   needed there.
+4. **PatternFly's own `.pf-v5-c-login__container` silently changes layout
+   strategy at 1200px** (confirmed in the extracted theme jar) — switching
+   from a simple centered block to a 2-column CSS grid
+   (`grid-template-areas: "main header" "main footer" "main ."`) meant for
+   pairing the card with a PatternFly-rendered header/footer column. This
+   theme hides `#kc-header` and its `footer.ftl` output carries no
+   `grid-area`, so without an explicit override, the footer would be
+   auto-placed by the grid into the unclaimed "header" cell (top-right of the
+   card) on any viewport ≥ 1200px — which includes both the 1366×768 and
+   1920×1080 viewports in the required test matrix. Forced a single
+   predictable block layout at every width instead, capped at 440px (within
+   the brief's 380–440px comfortable-reading-width target; PatternFly's own
+   default is an uncapped 500px below 1200px and literally unconstrained at
+   /above it).
+5. **Mobile had ~90px of unnecessary scroll on every load.** PatternFly sets
+   an unconditional `min-height: 100vh` on `.pf-v5-c-login`; below 992px,
+   `.pnc-shell` stacks the branding bar above it in a column, so that 100vh
+   stacked on top of the branding bar's own height overflowed the viewport.
+   `.pnc-shell`'s own `min-height: 100vh` already covers "fill the viewport"
+   at every width (desktop's flex-row default stretch handles the two-panel
+   full-height look without it), so this was just dropped.
+6. **Touch targets.** The "remember me" checkbox's native control is ~16px,
+   under SC 2.5.8's 24px guidance. Padded the shared `.pf-v5-c-check`
+   class (used by both the wrapping `<div>` and the clickable `<label>`) to
+   enlarge the real hit area, and added `cursor: pointer`.
+7. **Loading state wasn't announced.** `loginState.js` already prevents
+   double-submit via stock Keycloak's own `login.disabled = true` (native,
+   unmodified) and visually swaps in a spinner, but didn't tell assistive
+   tech the page was busy. Added `aria-busy="true"` alongside the existing
+   behavior.
+
+Already-correct and left unchanged (verified, not assumed): `autocomplete`
+attributes on username/password (`login.ftl`), labels-not-placeholders on
+every field, the password visibility toggle's `aria-label`/`aria-controls`
+(`field.ftl`), the full-width sign-in button (`kcButtonBlockClass`),
+`prefers-reduced-motion` handling on the loading spinner, and `<html lang>`/
+`dir` reflecting the active locale.
+
+**Verified live** against the running container: a real failed-login POST
+(confirms per-field `aria-live` error rendering, unchanged); a real
+forgot-password POST through to its confirmation page (confirms
+`role="alert"` actually renders, and that this change didn't regress the
+SMTP/Mailpit flow from `features/keycloak-forgot-password-email`); a real
+locale-switch request (confirms `lang="km"` and the new feature-list strings
+render in Khmer); served `login.css` brace-balance and rule presence; served
+`loginState.js` parses as valid JS and contains `aria-busy`;
+`docker compose config`/`ps` clean.
+
+**Not verified — no browser automation tool was available in this
+environment.** Everything above was checked via curl against the live
+container plus manual/scripted WCAG contrast computation, not a rendered
+browser. Specifically unverified: actual pixel-level rendering at the
+320/375/430/768/1366/1920 viewport matrix, real keyboard-navigation
+tab order and focus-visible appearance, real screen-reader output (NVDA/
+VoiceOver), the on-screen-keyboard-obscuring-the-field concern on a real
+phone, and the `:has()` CSS support note below in an actual old browser.
+These should be spot-checked in a real browser before sign-off.
+
 ## Known limitations / not yet done
 
 - **Khmer translations are a starting point**, not reviewed by a native
@@ -309,3 +402,6 @@ longer appear anywhere in the rendered page.
 - `.pf-v5-c-form__helper-text:has(a)` (right-aligning the forgot-password
   link) relies on `:has()`, unsupported in older browsers; it degrades
   harmlessly to left-aligned, not broken, if unsupported.
+- No browser automation tool was available to validate actual rendering,
+  keyboard navigation, or screen-reader output — see the audit section above
+  for exactly what was and wasn't checked.

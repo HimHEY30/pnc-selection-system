@@ -18,5 +18,9 @@
     button.dataset.pncLoading = "true";
     button.textContent = window.pncSigningInText || "Signing in...";
     button.classList.add("pnc-button--loading");
+    // The form's own onsubmit handler (login.disabled = true, in login.ftl)
+    // already prevents a second submit and reflects "disabled" to assistive
+    // tech; aria-busy additionally announces that the page is working.
+    button.setAttribute("aria-busy", "true");
   });
 })();
