@@ -2,7 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 
-namespace Api.Authorization;
+namespace Identity.Infrastructure;
 
 /// <summary>
 /// Keycloak puts realm roles inside a nested "realm_access": { "roles": [...] } claim,

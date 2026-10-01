@@ -1,14 +1,21 @@
-using Api.Authorization;
+using Identity.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers;
+namespace Identity.Api;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 [Authorize]
 public sealed class AuthController : ControllerBase
 {
+    private readonly ICurrentUserService _currentUserService;
+
+    public AuthController(ICurrentUserService currentUserService)
+    {
+        _currentUserService = currentUserService;
+    }
+
     /// <summary>
     /// Returns the caller's identity as the backend sees it. Used by the frontend
     /// to confirm the access token is valid and to read the caller's groups.
@@ -16,30 +23,32 @@ public sealed class AuthController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToArray();
+        var user = _currentUserService.User;
+        if (user is null)
+        {
+            return Unauthorized();
+        }
 
         return Ok(new
         {
-            username = User.Identity?.Name,
-            roles,
+            username = user.Username,
+            groups = user.Groups.Select(g => g.ToString()),
         });
     }
 
     [HttpGet("system-admin/ping")]
-    [Authorize(Policy = SelectionGroups.SystemAdmin)]
+    [Authorize(Policy = AuthorizationPolicies.SystemAdmin)]
     public IActionResult SystemAdminPing() => Ok(new { message = "system-admin access confirmed" });
 
     [HttpGet("selection-manager/ping")]
-    [Authorize(Policy = SelectionGroups.ManagementTier)]
+    [Authorize(Policy = AuthorizationPolicies.ManagementTier)]
     public IActionResult SelectionManagerPing() => Ok(new { message = "selection-manager (or system-admin) access confirmed" });
 
     [HttpGet("selection-officer/ping")]
-    [Authorize(Policy = SelectionGroups.OperationsTier)]
+    [Authorize(Policy = AuthorizationPolicies.OperationsTier)]
     public IActionResult SelectionOfficerPing() => Ok(new { message = "selection-officer tier access confirmed" });
 
     [HttpGet("committee/ping")]
-    [Authorize(Policy = SelectionGroups.CommitteeUser)]
+    [Authorize(Policy = AuthorizationPolicies.CommitteeUser)]
     public IActionResult CommitteePing() => Ok(new { message = "committee-user access confirmed" });
 }

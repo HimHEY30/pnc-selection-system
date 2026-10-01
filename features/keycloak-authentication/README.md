@@ -42,19 +42,33 @@ authentication sets up on its own.
 - 4 demo users (one per group) with temporary passwords, for local testing
   only — see "Local setup" below.
 
-**Backend** (`backend/`) — `dotnet new webapi`, ASP.NET Core on .NET 10:
-- `Program.cs` wires JWT Bearer auth against the Keycloak realm and defines
-  one authorization policy per group, plus two convenience tiers
-  (`ManagementTier` = admin+manager, `OperationsTier` = admin+manager+officer)
-  that most future endpoints should use instead of single-role checks.
-- `Authorization/KeycloakRoleClaimsTransformation.cs` flattens Keycloak's
-  nested `realm_access.roles` claim into standard ASP.NET `ClaimTypes.Role`
-  claims — without this, `[Authorize(Policy = ...)]` would never match
-  anything, since Keycloak doesn't emit role claims in the shape ASP.NET
-  expects by default.
-- `Controllers/AuthController.cs` — `GET /api/auth/me` (any authenticated
-  user) plus one ping endpoint per policy, to verify the wiring without
-  needing a real feature yet.
+**Backend** (`backend/`) — ASP.NET Core on .NET 10, structured as a Modular
+Monolith per `modular-monolith-enforcer`: every module is 4 projects
+(`Domain`/`Application`/`Infrastructure`/`Api`), composed by a thin `Host`
+that contains no business logic of its own. See `backend/ownership-matrix.md`.
+
+```text
+backend/src/
+├── SharedKernel/                    BaseEntity, Result<T>, Error, IClock, PagedResult
+├── Modules/
+│   └── Identity/
+│       ├── Identity.Domain/         Group (enum), AuthenticatedUser (value object)
+│       ├── Identity.Application/    ICurrentUserService, AuthorizationPolicies — the
+│       │                            only two things other modules may depend on
+│       ├── Identity.Infrastructure/ Keycloak JWT Bearer wiring, realm_access.roles ->
+│       │                            ClaimTypes.Role flattening, policy registration
+│       └── Identity.Api/            AuthController (GET /api/auth/me + one ping per policy)
+└── Host/                            Program.cs: calls AddIdentityInfrastructure() and
+                                      registers Identity.Api as an MVC application part.
+                                      Adding a module means adding one line of each here —
+                                      nothing else in Host should change.
+```
+
+`KeycloakRoleClaimsTransformation` (in `Identity.Infrastructure`) flattens
+Keycloak's nested `realm_access.roles` claim into standard ASP.NET
+`ClaimTypes.Role` claims — without it, `[Authorize(Policy = ...)]` would
+never match anything, since Keycloak doesn't emit role claims in the shape
+ASP.NET expects by default.
 
 **Frontend** (`apps/web/`) — `create-next-app`, Next.js 16 (App Router),
 TypeScript, Tailwind:
@@ -86,7 +100,7 @@ permissions it doesn't need.
 docker compose up -d
 
 # 2. Backend
-cd backend/src/Api
+cd backend/src/Host
 dotnet run
 #   -> http://localhost:5xxx (see console output), Swagger/OpenAPI at /openapi
 
@@ -101,6 +115,11 @@ npm run dev
 Demo logins (Keycloak sets these as **temporary** passwords — you'll be
 forced to change them on first login): `admin.demo`, `manager.demo`,
 `officer.demo`, `committee.demo`, all with password `ChangeMe123!`.
+
+Verified locally: `dotnet build` across all 6 projects, and running `Host`
+without any token returns `401` from both `/api/auth/me` and the
+policy-gated ping endpoints (confirms the module wiring and
+`AddApplicationPart` discovery work end-to-end).
 
 **Not yet done**, flagged so it isn't mistaken for finished:
 - Not tested against a live Keycloak instance in this environment — Docker
