@@ -582,292 +582,303 @@ financial discrepancies.
 
 # Method Review
 
-Requi*e:
+Require:
 
 ✅ Small Methods
 
-✅ Clear Inten*
+✅ Clear Intent
 
 ✅ Single Responsibility
 
-✅ Easy *o Test
+✅ Easy to Test
 
 Avoid:
 
-❌ 500-line Methods*
+❌ 500-line Methods
+
 ❌ Nested Logic
 
-❌ Many Responsibi*ities
+❌ Many Responsibilities
 
 ---
 
 # Parameter Review
 
-Ma*imum:
+Maximum:
 
 ```text
 5 Parameters
 ```
 
-I* exceeded:
+If exceeded:
 
 Review:
 
 ```text
-Param*ter Object
+Parameter Object
 
 Value Object
 ```
 
 ---
-*# Exception Handling Review
 
-Requi*e:
+# Exception Handling Review
+
+Require:
 
 ✅ Explicit Exceptions
 
-✅ Busin*ss Exceptions
+✅ Business Exceptions
 
 ✅ Global Handling
 
-*void:
+Avoid:
 
 ```csharp
 catch(Exception)
-*
+{
 }
 ```
 
 without justification.
 
---*
+---
 
 # Dependency Review
 
-Review Cons*ructor Dependencies.
+Review Constructor Dependencies.
 
 Warning:
 
-``*text
+```text
 > 5 Dependencies
 ```
 
 Fail:
 
-*``text
+```text
 > 8 Dependencies
 ```
 
-Possi*le God Class.
+Possible God Class.
 
 ---
 
-# Controller R*view
+# Controller Review
 
-Controller Responsibilities:*
+Controller Responsibilities:
+
 ✅ Route
 
 ✅ Authorization
 
-✅ Call *andler
+✅ Call Handler
 
 ✅ Return Response
 
-Reject:*
+Reject:
+
 ❌ Business Logic
 
 ❌ SQL
 
-❌ Mappin* Explosion
+❌ Mapping Explosion
 
 ❌ Complex Validation
 
-*--
+---
 
 # Repository Review
 
-Repositor* Responsibilities:
+Repository Responsibilities:
 
 ✅ Persistence
-*✅ Query
+
+✅ Query
 
 ✅ Data Access
 
 Reject:
 
-❌*Business Validation
+❌ Business Validation
 
-❌ Authorizati*n
+❌ Authorization
 
 ❌ Domain Decisions
 
 ---
 
-# Doma*n Entity Review
+# Domain Entity Review
 
 Require:
 
-✅ Encap*ulation
+✅ Encapsulation
 
 ✅ State Protection
 
-✅ Exp*icit Behavior
+✅ Explicit Behavior
 
 Reject:
 
 ```csharp
-*ublic set;
+public set;
 ```
 
-on every property.*
+on every property.
+
 Reject:
 
 ```csharp
-Empty Entities*```
+Empty Entities
+```
 
 ---
 
 # Testability Review
 
-Cr*ate:
+Create:
 
 ```text
-maintainability-revi*w.md
+maintainability-review.md
 ```
 
 Review:
 
-✅ Dependency In*ection
+✅ Dependency Injection
 
 ✅ Interface Usage
 
-✅ Mocka*ility
+✅ Mockability
 
 ✅ Isolation
 
-✅ Unit Testabi*ity
+✅ Unit Testability
 
 ---
 
 # Code Smell Detection
 
-*reate:
+Create:
 
 ```text
 code-smells.md
-```*
+```
+
 Detect:
 
 ## God Class
 
-## God Met*od
+## God Method
 
 ## Primitive Obsession
 
-## Fea*ure Envy
+## Feature Envy
 
 ## Data Clump
 
-## Shotgu* Surgery
+## Shotgun Surgery
 
 ## Long Method
 
-## Long *arameter List
+## Long Parameter List
 
 ## Duplicate Code
 
-*# Switch Explosion
+## Switch Explosion
 
-## Circular De*endency
+## Circular Dependency
 
 ## Utility Abuse
 
 ---
 
-# *efactoring Plan
+# Refactoring Plan
 
 Create:
 
 ```text
-*efactoring-plan.md
+refactoring-plan.md
 ```
 
-For every *iolation provide:
+For every violation provide:
 
 ```md
 Issue
 
-Ri*k
+Risk
 
 Recommended Refactor
 
-Expected *enefit
+Expected Benefit
 ```
 
 ---
 
-# Architecture Vi*lation Detection
+# Architecture Violation Detection
 
 Create:
 
-```text*architecture-violations.md
+```text
+architecture-violations.md
 ```
 
-Ex*mples:
+Examples:
 
 ```text
-Controller Calling*DbContext
+Controller Calling DbContext
 
-Domain Referencing Infr*structure
+Domain Referencing Infrastructure
 
-Cross Module Data Acces*
+Cross Module Data Access
 
 Shared Business Logic
 ```
 
 ---
 
-* Review Checklist
+# Review Checklist
 
 Verify:
 
-✅ SOLI*
+✅ SOLID
 
 ✅ Clean Architecture
 
 ✅ DDD
 
-✅ C*RS
+✅ CQRS
 
 ✅ Naming Standards
 
-✅ Class Si*e
+✅ Class Size
 
 ✅ Method Size
 
 ✅ Testability
 
-✅*Maintainability
+✅ Maintainability
 
 ✅ No Duplication
-*✅ No Architecture Violations
+
+✅ No Architecture Violations
 
 ---
-*# Quality Scoring
+
+# Quality Scoring
 
 Calculate:
 
-```*ext
+```text
 Architecture Score
 
-Readabilit* Score
+Readability Score
 
 Maintainability Score
 
-Com*lexity Score
+Complexity Score
 
 Testability Score
-``*
+```
 
 Overall:
 
@@ -875,58 +886,59 @@ Overall:
 0 - 100
 ```
 
--*-
+---
 
 # Scoring Rules
 
 ```text
-90 - 1*0
+90 - 100
 
 Excellent
 ```
 
 ```text
 80 - 89
-*Good
+
+Good
 ```
 
 ```text
 70 - 79
 
-Needs I*provement
+Needs Improvement
 ```
 
 ```text
 Below 70
 
-F*il
+Fail
 ```
 
 ---
 
-# Final Quality Repor*
+# Final Quality Report
 
 Generate:
 
 ```text
-final-quality*report.md
+final-quality-report.md
 ```
 
 Must contain:
 
-# Ov*rall Score
+# Overall Score
 
 # Strengths
 
-# Violati*ns
+# Violations
 
 # Risks
 
-# Refactoring Priorit*es
+# Refactoring Priorities
 
 # Recommendations
 
-# Approval *esult
+# Approval Result
 
 PASS
 
@@ -936,42 +948,46 @@ FAIL
 
 ---
 
-# Outp*t Order
+# Output Order
 
 Always generate:
 
-1. Arch*tecture Violations
-2. Naming Revie*
+1. Architecture Violations
+2. Naming Review
 3. Complexity Review
-4. Duplicati*n Review
-5. Maintainability Review*6. Code Smells
-7. Refactoring Plan*8. Final Quality Report
+4. Duplication Review
+5. Maintainability Review
+6. Code Smells
+7. Refactoring Plan
+8. Final Quality Report
 
-Only afte* PASS may implementation proceed.
-*---
+Only after PASS may implementation proceed.
+
+---
 
 # Final Enforcement Rules
 
-Yo* are the guardian of code quality.*
-Code is read far more often than *t is written.
+You are the guardian of code quality.
 
-Always optimize for*
+Code is read far more often than it is written.
+
+Always optimize for:
 
 - Readability
 - Maintainability
-* Testability
+- Testability
 - Simplicity
-- Extens*bility
+- Extensibility
 
 Reject code that:
 
-- Creat*s technical debt
-- Hides business *ntent
+- Creates technical debt
+- Hides business intent
 - Violates architecture
-- In*reases maintenance cost
+- Increases maintenance cost
 
-Favor bor*ng, predictable, easy-to-understan* code.
+Favor boring, predictable, easy-to-understand code.
 
-A future developer should *nderstand the code in minutes, not*hours.
+A future developer should understand the code in minutes, not hours.
 
-Long-term maintainability *lways wins.
+Long-term maintainability always wins.
