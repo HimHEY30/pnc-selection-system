@@ -1,0 +1,120 @@
+{
+  "realm": "pnc-selection",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "sslRequired": "external",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+
+  "roles": {
+    "realm": [
+      { "name": "system-admin", "description": "Full administrative access: user/group management, system configuration." },
+      { "name": "selection-manager", "description": "Owns selection campaigns end-to-end: create, configure, assign officers, finalize results." },
+      { "name": "selection-officer", "description": "Executes day-to-day selection tasks: screens candidates, records evaluations, prepares committee packets." },
+      { "name": "committee-user", "description": "Reviews prepared packets and records committee decisions/votes. Read-mostly, decision-write." }
+    ]
+  },
+
+  "groups": [
+    {
+      "name": "system-admin",
+      "path": "/system-admin",
+      "realmRoles": ["system-admin"]
+    },
+    {
+      "name": "selection-manager",
+      "path": "/selection-manager",
+      "realmRoles": ["selection-manager"]
+    },
+    {
+      "name": "selection-officer",
+      "path": "/selection-officer",
+      "realmRoles": ["selection-officer"]
+    },
+    {
+      "name": "committee-user",
+      "path": "/committee-user",
+      "realmRoles": ["committee-user"]
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "selection-system-api",
+      "name": "PNC Selection System API",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "selection-system-web",
+      "name": "PNC Selection System Web",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "dev-web-client-secret-change-me",
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience-selection-system-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "selection-system-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "admin.demo",
+      "email": "admin.demo@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe123!", "temporary": true }],
+      "groups": ["/system-admin"]
+    },
+    {
+      "username": "manager.demo",
+      "email": "manager.demo@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe123!", "temporary": true }],
+      "groups": ["/selection-manager"]
+    },
+    {
+      "username": "officer.demo",
+      "email": "officer.demo@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe123!", "temporary": true }],
+      "groups": ["/selection-officer"]
+    },
+    {
+      "username": "committee.demo",
+      "email": "committee.demo@example.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe123!", "temporary": true }],
+      "groups": ["/committee-user"]
+    }
+  ]
+}
