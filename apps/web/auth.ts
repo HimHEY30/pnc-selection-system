@@ -23,7 +23,19 @@ declare module "@auth/core/jwt" {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Keycloak],
+  providers: [
+    Keycloak({
+      // AUTH_KEYCLOAK_ISSUER drives the token/userinfo/jwks exchange, which
+      // this server performs itself — when running in Docker that's the
+      // internal service address (http://keycloak:8080/...), unreachable
+      // from outside the Docker network. The authorization endpoint, by
+      // contrast, is a redirect the BROWSER must follow, so it needs the
+      // publicly published address even when everything else here uses the
+      // internal one. Outside Docker both env vars point at the same
+      // localhost address, so this override is a no-op.
+      authorization: `${process.env.AUTH_KEYCLOAK_PUBLIC_ISSUER ?? process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/auth`,
+    }),
+  ],
   session: { strategy: "jwt" },
   callbacks: {
     // Keycloak's access token carries realm roles under realm_access.roles.

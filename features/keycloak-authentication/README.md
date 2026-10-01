@@ -93,11 +93,41 @@ login/token endpoints. This keeps the API's job to exactly one thing
 (validate + authorize) and avoids giving the browser-facing client
 permissions it doesn't need.
 
+## Configuration
+
+All configuration for every service (Keycloak, Postgres, backend, frontend)
+lives in one root `.env` file, copied from `.env.example`. `docker-compose.yml`
+reads it automatically and forwards the relevant values into each container
+— there's exactly one place to change a port, client secret, or origin.
+
+The one subtlety: Keycloak is reachable at **two different addresses** that
+both point at the same server —`KEYCLOAK_PUBLIC_URL` (`http://localhost:8080`,
+the published port the *browser* uses) and `KEYCLOAK_INTERNAL_URL`
+(`http://keycloak:8080`, the Docker service DNS name the *backend and
+frontend containers* use). The backend only ever validates tokens
+server-to-server, so it always uses the internal address. The frontend does
+both: it exchanges tokens server-to-server (internal address) but also has to
+redirect the browser to Keycloak's login page (public address) — see the
+`authorization` override in `apps/web/auth.ts`.
+
 ## Local setup
 
+**Option A — everything in Docker (recommended, one command):**
+
 ```bash
-# 1. Start Keycloak (imports the realm automatically)
-docker compose up -d
+cp .env.example .env    # adjust AUTH_SECRET etc. if you want; defaults work
+docker compose up -d --build
+#   -> frontend:  http://localhost:3000  (FRONTEND_PORT)
+#   -> backend:   http://localhost:5000  (BACKEND_PORT), OpenAPI at /openapi
+#   -> keycloak:  http://localhost:8080  (KEYCLOAK_PORT)
+```
+
+**Option B — infra in Docker, backend/frontend run natively** (faster
+edit-reload loop while actively developing):
+
+```bash
+# 1. Start just Keycloak + its database
+docker compose up -d keycloak-db keycloak
 
 # 2. Backend
 cd backend/src/Host
@@ -119,14 +149,17 @@ forced to change them on first login): `admin.demo`, `manager.demo`,
 Verified locally: `dotnet build` across all 6 projects, and running `Host`
 without any token returns `401` from both `/api/auth/me` and the
 policy-gated ping endpoints (confirms the module wiring and
-`AddApplicationPart` discovery work end-to-end).
+`AddApplicationPart` discovery work end-to-end). `docker compose config`
+validates the compose file's variable substitution and resulting YAML.
 
 **Not yet done**, flagged so it isn't mistaken for finished:
-- Not tested against a live Keycloak instance in this environment — Docker
-  Desktop's engine wasn't running here, so `docker compose up` itself is
-  unverified beyond `docker compose config` validating the YAML and the
+- Not tested against a live Keycloak instance, or the backend/frontend
+  Docker images, in this environment — Docker Desktop's engine wasn't
+  running here, so `docker compose up --build` itself is unverified beyond
+  `docker compose config` validating the YAML/variable substitution and the
   realm JSON parsing cleanly. Run it locally and confirm login actually
-  round-trips before relying on this.
+  round-trips — including the public/internal Keycloak URL split in
+  `auth.ts` — before relying on this.
 - `security-architect` and `identity-access-expert` deep review (token
   lifetime/refresh strategy, session fixation, CSRF on the Next.js side,
   secrets management for `AUTH_KEYCLOAK_SECRET` in real environments) has
