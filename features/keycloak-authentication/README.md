@@ -146,20 +146,24 @@ Demo logins (Keycloak sets these as **temporary** passwords — you'll be
 forced to change them on first login): `admin.demo`, `manager.demo`,
 `officer.demo`, `committee.demo`, all with password `ChangeMe123!`.
 
-Verified locally: `dotnet build` across all 6 projects, and running `Host`
-without any token returns `401` from both `/api/auth/me` and the
-policy-gated ping endpoints (confirms the module wiring and
-`AddApplicationPart` discovery work end-to-end). `docker compose config`
-validates the compose file's variable substitution and resulting YAML.
+Verified locally with `docker compose up -d --build` (Option A, full stack):
+- All 4 containers build and start cleanly; Keycloak imports the
+  `pnc-selection` realm on first boot.
+- The frontend container can reach Keycloak over the internal Docker
+  network (`http://keycloak:8080`) — confirmed with a fetch from inside the
+  running `frontend` container — so the `authorization`-endpoint override in
+  `auth.ts` has the internal/public split it needs to actually work.
+- The backend returns `401` from `/api/auth/me` and every policy-gated ping
+  endpoint without a token, and serves its OpenAPI doc at `/openapi/v1.json`.
+- Also verified earlier with `dotnet build` across all 6 backend projects run
+  natively (Option B).
 
 **Not yet done**, flagged so it isn't mistaken for finished:
-- Not tested against a live Keycloak instance, or the backend/frontend
-  Docker images, in this environment — Docker Desktop's engine wasn't
-  running here, so `docker compose up --build` itself is unverified beyond
-  `docker compose config` validating the YAML/variable substitution and the
-  realm JSON parsing cleanly. Run it locally and confirm login actually
-  round-trips — including the public/internal Keycloak URL split in
-  `auth.ts` — before relying on this.
+- An actual interactive sign-in through the browser (e.g. `admin.demo` /
+  `ChangeMe123!` at `http://localhost:3000`) hasn't been done — everything
+  that makes that round-trip work has been verified piece by piece (realm
+  import, internal/external Keycloak reachability, backend auth wiring), but
+  the full browser flow itself is still worth confirming once.
 - `security-architect` and `identity-access-expert` deep review (token
   lifetime/refresh strategy, session fixation, CSRF on the Next.js side,
   secrets management for `AUTH_KEYCLOAK_SECRET` in real environments) has
