@@ -35,6 +35,8 @@ export type RulePatch = Partial<Pick<Rule, "fieldKey" | "operatorKey" | "values"
 
 export type DraftAction =
   | { type: "addGroup" }
+  /** For an empty page: a new group with its first rule in one step. */
+  | { type: "addFirstRule" }
   | { type: "renameGroup"; groupId: string; name: string }
   | { type: "setLogic"; groupId: string; logic: GroupLogic }
   | { type: "deleteGroup"; groupId: string }
@@ -146,6 +148,12 @@ export function createDraftReducer(env: DraftEnvironment) {
           ...state,
           groups: [...state.groups, { id: env.newId(), name: nextGroupName(state.groups), logic: "All", rules: [] }],
         };
+
+      case "addFirstRule": {
+        const rule = newRule(env, ctx);
+        const created: DraftGroup = { id: env.newId(), name: nextGroupName(state.groups), logic: "All", rules: [rule] };
+        return { ...ensureReferenceDate(state, fieldOf(rule.fieldKey), env.campaignStartDate), groups: [...state.groups, created] };
+      }
 
       case "renameGroup":
         return { ...state, groups: state.groups.map((g) => (g.id === action.groupId ? { ...g, name: action.name } : g)) };

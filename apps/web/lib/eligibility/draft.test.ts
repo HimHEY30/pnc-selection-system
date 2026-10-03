@@ -140,6 +140,31 @@ describe("adding a rule", () => {
   });
 });
 
+describe("adding the first rule", () => {
+  it("creates a group with a rule in it, in one step", () => {
+    const state = run(start(), { type: "addFirstRule" });
+
+    expect(state.groups).toHaveLength(1);
+    expect(state.groups[0]).toMatchObject({ name: "Group 1", logic: "All" });
+    expect(state.groups[0].rules).toHaveLength(1);
+    expect(state.groups[0].rules[0]).toMatchObject({ fieldKey: "age", type: "Mandatory", isActive: true });
+    expect(isDirty(state)).toBe(true);
+  });
+
+  it("suggests the age reference date, like any first age rule", () => {
+    expect(run(start(), { type: "addFirstRule" }).ageReferenceDate).toBe("2026-11-02");
+  });
+
+  it("adds beside existing groups without touching them", () => {
+    const existing = group([rule("gender", "is", ["female"])], { name: "Group 1" });
+
+    const state = run(start([existing]), { type: "addFirstRule" });
+
+    expect(state.groups.map((g) => g.name)).toEqual(["Group 1", "Group 2"]);
+    expect(state.groups[0].rules).toHaveLength(1);
+  });
+});
+
 describe("editing a rule", () => {
   const age = () => rule("age", "between", ["17", "23"], { message: "Age must be between 17 and 23." });
 
