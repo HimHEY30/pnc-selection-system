@@ -12,6 +12,9 @@ public interface ICampaignService
     Task<Result<CampaignDetailDto>> SaveInfoDraftAsync(Guid id, CampaignInfoRequest request, CancellationToken ct);
     Task<Result<CampaignDetailDto>> CompleteInfoAsync(Guid id, CampaignInfoRequest request, CancellationToken ct);
     Task<IReadOnlyList<ProvinceDto>> ListProvincesAsync(CancellationToken ct);
+
+    /// <summary>What a campaign has that can be copied, with counts, for the "copy from" checklist.</summary>
+    Task<Result<CopyPreviewDto>> GetCopyPreviewAsync(Guid id, CancellationToken ct);
 }
 
 /// <summary>
@@ -143,6 +146,45 @@ public sealed class CampaignService : ICampaignService
     {
         var provinces = await _repository.ListProvincesAsync(ct);
         return provinces.Select(p => new ProvinceDto(p.Id, p.Code, p.NameEn)).ToList();
+    }
+
+    public async Task<Result<CopyPreviewDto>> GetCopyPreviewAsync(Guid id, CancellationToken ct)
+    {
+        var source = await _repository.GetAsync(id, ct);
+        if (source is null)
+        {
+            return Result.Failure<CopyPreviewDto>(CampaignErrors.NotFound);
+        }
+
+        var parts = new List<CopyPartPreview>();
+        foreach (var key in CopyParts.All)
+        {
+            parts.Add(key switch
+            {
+                CopyParts.Provinces => new CopyPartPreview(
+                    key, "Target provinces", source.Provinces.Count > 0, source.Provinces.Count,
+                    source.Provinces.Count > 0 ? null : "This campaign has no target provinces."),
+                CopyParts.Details => DescribeDetails(source),
+                _ when _copyParts.TryGetValue(key, out var part) => await part.DescribeAsync(source.Id, ct),
+                _ => new CopyPartPreview(key, Labels.GetValueOrDefault(key, key), false, 0, "Copying this is not available yet."),
+            });
+        }
+
+        return new CopyPreviewDto(source.Id, source.Name, source.AcademicYear, parts);
+    }
+
+    private static readonly IReadOnlyDictionary<string, string> Labels = new Dictionary<string, string>
+    {
+        [CopyParts.EligibilityRules] = "Eligibility rules",
+        [CopyParts.InformationSessions] = "Information sessions",
+    };
+
+    private static CopyPartPreview DescribeDetails(Campaign source)
+    {
+        var count = new[] { source.Description is not null, source.ExpectedCandidates is not null, source.SeatsAvailable is not null }.Count(x => x);
+        return new CopyPartPreview(
+            CopyParts.Details, "Description, expected candidates and seats", count > 0, count,
+            count > 0 ? "The name, academic year and dates are not copied." : "This campaign has none of these filled in.");
     }
 
     private async Task<Result<CampaignDetailDto>> SaveInfoAsync(

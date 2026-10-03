@@ -166,7 +166,7 @@ public sealed class CreateCampaignTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Contains("copyFrom.sourceCampaignId", (await response.ReadProblemAsync()).Errors!.Keys);
-        Assert.DoesNotContain(await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"), c => c.Name == request.Name);
+        Assert.DoesNotContain((await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"))!, c => c.Name == request.Name);
     }
 
     [Fact]
@@ -231,7 +231,59 @@ public sealed class CreateCampaignTests
         var response = await client.PostAsJsonAsync("/api/campaigns", request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.DoesNotContain(await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"), c => c.Name == request.Name);
+        Assert.DoesNotContain((await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"))!, c => c.Name == request.Name);
+    }
+
+    [Fact]
+    public async Task CopyPreview_ListsEveryPartWithItsCount()
+    {
+        var client = _fixture.CreateManagerClient();
+        var source = await CreateSourceAsync(client);
+
+        var preview = await client.GetFromJsonAsync<CopyPreviewDto>($"/api/campaigns/{source.Id}/copy-preview");
+
+        Assert.Equal(source.Name, preview!.Name);
+        Assert.Equal(CopyParts.All, preview.Parts.Select(p => p.Key));
+        var provinces = preview.Parts.Single(p => p.Key == CopyParts.Provinces);
+        Assert.True(provinces.Available);
+        Assert.Equal(4, provinces.Count);
+        var details = preview.Parts.Single(p => p.Key == CopyParts.Details);
+        Assert.True(details.Available);
+        Assert.Equal(3, details.Count);
+    }
+
+    [Fact]
+    public async Task CopyPreview_SaysWhenACampaignHasNothingToCopyForAPart()
+    {
+        var client = _fixture.CreateManagerClient();
+        var empty = await client.CreateCampaignAsync();
+        await client.SaveDraftAsync(empty.Id, TestData.MinimalInfo(empty.Name));
+
+        var preview = await client.GetFromJsonAsync<CopyPreviewDto>($"/api/campaigns/{empty.Id}/copy-preview");
+
+        var provinces = preview!.Parts.Single(p => p.Key == CopyParts.Provinces);
+        Assert.False(provinces.Available);
+        Assert.Equal(0, provinces.Count);
+        Assert.NotNull(provinces.Note);
+    }
+
+    [Fact]
+    public async Task CopyPreview_OfAnUnknownCampaign_Returns404()
+    {
+        var response = await _fixture.CreateManagerClient().GetAsync($"/api/campaigns/{Guid.NewGuid()}/copy-preview");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CopyPreview_AnOfficerCannotSeeIt()
+    {
+        var source = await CreateSourceAsync(_fixture.CreateManagerClient());
+        var officer = _fixture.CreateClient("Officer", Roles.SelectionOfficer);
+
+        var response = await officer.GetAsync($"/api/campaigns/{source.Id}/copy-preview");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

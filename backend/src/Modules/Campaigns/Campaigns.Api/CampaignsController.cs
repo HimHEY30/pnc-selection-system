@@ -39,7 +39,18 @@ public sealed class CampaignsController : ControllerBase
         return result.IsSuccess ? Ok(result.Value) : result.Error.ToProblem();
     }
 
-    /// <summary>Creates a Draft campaign. Step 1 starts In progress.</summary>
+    /// <summary>What this campaign has that a new campaign can copy, with counts. Feeds the "copy from" checklist.</summary>
+    [HttpGet("{id:guid}/copy-preview")]
+    [Authorize(Policy = AuthorizationPolicies.ManagementTier)]
+    [ProducesResponseType<CopyPreviewDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CopyPreviewDto>> CopyPreview(Guid id, CancellationToken ct)
+    {
+        var result = await _campaigns.GetCopyPreviewAsync(id, ct);
+        return result.IsSuccess ? Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>Creates a Draft campaign, from scratch or by copying parts of another. Step 1 starts In progress.</summary>
     [HttpPost]
     [Authorize(Policy = AuthorizationPolicies.ManagementTier)]
     [ProducesResponseType<CampaignDetailDto>(StatusCodes.Status201Created)]
