@@ -256,6 +256,33 @@ export const en = {
     } as Record<string, (field: string, values: string[]) => string>,
     fallbackMessage: "The candidate does not meet this rule.",
 
+    // Same wording as the backend (RuleSetValidator), so a message reads the same whether it
+    // comes from this page or from the server.
+    validation: {
+      fieldRequired: "Choose a field.",
+      operatorRequired: "Choose how to compare.",
+      valueRequired: "Enter a value.",
+      bothValues: "Enter both values.",
+      chooseOne: "Choose at least one option.",
+      blank: "Fill in every value.",
+      notNumber: "Enter a number.",
+      wholeNumber: "Use a whole number.",
+      decimals: (places: number) => `Use at most ${places} decimal places.`,
+      atLeast: (min: string) => `Enter ${min} or more.`,
+      atMost: (max: string) => `Enter ${max} or less.`,
+      notDate: "Enter a date as year-month-day.",
+      firstLower: "The first value must be lower than the second.",
+      notInList: "Choose from the list.",
+      notTarget: "Choose only target provinces of this campaign. Change them in Step 1.",
+      messageRequired: "Write the reason shown when a candidate fails this rule.",
+      messageTooLong: (max: number) => `The message must be ${max} characters or fewer.`,
+      groupNameRequired: "Give the group a name.",
+      groupNameTooLong: (max: number) => `Group name must be ${max} characters or fewer.`,
+      duplicate: "The same rule already exists in this group.",
+      needMandatory: "Add at least one active mandatory rule.",
+      needReferenceDate: "Choose the date ages are calculated on.",
+    },
+
     summary: {
       title: "Summary",
       empty: "Add a rule to see who would be eligible.",
