@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { CATALOGUE, group, PROVINCES, rule } from "@/test-utils/eligibility-fixtures";
+import { CATALOGUE, examCatalogue, group, MATH, PROVINCES, rule, SUBJECTS } from "@/test-utils/eligibility-fixtures";
 import {
   allRules,
   createDraftReducer,
@@ -412,5 +412,69 @@ describe("snapshot", () => {
 
     expect(snapshot(a)).toBe(snapshot(b));
     expect(snapshot(run(a, { type: "setReferenceDate", date: "2027-01-01" }))).not.toBe(snapshot(a));
+  });
+});
+
+describe("exam subjects", () => {
+  const examEnv = { ...env, catalogue: examCatalogue() };
+  const examReduce = createDraftReducer(examEnv);
+  const examStart = (groups: RuleSetData["groups"] = []) => initialState(data(groups), examEnv);
+  const renamed = examCatalogue(SUBJECTS.map((s) => (s.key === MATH ? { ...s, name: "Mathematics" } : s)));
+
+  it("fills in a pre-filled reason for a rule on a subject, and follows it as the rule is edited", () => {
+    const state = examStart([group([rule(MATH, "at_least", ["50"], { message: "Math score must be at least 50 points." })])]);
+    const id = allRules(state)[0].id;
+
+    const edited = examReduce(state, { type: "updateRule", ruleId: id, patch: { values: ["60"] } });
+
+    expect(ruleOf(edited, id).customMessage).toBe(false);
+    expect(ruleOf(edited, id).message).toBe("Math score must be at least 60 points.");
+  });
+
+  it("moves a rule to the next field's own operators when it is switched to a subject", () => {
+    const state = examStart([group([rule("gender", "is", ["female"])])]);
+    const id = allRules(state)[0].id;
+
+    const next = examReduce(state, { type: "updateRule", ruleId: id, patch: { fieldKey: MATH } });
+
+    expect(ruleOf(next, id)).toMatchObject({ fieldKey: MATH, operatorKey: "equals", values: [] });
+  });
+
+  it("rewrites a message that was filled in for the user when a subject is renamed", () => {
+    const state = examStart([group([rule(MATH, "at_least", ["50"], { message: "Math score must be at least 50 points." })])]);
+    const id = allRules(state)[0].id;
+
+    const next = examReduce(state, { type: "refreshMessages", catalogue: renamed });
+
+    expect(ruleOf(next, id).message).toBe("Mathematics score must be at least 50 points.");
+    expect(ruleOf(next, id).customMessage).toBe(false);
+    expect(isDirty(next)).toBe(true);
+  });
+
+  it("leaves a message the user wrote alone when a subject is renamed", () => {
+    const state = examStart([group([rule(MATH, "at_least", ["50"], { message: "Maths pass mark is 50." })])]);
+    const id = allRules(state)[0].id;
+
+    const next = examReduce(state, { type: "refreshMessages", catalogue: renamed });
+
+    expect(ruleOf(next, id).message).toBe("Maths pass mark is 50.");
+    expect(isDirty(next)).toBe(false);
+  });
+
+  it("changes nothing when no rule uses the renamed subject", () => {
+    const state = examStart([group([rule("age", "at_least", ["17"], { message: "Age must be at least 17." })])]);
+
+    const next = examReduce(state, { type: "refreshMessages", catalogue: renamed });
+
+    expect(snapshot(next)).toBe(snapshot(state));
+    expect(isDirty(next)).toBe(false);
+  });
+
+  it("keeps the rule on the subject's key through a rename and through saving", () => {
+    const state = examStart([group([rule(MATH, "at_least", ["50"])])]);
+
+    const next = examReduce(state, { type: "refreshMessages", catalogue: renamed });
+
+    expect(toRequest(next).groups[0].rules[0].fieldKey).toBe(MATH);
   });
 });

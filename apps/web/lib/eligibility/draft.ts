@@ -50,6 +50,11 @@ export type DraftAction =
   | { type: "reorderRules"; groupId: string; orderedIds: string[] }
   | { type: "setReferenceDate"; date: string }
   | { type: "insertSuggested"; suggested: SuggestedData }
+  /**
+   * A field was renamed (an exam subject). Rewrites the failure messages that were filled in for the user,
+   * with the names in this catalogue; a message the user wrote themselves is left alone.
+   */
+  | { type: "refreshMessages"; catalogue: Catalogue }
   | { type: "saved"; data: RuleSetData };
 
 export type DraftEnvironment = {
@@ -226,6 +231,11 @@ export function createDraftReducer(env: DraftEnvironment) {
           ageReferenceDate: state.ageReferenceDate || action.suggested.ageReferenceDate || "",
           groups: [...state.groups, ...added],
         };
+      }
+
+      case "refreshMessages": {
+        const fresh = { catalogue: action.catalogue, provinces: env.provinces };
+        return { ...state, groups: mapRules((r) => (r.customMessage ? r : { ...r, message: defaultMessage(r, fresh) })) };
       }
 
       case "saved": {
