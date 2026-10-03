@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import type { CampaignSummary } from "@/lib/campaigns/types";
 import CreateCampaignDialog from "./CreateCampaignDialog";
 
 type CreateCampaignContext = {
@@ -15,7 +16,16 @@ const Context = createContext<CreateCampaignContext>({ canCreate: false, open: (
  * Lets any button in the admin area (the empty state, the campaign switcher) open the
  * one "Create campaign" dialog without each owning a copy of it.
  */
-export function CreateCampaignProvider({ canCreate, children }: { canCreate: boolean; children: ReactNode }) {
+export function CreateCampaignProvider({
+  canCreate,
+  copySources = [],
+  children,
+}: {
+  canCreate: boolean;
+  /** The campaigns a new one can copy from (the campaign list the layout already has). */
+  copySources?: CampaignSummary[];
+  children: ReactNode;
+}) {
   const [openCount, setOpenCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,7 +41,7 @@ export function CreateCampaignProvider({ canCreate, children }: { canCreate: boo
   return (
     <Context.Provider value={value}>
       {children}
-      {canCreate && openCount > 0 && <CreateCampaignDialog key={openCount} open={isOpen} onClose={close} />}
+      {canCreate && openCount > 0 && <CreateCampaignDialog key={openCount} open={isOpen} onClose={close} copySources={copySources} />}
     </Context.Provider>
   );
 }

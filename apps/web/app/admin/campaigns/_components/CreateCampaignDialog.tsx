@@ -6,16 +6,33 @@ import Button from "@/components/ui/Button";
 import FormField from "@/components/ui/FormField";
 import { Select, TextInput, Textarea } from "@/components/ui/inputs";
 import { academicYearOptions, defaultAcademicYear } from "@/lib/campaigns/academic-years";
+import { partsInOrder, validateCopy } from "@/lib/campaigns/copy";
+import { COPY_PART_KEYS, type CampaignSummary, type CopyPartKey, type CopyPreview, type CreatedCampaign } from "@/lib/campaigns/types";
 import { validateCreate, type CreateField } from "@/lib/campaigns/validation";
 import { t } from "@/lib/messages";
-import { createCampaignAction } from "../actions";
+import { createCampaignAction, loadCopyPreviewAction } from "../actions";
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** The campaigns a new one can copy from. Empty means the copy option is shown but cannot be chosen. */
+  copySources?: CampaignSummary[];
 };
 
-type Errors = Partial<Record<CreateField | "startMode", string>>;
+type Errors = Partial<Record<CreateField | "startMode" | "copyFrom.sourceCampaignId" | "copyFrom.parts", string>>;
+
+/** What is known about the chosen source campaign's copyable parts. */
+type PreviewState =
+  | { state: "idle" }
+  | { state: "loading" }
+  | { state: "ready"; data: CopyPreview }
+  | { state: "error"; message: string };
+
+const text = t.create;
+
+// Selected and unselected look of a "how to start" card.
+const SELECTED = "border-2 border-primary bg-primary-soft";
+const UNSELECTED = "border border-line";
 
 /**
  * "Create campaign" as a native <dialog> opened with showModal(). The browser then
@@ -25,18 +42,31 @@ type Errors = Partial<Record<CreateField | "startMode", string>>;
  *
  * It holds the form state, so the provider mounts a fresh copy (new `key`) each time
  * it is opened, which resets the fields without any reset code.
+ *
+ * Starting from a copy: pick the campaign, see what it has (with counts), and tick what to carry over, one by
+ * one. Once the campaign exists, the dialog says how each part went before the manager opens it.
  */
-export default function CreateCampaignDialog({ open, onClose }: Props) {
+export default function CreateCampaignDialog({ open, onClose, copySources = [] }: Props) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const partsRef = useRef<HTMLFieldSetElement>(null);
 
   const [name, setName] = useState("");
   const [academicYear, setAcademicYear] = useState(() => defaultAcademicYear());
   const [description, setDescription] = useState("");
+  const [startMode, setStartMode] = useState<"scratch" | "copy">("scratch");
+  const [sourceId, setSourceId] = useState("");
+  const [preview, setPreview] = useState<PreviewState>({ state: "idle" });
+  const [ticked, setTicked] = useState<ReadonlySet<CopyPartKey>>(new Set());
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [created, setCreated] = useState<CreatedCampaign | null>(null);
   const [pending, startTransition] = useTransition();
+  // The source asked for last, so an answer that arrives late for an earlier choice is ignored.
+  const latestSource = useRef("");
+
+  const canCopy = copySources.length > 0;
 
   // The `open` prop is the source of truth; the DOM dialog follows it.
   useEffect(() => {
@@ -50,22 +80,74 @@ export default function CreateCampaignDialog({ open, onClose }: Props) {
     (formRef.current?.elements.namedItem(field) as HTMLElement | null)?.focus();
   }
 
+  function chooseSource(id: string) {
+    latestSource.current = id;
+    setSourceId(id);
+    setTicked(new Set());
+    setErrors((e) => ({ ...e, "copyFrom.sourceCampaignId": undefined, "copyFrom.parts": undefined }));
+    if (!id) {
+      setPreview({ state: "idle" });
+      return;
+    }
+
+    setPreview({ state: "loading" });
+    void loadCopyPreviewAction(id).then((result) => {
+      if (latestSource.current !== id) return;
+      setPreview(result.ok ? { state: "ready", data: result.data } : { state: "error", message: result.message });
+    });
+  }
+
+  function toggle(key: CopyPartKey, on: boolean) {
+    setTicked((current) => {
+      const next = new Set(current);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+    setErrors((e) => ({ ...e, "copyFrom.parts": undefined }));
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
 
-    const found = validateCreate({ name, academicYear, description });
+    const found: Errors = validateCreate({ name, academicYear, description });
+    if (startMode === "copy") {
+      const copyErrors = validateCopy(sourceId, ticked);
+      if (copyErrors.source) found["copyFrom.sourceCampaignId"] = copyErrors.source;
+      if (copyErrors.parts) found["copyFrom.parts"] = copyErrors.parts;
+    }
     setErrors(found);
     setFormError(null);
+
     const firstInvalid = (["name", "academicYear", "description"] as const).find((f) => found[f]);
     if (firstInvalid) {
       focusField(firstInvalid);
       return;
     }
+    if (found["copyFrom.sourceCampaignId"]) {
+      focusField("copyFrom.sourceCampaignId");
+      return;
+    }
+    if (found["copyFrom.parts"]) {
+      partsRef.current?.focus();
+      return;
+    }
 
     startTransition(async () => {
-      const result = await createCampaignAction({ name, academicYear, description, startMode: "scratch" });
+      const result = await createCampaignAction({
+        name,
+        academicYear,
+        description,
+        startMode,
+        ...(startMode === "copy" && { copyFrom: { sourceCampaignId: sourceId, parts: partsInOrder(ticked) } }),
+      });
       if (result.ok) {
+        // A copy says how each part went before the manager moves on; a new campaign goes straight to its setup.
+        if (startMode === "copy" && result.data.copyResults) {
+          setCreated(result.data);
+          return;
+        }
         onClose();
         router.push(`/admin/campaigns/${result.data.id}`);
         return;
@@ -74,8 +156,15 @@ export default function CreateCampaignDialog({ open, onClose }: Props) {
       setErrors((result.fieldErrors ?? {}) as Errors);
       setFormError(result.fieldErrors ? null : result.message);
       const first = Object.keys(result.fieldErrors ?? {})[0];
-      if (first) focusField(first);
+      if (first === "copyFrom.parts") partsRef.current?.focus();
+      else if (first) focusField(first);
     });
+  }
+
+  function openCreated() {
+    if (!created) return;
+    onClose();
+    router.push(`/admin/campaigns/${created.id}`);
   }
 
   return (
@@ -98,9 +187,9 @@ export default function CreateCampaignDialog({ open, onClose }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 id="create-campaign-title" className="text-xl font-bold">
-                {t.create.title}
+                {created ? text.created.title : text.title}
               </h2>
-              <p className="mt-1 text-[15px] text-ink-muted">{t.create.subtitle}</p>
+              <p className="mt-1 text-[15px] text-ink-muted">{created ? text.created.intro : text.subtitle}</p>
             </div>
             <button
               type="button"
@@ -114,88 +203,221 @@ export default function CreateCampaignDialog({ open, onClose }: Props) {
             </button>
           </div>
 
-          {formError && (
-            <p role="alert" className="mt-5 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger-text">
-              {formError}
-            </p>
-          )}
-
-          <div className="mt-6 flex flex-col gap-5">
-            <FormField label={t.create.name} hint={t.create.nameHint} error={errors.name}>
-              {(control) => (
-                <TextInput
-                  {...control}
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t.create.namePlaceholder}
-                  maxLength={150}
-                  autoComplete="off"
-                />
+          {created ? (
+            <CopyResults created={created} />
+          ) : (
+            <>
+              {formError && (
+                <p role="alert" className="mt-5 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger-text">
+                  {formError}
+                </p>
               )}
-            </FormField>
 
-            <FormField label={t.create.academicYear} error={errors.academicYear}>
-              {(control) => (
-                <Select {...control} name="academicYear" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
-                  {academicYearOptions(new Date(), academicYear).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </FormField>
+              <div className="mt-6 flex flex-col gap-5">
+                <FormField label={text.name} hint={text.nameHint} error={errors.name}>
+                  {(control) => (
+                    <TextInput
+                      {...control}
+                      name="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={text.namePlaceholder}
+                      maxLength={150}
+                      autoComplete="off"
+                    />
+                  )}
+                </FormField>
 
-            <FormField label={t.create.description} optional error={errors.description}>
-              {(control) => (
-                <Textarea {...control} name="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-              )}
-            </FormField>
+                <FormField label={text.academicYear} error={errors.academicYear}>
+                  {(control) => (
+                    <Select {...control} name="academicYear" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
+                      {academicYearOptions(new Date(), academicYear).map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </FormField>
 
-            <fieldset>
-              <legend className="mb-1.5 text-sm font-semibold">{t.create.howToStart}</legend>
-              <div className="flex flex-col gap-2">
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-primary bg-primary-soft px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary">
-                  <input type="radio" name="startMode" value="scratch" defaultChecked className="mt-1 size-4 accent-primary" />
-                  <span>
-                    <span className="block text-[15px] font-semibold">{t.create.scratch}</span>
-                    <span className="block text-sm text-ink-muted">{t.create.scratchHint}</span>
-                  </span>
-                </label>
+                <FormField label={text.description} optional error={errors.description}>
+                  {(control) => (
+                    <Textarea {...control} name="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+                  )}
+                </FormField>
 
-                {/* No campaign can be Closed yet, so there is nothing to copy from. */}
-                <label className="flex cursor-not-allowed items-start gap-3 rounded-lg border border-line px-4 py-3">
-                  <input
-                    type="radio"
-                    name="startMode"
-                    value="copy"
-                    disabled
-                    aria-describedby="copy-hint"
-                    className="mt-1 size-4"
-                  />
-                  <span>
-                    <span className="block text-[15px] font-semibold text-ink-muted">{t.create.copy}</span>
-                    <span id="copy-hint" className="block text-sm text-ink-muted">
-                      {t.create.copyHint}
-                    </span>
-                  </span>
-                </label>
+                <fieldset>
+                  <legend className="mb-1.5 text-sm font-semibold">{text.howToStart}</legend>
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
+                        startMode === "scratch" ? SELECTED : UNSELECTED
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="startMode"
+                        value="scratch"
+                        checked={startMode === "scratch"}
+                        onChange={() => setStartMode("scratch")}
+                        className="mt-1 size-4 accent-primary"
+                      />
+                      <span>
+                        <span className="block text-[15px] font-semibold">{text.scratch}</span>
+                        <span className="block text-sm text-ink-muted">{text.scratchHint}</span>
+                      </span>
+                    </label>
+
+                    <label
+                      className={`flex items-start gap-3 rounded-lg px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
+                        canCopy ? `cursor-pointer ${startMode === "copy" ? SELECTED : UNSELECTED}` : `cursor-not-allowed ${UNSELECTED}`
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="startMode"
+                        value="copy"
+                        checked={startMode === "copy"}
+                        onChange={() => setStartMode("copy")}
+                        disabled={!canCopy}
+                        aria-describedby="copy-hint"
+                        className="mt-1 size-4 accent-primary"
+                      />
+                      <span>
+                        <span className={`block text-[15px] font-semibold ${canCopy ? "" : "text-ink-muted"}`}>{text.copy}</span>
+                        <span id="copy-hint" className="block text-sm text-ink-muted">
+                          {canCopy ? text.copyHint : text.copyUnavailable}
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                  {errors.startMode && <p className="mt-1.5 text-[13px] text-danger-text">{errors.startMode}</p>}
+                </fieldset>
+
+                {startMode === "copy" && (
+                  <div className="flex flex-col gap-5 rounded-lg border border-line bg-canvas px-4 py-4">
+                    <FormField label={text.copyFrom} error={errors["copyFrom.sourceCampaignId"]}>
+                      {(control) => (
+                        <Select
+                          {...control}
+                          name="copyFrom.sourceCampaignId"
+                          value={sourceId}
+                          onChange={(e) => chooseSource(e.target.value)}
+                        >
+                          <option value="">{text.copyFromChoose}</option>
+                          {copySources.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {text.copySourceOption(c.name, c.academicYear, t.status[c.status])}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </FormField>
+
+                    {preview.state === "loading" && (
+                      <p role="status" className="text-sm text-ink-muted">
+                        {text.copyChecking}
+                      </p>
+                    )}
+                    {preview.state === "error" && (
+                      <p role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger-text">
+                        {preview.message}
+                      </p>
+                    )}
+                    {preview.state === "ready" && (
+                      <fieldset ref={partsRef} tabIndex={-1} aria-describedby="copy-parts-hint" className="focus:outline-none">
+                        <legend className="mb-1 text-sm font-semibold">{text.copyPartsLegend}</legend>
+                        <p id="copy-parts-hint" className="mb-2 text-[13px] text-ink-muted">
+                          {text.copyPartsHint}
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          {COPY_PART_KEYS.flatMap((key) => {
+                            const part = preview.data.parts.find((p) => p.key === key);
+                            if (!part) return [];
+                            return (
+                              <label
+                                key={key}
+                                className={`flex items-start gap-3 rounded-lg border border-line bg-surface px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
+                                  part.available ? "cursor-pointer" : "cursor-not-allowed"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  name={`copyPart-${key}`}
+                                  checked={ticked.has(key)}
+                                  disabled={!part.available}
+                                  onChange={(e) => toggle(key, e.target.checked)}
+                                  className="mt-1 size-4 accent-primary"
+                                />
+                                <span>
+                                  <span className={`block text-[15px] font-semibold ${part.available ? "" : "text-ink-muted"}`}>
+                                    {text.copyPartLabels[key]}
+                                    {part.available && <span className="font-normal text-ink-muted"> · {text.copyCount[key](part.count)}</span>}
+                                  </span>
+                                  {part.note && <span className="block text-sm text-ink-muted">{part.note}</span>}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {errors["copyFrom.parts"] && (
+                          <p role="alert" className="mt-1.5 text-[13px] text-danger-text">
+                            {errors["copyFrom.parts"]}
+                          </p>
+                        )}
+                      </fieldset>
+                    )}
+                  </div>
+                )}
               </div>
-              {errors.startMode && <p className="mt-1.5 text-[13px] text-danger-text">{errors.startMode}</p>}
-            </fieldset>
-          </div>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 border-t border-line px-8 py-5">
-          <Button onClick={() => dialogRef.current?.close()} disabled={pending}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" variant="primary" disabled={pending}>
-            {pending ? t.create.submitting : t.create.submit}
-          </Button>
+          {created ? (
+            <Button type="button" variant="primary" onClick={openCreated} autoFocus>
+              {text.created.open}
+            </Button>
+          ) : (
+            <>
+              <Button onClick={() => dialogRef.current?.close()} disabled={pending}>
+                {t.common.cancel}
+              </Button>
+              <Button type="submit" variant="primary" disabled={pending}>
+                {pending ? text.submitting : text.submit}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </dialog>
+  );
+}
+
+/** How each copied part went. A part that did not copy, or copied with something to check, says why. */
+function CopyResults({ created }: { created: CreatedCampaign }) {
+  return (
+    <ul aria-label={text.created.listLabel} className="mt-6 flex flex-col gap-2">
+      {(created.copyResults ?? []).map((result) => (
+        <li key={result.part} className="rounded-lg border border-line px-4 py-3">
+          <p className="text-[15px] font-semibold">
+            {text.copyPartLabels[result.part]}
+            {result.outcome !== "Failed" && <span className="font-normal text-ink-muted"> · {text.copyCount[result.part](result.count)}</span>}
+          </p>
+          <p className={`text-sm ${result.outcome === "Copied" ? "text-ink-muted" : "text-ink"}`}>
+            {result.outcome === "Failed" ? "✕ " : result.outcome === "Partly" ? "! " : "✓ "}
+            {text.created.outcome[result.outcome]}
+          </p>
+          {result.issues.length > 0 && (
+            <ul className="mt-1 list-disc pl-5 text-sm text-ink-muted">
+              {result.issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }

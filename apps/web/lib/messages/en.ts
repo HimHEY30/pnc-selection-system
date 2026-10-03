@@ -108,10 +108,40 @@ export const en = {
     howToStart: "How do you want to start?",
     scratch: "Start from scratch",
     scratchHint: "Set every step yourself with guidance along the way.",
-    copy: "Copy settings from a previous campaign",
-    copyHint: "Available once you have completed your first campaign.",
+    copy: "Copy settings from an existing campaign",
+    copyHint: "Pick the campaign, then choose what to carry over, one by one.",
+    copyUnavailable: "Available once there is another campaign to copy from.",
+    copyFrom: "Copy from",
+    copyFromChoose: "Choose a campaign…",
+    copySourceOption: (name: string, year: string, status: string) => `${name} · ${year} (${status})`,
+    copySourceRequired: "Choose the campaign to copy from.",
+    copyPartsLegend: "What do you want to copy?",
+    copyPartsHint: "Names and dates are never copied. Anything you copy is a draft you can still change.",
+    copyPartsRequired: "Choose at least one thing to copy.",
+    copyChecking: "Checking what this campaign has…",
+    copyPartLabels: {
+      Provinces: "Target provinces",
+      Details: "Description, expected candidates and seats",
+      EligibilityRules: "Eligibility rules",
+      InformationSessions: "Information sessions",
+    },
+    copyCount: {
+      Provinces: (n: number) => (n === 1 ? "1 province" : `${n} provinces`),
+      Details: (n: number) => `${n} of 3 filled in`,
+      EligibilityRules: (n: number) => (n === 1 ? "1 rule" : `${n} rules`),
+      InformationSessions: (n: number) => (n === 1 ? "1 session" : `${n} sessions`),
+    },
     submit: "Create and continue",
     submitting: "Creating…",
+
+    // Shown in the dialog once a campaign made from a copy exists, so nothing that failed to copy goes unnoticed.
+    created: {
+      title: "Campaign created",
+      intro: "Here is what was copied. It is all still a draft: look through each step before you activate the campaign.",
+      listLabel: "What was copied",
+      outcome: { Copied: "Copied", Partly: "Copied, with something to check", Failed: "Not copied" },
+      open: "Open campaign",
+    },
   },
 
   setup: {

@@ -39,7 +39,7 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
   }, []);
 
   return (
-    <CreateCampaignProvider canCreate={canCreate}>
+    <CreateCampaignProvider canCreate={canCreate} copySources={campaigns ?? []}>
       <div className="min-h-screen bg-canvas font-sans text-ink">
         {/* Skips the sidebar for keyboard users. */}
         <a
