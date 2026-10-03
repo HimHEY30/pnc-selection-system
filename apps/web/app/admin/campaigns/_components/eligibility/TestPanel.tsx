@@ -33,6 +33,9 @@ type Outcome = {
 
 const text = t.eligibility.ui.test;
 
+/** The total and the average of the exam scores: fields with no value of their own to enter. */
+const isScoreAggregate = (field: CatalogueField): boolean => field.derivation === "ExamTotal" || field.derivation === "ExamAverage";
+
 /**
  * "Test a sample candidate": fill in a person's details, press Run test, and see whether the
  * rules on screen would accept them, with a pass or fail (and the failure message) per rule.
@@ -45,10 +48,17 @@ export default function TestPanel({ groups, ctx, rulesKey, prepare, runTest }: P
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // One input per field the rules use, in the catalogue's order.
-  const usedFields = useMemo(() => {
+  // One input per field the rules use, in the catalogue's order. The total and the average have no input
+  // of their own: they are worked out from the subject scores, so a rule on either one asks for every score.
+  const { usedFields, usesAggregate } = useMemo(() => {
     const used = new Set(allRules({ groups }).map((r) => r.fieldKey));
-    return ctx.catalogue.fields.filter((f) => used.has(f.key));
+    const aggregate = ctx.catalogue.fields.some((f) => used.has(f.key) && isScoreAggregate(f));
+    return {
+      usesAggregate: aggregate,
+      usedFields: ctx.catalogue.fields.filter(
+        (f) => !isScoreAggregate(f) && (used.has(f.key) || (aggregate && f.derivation === "ExamScore")),
+      ),
+    };
   }, [groups, ctx.catalogue.fields]);
 
   const set = (attribute: string, value: string) => setCandidate((c) => ({ ...c, [attribute]: value }));
@@ -96,6 +106,7 @@ export default function TestPanel({ groups, ctx, rulesKey, prepare, runTest }: P
           }}
           className="mt-4 flex flex-col gap-3"
         >
+          {usesAggregate && <p className="text-[13px] text-ink-muted">{text.derivedFromScores}</p>}
           {usedFields.map((field) => (
             <CandidateInput
               key={field.key}
