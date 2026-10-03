@@ -46,7 +46,8 @@ each part one by one.
 - R5. Target provinces are applied first. A session whose province is not in the new campaign's provinces keeps no
   province (it is not dropped); rules and sessions never bring a province the manager did not tick.
 - R6. **Unscheduled sessions.** A copied session has status *Unscheduled*: its date, start and end time, host and
-  person responsible are empty. It becomes *Planned* only when someone gives all of them (the existing validation
+  person responsible are empty, and they are filled in later with a **Schedule** action. Scheduling is all at once
+  (confirmed with the requester): there is no half-scheduled state. It becomes *Planned* only when someone gives all of them (the existing validation
   applies at that moment, including the host-clash check). Because no host or date is copied, there is nothing to
   skip and nothing that can clash with the source campaign. The expected number is not copied (a last cycle's figure
   would mislead).
