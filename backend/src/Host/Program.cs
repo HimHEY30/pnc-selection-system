@@ -14,7 +14,8 @@ builder.Services
     .AddApplicationPart(typeof(Identity.Api.AuthController).Assembly)
     .AddApplicationPart(typeof(Campaigns.Api.CampaignsController).Assembly)
     .AddApplicationPart(typeof(Eligibility.Api.EligibilityController).Assembly)
-    .AddApplicationPart(typeof(Sessions.Api.HostsController).Assembly);
+    .AddApplicationPart(typeof(Sessions.Api.HostsController).Assembly)
+    .AddApplicationPart(typeof(Candidates.Api.CandidatesController).Assembly);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

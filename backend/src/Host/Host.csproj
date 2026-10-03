@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Modules\Eligibility\Eligibility.Infrastructure\Eligibility.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Sessions\Sessions.Api\Sessions.Api.csproj" />
     <ProjectReference Include="..\Modules\Sessions\Sessions.Infrastructure\Sessions.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Candidates\Candidates.Api\Candidates.Api.csproj" />
     <ProjectReference Include="..\Modules\Candidates\Candidates.Infrastructure\Candidates.Infrastructure.csproj" />
   </ItemGroup>
 
