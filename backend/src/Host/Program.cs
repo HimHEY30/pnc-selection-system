@@ -1,4 +1,5 @@
 using Campaigns.Infrastructure;
+using Candidates.Infrastructure;
 using Eligibility.Infrastructure;
 using Identity.Infrastructure;
 using Sessions.Infrastructure;
@@ -24,6 +25,7 @@ builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddCampaignsInfrastructure();
 builder.Services.AddEligibilityInfrastructure();
 builder.Services.AddSessionsInfrastructure();
+builder.Services.AddCandidatesInfrastructure();
 
 builder.Services.AddCors(options =>
 {
@@ -40,10 +42,12 @@ var app = builder.Build();
 // Database:MigrateOnStartup=false when migrations are applied by the pipeline instead.
 if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
-    // Order matters: Eligibility's and Sessions' tables point at the campaigns table, so Campaigns goes first.
+    // Order matters: Eligibility's, Sessions' and Candidates' tables point at the campaigns table, and Candidates'
+    // also at the sessions table, so Campaigns goes first and Sessions before Candidates.
     await CampaignsDatabaseInitializer.InitializeAsync(app.Services);
     await EligibilityDatabaseInitializer.InitializeAsync(app.Services);
     await SessionsDatabaseInitializer.InitializeAsync(app.Services);
+    await CandidatesDatabaseInitializer.InitializeAsync(app.Services);
 }
 
 // Configure the HTTP request pipeline.

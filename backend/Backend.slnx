@@ -29,7 +29,9 @@
     <Project Path="src/Modules/Sessions/Sessions.Infrastructure/Sessions.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Candidates/">
+    <Project Path="src/Modules/Candidates/Candidates.Application/Candidates.Application.csproj" />
     <Project Path="src/Modules/Candidates/Candidates.Domain/Candidates.Domain.csproj" />
+    <Project Path="src/Modules/Candidates/Candidates.Infrastructure/Candidates.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Campaigns.Tests/Campaigns.Tests.csproj" />

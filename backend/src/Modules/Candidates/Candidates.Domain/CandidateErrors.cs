@@ -20,6 +20,10 @@ public static class CandidateErrors
     public static readonly Error CampaignClosed =
         Error.Conflict("candidates.campaign_closed", "This campaign is closed, so its candidates can no longer be changed.");
 
+    /// <summary>What storage reports when the phone is taken between the service's check and the save. The normal check names the candidate.</summary>
+    public static readonly Error PhoneTaken =
+        Error.Conflict("candidates.duplicate_phone", "This phone number already belongs to another candidate in this campaign.");
+
     public static Error DuplicatePhone(string existingName) =>
         Error.Conflict("candidates.duplicate_phone", $"This phone number already belongs to {existingName} in this campaign.");
 }

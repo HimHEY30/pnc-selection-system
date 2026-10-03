@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Candidates\Candidates.Domain\Candidates.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Candidates\Candidates.Application\Candidates.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Candidates\Candidates.Infrastructure\Candidates.Infrastructure.csproj" />
     <ProjectReference Include="..\Ssms.TestSupport\Ssms.TestSupport.csproj" />
   </ItemGroup>
 
