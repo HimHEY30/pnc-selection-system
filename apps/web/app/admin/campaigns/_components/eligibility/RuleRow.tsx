@@ -147,7 +147,8 @@ export default function RuleRow({
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        {/* On a phone this wraps onto its own line instead of pushing the page wider than the screen. */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
           <div className="w-32">
             <TypeSelect value={rule.type} onChange={(type: RuleType) => onChange({ type })} disabled={!canEdit} onBlur={onTouch} />
           </div>
