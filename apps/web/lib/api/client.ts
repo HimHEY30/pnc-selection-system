@@ -73,6 +73,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (response.ok) {
+    // "204 No Content" (a delete) has no body to read.
+    if (response.status === 204) return { ok: true, data: undefined as T };
     return { ok: true, data: (await response.json()) as T };
   }
 
