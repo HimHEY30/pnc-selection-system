@@ -61,8 +61,9 @@ Spotlight tour, tooltips on fields, a per-user setting that follows the person a
   Create campaign dialog report it. The numbers form compares with its last save because it stays open after saving.
   The Create campaign dialog has its own `<dialog>`, so it carries the same question itself.
 - Behaviour you might not expect: the cookie is **per browser, not per person**. Two people sharing one browser profile
-  see the tour once between them. The guide text only describes what exists today: Steps 4 and 5 (Candidates, Entrance
-  exam) are said to be "not open yet".
+  see the tour once between them. The guide text only describes what exists today: Step 5 (Entrance exam) is said to be
+  "not open yet". (Step 4, Candidates, was described as not open when this was written and the Guide was updated when
+  Candidates were built; see `features/candidates`.)
 
 ## Tests
 

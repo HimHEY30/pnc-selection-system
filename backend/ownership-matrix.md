@@ -98,7 +98,10 @@ Owns (schema `sessions` in the `ssms` database):
 Publishes:
 - HTTP API: `/api/campaigns/{id}/sessions[/{sessionId}[/cancel|/expected|/attendance]]`, `/api/sessions/mine`,
   `/api/session-hosts[/{id}[/active]]`
-- `ISessionService`, `IHostService` (Sessions.Application), for the Candidates step later
+- `ISessionService`, `IHostService` (Sessions.Application)
+- `ISessionChoices` and `ISchoolDirectory` (Sessions.Application): the small read-only questions the Candidates module
+  asks (which sessions of a campaign can be chosen; which high schools are active), so Candidates never touches
+  session entities or tables
 
 Consumes:
 - Campaigns: `ICampaignSetupGateway` (the campaign's status and target provinces; set Step 3's status)
@@ -108,6 +111,34 @@ Consumes:
 Written by hand: the foreign keys from `information_sessions` and `audit_log` to `campaigns.campaigns`, and from
 `information_sessions` to `campaigns.provinces` (other modules' tables, which EF cannot model). The Host runs the
 Campaigns migrations first for that reason.
+
+---
+
+## Candidates
+
+Owns (schema `candidates` in the `ssms` database):
+- `Candidate` (Candidates.Domain): one person in one campaign: Khmer and English names, gender, birth date, a
+  normalised Cambodian phone, an address (codes with names, or typed names), the school, an optional session and NGO
+  support. Every change goes through it, so a candidate cannot hold an impossible combination.
+- The append-only `audit_log` (add, change, delete; it keeps what a deleted candidate looked like)
+- The rules: the candidate's own fields (Candidates.Domain), and the ones that need other data: an open campaign, one
+  phone per campaign, a real active high school, a session of the same campaign that is not cancelled
+  (Candidates.Application)
+
+Publishes:
+- HTTP API: `/api/campaigns/{id}/candidates[/{candidateId}|/session-choices]`, `/api/candidate-schools`
+- `ICandidateService` (Candidates.Application)
+
+Consumes:
+- Campaigns: `ICampaignSetupGateway` (the campaign's name and status)
+- Sessions: `ISessionChoices`, `ISchoolDirectory` (read-only)
+- Identity: `ICurrentUserService`, `AuthorizationPolicies` (`OperationsTier` to read, add and change, `ManagementTier`
+  to delete)
+
+Written by hand: the foreign keys from `candidates` and `audit_log` to `campaigns.campaigns` (deleting a campaign removes
+its candidates), and from `candidates` to `sessions.information_sessions` (deleting a session only clears the link).
+There is no foreign key to the host directory: a host is switched off, never deleted, and its name is copied. The Host
+runs the Campaigns and Sessions migrations first for that reason.
 
 ---
 
