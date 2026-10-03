@@ -38,6 +38,118 @@ export const en = {
     toggle: "Toggle navigation",
   },
 
+  // The first-login tour and the Guide page share these steps: the tour shows one at a time, the page shows all.
+  // Only describe what the app does today; Candidates and Entrance exam are not open yet.
+  guide: {
+    navGroup: "Help",
+    nav: "Guide",
+    tour: {
+      stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+      progressLabel: "Tour progress",
+      next: "Next",
+      back: "Back",
+      skip: "Skip the tour",
+      done: "Got it",
+    },
+    page: {
+      title: "Guide",
+      subtitle: "How to use Student Selection, in the order you will need it.",
+      showTour: "Show the tour again",
+      forManagers: "For selection managers and system admins",
+      forOfficers: "For selection officers",
+      glossaryTitle: "Words used in this app",
+    },
+    manager: [
+      {
+        title: "Welcome to Student Selection",
+        body: "This app runs one selection cycle for Passerelles Numériques Cambodia, from setting up the rules to the entrance exam. This short tour shows where things are.",
+        points: [],
+      },
+      {
+        title: "Start with a campaign",
+        body: 'A campaign is one selection cycle, for example "Selection 2027". Everything else lives inside it.',
+        points: [
+          "Choose Create campaign on the dashboard or in the top bar.",
+          "Start from scratch, or copy settings from an earlier campaign and tick what to bring over: provinces, details, eligibility rules and information sessions.",
+          "The name, academic year and dates are never copied. Copied sessions arrive as Not scheduled, with no date or host.",
+        ],
+      },
+      {
+        title: "Work through the setup steps",
+        body: "A campaign has five setup steps. You can do them in any order, and your work is saved as a draft.",
+        points: [
+          "Step 1, Campaign info: dates, expected candidates, seats and target provinces.",
+          "Step 2, Eligibility rules: who can apply. Rules are grouped, and can check things such as age, province and exam scores.",
+          "Step 3, Information sessions: visits to schools and communities.",
+          "Step 4, Candidates, and Step 5, Entrance exam, are not open yet.",
+        ],
+      },
+      {
+        title: "Plan information sessions",
+        body: "Add a session, give it a date and time, and choose who is responsible and who hosts it.",
+        points: [
+          "The person responsible can be you, another manager or an officer.",
+          "A host can be an officer, an alumnus or a partner such as an NGO or a high school. Alumni and partners are kept in the host directory, so you can use them again.",
+          "The same host cannot run two sessions at the same time.",
+          "After a session, enter how many females and males came.",
+        ],
+      },
+      {
+        title: "Find this again",
+        body: "Open Guide in the sidebar at any time to read this again or to start the tour again.",
+        points: [
+          "Press Escape or the × to close a form. If you typed something, you are asked before it is thrown away.",
+          "A page you can only view says so at the top.",
+        ],
+      },
+    ],
+    officer: [
+      {
+        title: "Welcome to Student Selection",
+        body: "This app runs one selection cycle for Passerelles Numériques Cambodia, from setting up the rules to the entrance exam. This short tour shows what you can do as an officer.",
+        points: [],
+      },
+      {
+        title: "What you can see",
+        body: "As a selection officer you can look at campaigns and their setup. Only selection managers and system admins can create or change them.",
+        points: [
+          "Use the campaign switcher in the top bar to choose a campaign.",
+          "A page you can only view says so at the top.",
+        ],
+      },
+      {
+        title: "Your sessions",
+        body: "Information sessions in the sidebar lists the sessions you are responsible for or are hosting, across campaigns.",
+        points: ["Each one shows its date, time, place and who is hosting."],
+      },
+      {
+        title: "Enter the numbers",
+        body: "You can record how many candidates are expected and, once a session has taken place, how many came.",
+        points: [
+          "Find the session and choose Enter numbers, in its ⋯ menu or on its card.",
+          "Attendance is two numbers, females and males. Both are needed, and 0 is a real answer.",
+          "You can correct the numbers later.",
+        ],
+      },
+      {
+        title: "Find this again",
+        body: "Open Guide in the sidebar at any time to read this again or to start the tour again.",
+        points: ["Press Escape or the × to close a form. If you typed something, you are asked before it is thrown away."],
+      },
+    ],
+    glossary: [
+      { term: "Campaign", meaning: "One selection cycle, for example Selection 2027. It holds the dates, rules, sessions, candidates and exam." },
+      { term: "Draft, Active, Closed", meaning: "A new campaign is a Draft and can be changed. It becomes Active when it runs, and Closed when it is over." },
+      { term: "Setup step", meaning: "One of the five parts of preparing a campaign. Each is Not started, In progress or Complete." },
+      { term: "Eligibility rule", meaning: "A condition a candidate must meet to apply, such as an age limit or a minimum exam score." },
+      { term: "Rule group", meaning: "Several rules together. A group says whether a candidate must meet all of its rules or any one of them." },
+      { term: "Information session", meaning: "A visit to a school or community to tell young people about the programme." },
+      { term: "Host", meaning: "Who runs a session: an officer, an alumnus or a partner such as an NGO or a high school." },
+      { term: "Not scheduled", meaning: "A session copied from another campaign that still needs a date, times, a person responsible and a host." },
+      { term: "Expected and actual", meaning: "Expected is how many candidates you think will join a session. Actual is how many females and males really did." },
+    ],
+  },
+
   roles: {
     "system-admin": "System admin",
     "selection-manager": "Selection manager",

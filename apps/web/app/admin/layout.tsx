@@ -1,8 +1,11 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, signOut, keycloakLogoutUrl } from "@/auth";
 import { loadCampaignsOrNull } from "@/lib/campaigns/api";
+import { GUIDE_COOKIE } from "@/lib/guide/guide";
 import { canAccessAdminArea, canManageCampaigns } from "@/lib/permissions";
 import AdminShell from "./_components/AdminShell";
+import { GuideProvider } from "./_components/GuideProvider";
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await auth();
@@ -29,18 +32,23 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // its own error state.
   const campaigns = await loadCampaignsOrNull();
 
+  // The welcome tour opens by itself until this browser has been shown it once.
+  const guideSeen = (await cookies()).has(GUIDE_COOKIE);
+
   return (
-    <AdminShell
-      user={{
-        name: session.user?.name ?? session.user?.email ?? "Admin",
-        email: session.user?.email,
-        roles: session.roles,
-      }}
-      signOutAction={signOutAction}
-      campaigns={campaigns}
-      canCreate={canManageCampaigns(session.roles)}
-    >
-      {children}
-    </AdminShell>
+    <GuideProvider roles={session.roles} startOpen={!guideSeen}>
+      <AdminShell
+        user={{
+          name: session.user?.name ?? session.user?.email ?? "Admin",
+          email: session.user?.email,
+          roles: session.roles,
+        }}
+        signOutAction={signOutAction}
+        campaigns={campaigns}
+        canCreate={canManageCampaigns(session.roles)}
+      >
+        {children}
+      </AdminShell>
+    </GuideProvider>
   );
 }
