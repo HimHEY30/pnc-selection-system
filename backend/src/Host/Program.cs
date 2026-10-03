@@ -1,6 +1,7 @@
 using Campaigns.Infrastructure;
 using Eligibility.Infrastructure;
 using Identity.Infrastructure;
+using Sessions.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddCampaignsInfrastructure();
 builder.Services.AddEligibilityInfrastructure();
+builder.Services.AddSessionsInfrastructure();
 
 builder.Services.AddCors(options =>
 {
@@ -37,9 +39,10 @@ var app = builder.Build();
 // Database:MigrateOnStartup=false when migrations are applied by the pipeline instead.
 if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
-    // Order matters: Eligibility's tables point at the campaigns table, so Campaigns goes first.
+    // Order matters: Eligibility's and Sessions' tables point at the campaigns table, so Campaigns goes first.
     await CampaignsDatabaseInitializer.InitializeAsync(app.Services);
     await EligibilityDatabaseInitializer.InitializeAsync(app.Services);
+    await SessionsDatabaseInitializer.InitializeAsync(app.Services);
 }
 
 // Configure the HTTP request pipeline.
