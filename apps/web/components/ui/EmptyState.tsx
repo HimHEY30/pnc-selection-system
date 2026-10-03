@@ -7,6 +7,8 @@ type Props = {
   action?: ReactNode;
   /** Small text under the action. */
   hint?: string;
+  /** A shorter card, for an empty section inside a page rather than a whole empty page. */
+  compact?: boolean;
   className?: string;
 };
 
@@ -28,10 +30,10 @@ function Illustration() {
   );
 }
 
-export default function EmptyState({ title, description, action, hint, className }: Props) {
+export default function EmptyState({ title, description, action, hint, compact, className }: Props) {
   return (
     <section
-      className={`flex min-h-[540px] flex-col items-center justify-center rounded-2xl border border-line bg-surface px-6 py-12 text-center ${className ?? ""}`}
+      className={`flex flex-col items-center justify-center rounded-2xl border border-line bg-surface px-6 py-12 text-center ${compact ? "min-h-[340px]" : "min-h-[540px]"} ${className ?? ""}`}
     >
       <Illustration />
       <h2 className="text-xl font-bold text-ink">{title}</h2>

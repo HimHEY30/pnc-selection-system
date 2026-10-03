@@ -119,7 +119,9 @@ export default function RuleRow({
             value={rule.fieldKey}
             onChange={(fieldKey) => onChange({ fieldKey })}
             disabled={!canEdit}
-            invalid={Boolean(error("field"))}
+            // A problem with the rule as a whole (a duplicate, a contradiction) marks the first input,
+            // so there is somewhere for focus to land and for the message to be linked to.
+            invalid={Boolean(error("field") || error())}
             describedBy={describedBy}
             onBlur={onTouch}
           />
