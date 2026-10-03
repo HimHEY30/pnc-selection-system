@@ -91,7 +91,7 @@ public sealed class InformationSession
     public static Result<InformationSession> Create(
         Guid campaignId, SessionDetails details, string createdById, string createdByName, DateTimeOffset now)
     {
-        var cleaned = Check(details);
+        var cleaned = Validate(details);
         if (cleaned.IsFailure)
         {
             return Result.Failure<InformationSession>(cleaned.Error);
@@ -118,7 +118,7 @@ public sealed class InformationSession
             return Result.Failure(SessionErrors.NotPlanned);
         }
 
-        var cleaned = Check(details);
+        var cleaned = Validate(details);
         if (cleaned.IsFailure)
         {
             return Result.Failure(cleaned.Error);
@@ -238,8 +238,11 @@ public sealed class InformationSession
         UpdatedAt = now;
     }
 
-    /// <summary>Tidies the text and returns the details to store, or every problem found.</summary>
-    private static Result<SessionDetails> Check(SessionDetails d)
+    /// <summary>
+    /// Tidies the text and returns the details to store, or every problem found. Public so a service can check a
+    /// form (and merge its own findings) before it creates or changes anything.
+    /// </summary>
+    public static Result<SessionDetails> Validate(SessionDetails d)
     {
         var errors = new Dictionary<string, string[]>();
 

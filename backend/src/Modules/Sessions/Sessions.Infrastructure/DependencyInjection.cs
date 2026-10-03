@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Sessions.Application;
 using Sessions.Infrastructure.Persistence;
 using SharedKernel;
 
@@ -36,6 +37,8 @@ public static class DependencyInjection
         });
 
         services.TryAddSingleton<IClock, SystemClock>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<IHostService, HostService>();
 
         return services;
     }

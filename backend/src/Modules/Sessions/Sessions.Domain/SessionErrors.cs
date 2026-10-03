@@ -38,6 +38,15 @@ public static class SessionErrors
     public static Error HostBusy(string hostName) =>
         Error.Conflict("sessions.host_busy", $"{hostName} already runs another session at that time.");
 
+    /// <summary>What storage reports when two hosts of one type would share a name. The host service turns it into <see cref="HostNameTaken"/>.</summary>
+    public static readonly Error DuplicateHost =
+        Error.Conflict("sessions.duplicate_host", "A host with this name already exists.");
+
+    public static Error HostNameTaken(HostType type) =>
+        Invalid("name", type == HostType.Alumni
+            ? "An alumnus with this name is already in the list."
+            : "A partner with this name is already in the list.");
+
     public static readonly Error HostInactive =
         Error.Conflict("sessions.host_inactive", "This host is switched off. Switch it on or choose another host.");
 
