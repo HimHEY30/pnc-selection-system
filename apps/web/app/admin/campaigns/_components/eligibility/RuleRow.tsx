@@ -113,7 +113,7 @@ export default function RuleRow({
           </button>
         )}
 
-        <div className={`grid min-w-0 flex-1 basis-[28rem] grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.4fr)] ${rule.isActive ? "" : "opacity-60"}`}>
+        <div className={`grid min-w-0 flex-1 basis-[28rem] grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1.7fr)_minmax(0,0.8fr)_minmax(0,1.4fr)] ${rule.isActive ? "" : "opacity-60"}`}>
           <FieldSelect
             catalogue={ctx.catalogue}
             value={rule.fieldKey}
