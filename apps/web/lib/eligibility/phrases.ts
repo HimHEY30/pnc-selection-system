@@ -31,11 +31,22 @@ export function displayValue(field: CatalogueField, raw: string, ctx: PhraseCont
   }
 }
 
+/**
+ * A list of choices in the order a person expects: grades in the order of the grade list, provinces
+ * A to Z. The stored order is only for comparing rules (it is sorted by key), so it is not shown.
+ */
+function inReadingOrder(field: CatalogueField, values: string[], ctx: PhraseContext): string[] {
+  const order = field.optionsSource === "CampaignProvinces" ? ctx.provinces.map((p) => p.id) : field.options.map((o) => o.key);
+  const place = (v: string) => (order.includes(v) ? order.indexOf(v) : order.length);
+  return [...values].sort((a, b) => place(a) - place(b));
+}
+
 /** The values to put in a sentence. Missing ones show as "…" so the summary works while typing. */
 function valuesFor(rule: Rule, field: CatalogueField, ctx: PhraseContext): string[] {
   const arity = field.operators.find((o) => o.key === rule.operatorKey)?.arity;
   const wanted = arity === "Two" ? 2 : arity === "One" ? 1 : 0;
-  const shown = rule.values.map((v) => displayValue(field, v, ctx));
+  const values = arity === "List" && field.valueType === "Choice" ? inReadingOrder(field, rule.values, ctx) : rule.values;
+  const shown = values.map((v) => displayValue(field, v, ctx));
   while (shown.length < wanted) shown.push(t.eligibility.summary.missingValue);
   return shown;
 }

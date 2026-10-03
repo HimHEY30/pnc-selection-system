@@ -78,6 +78,35 @@ describe("defaultMessage", () => {
   });
 });
 
+describe("lists of choices read in a natural order", () => {
+  it("puts grades in the order of the grade list, whatever order they were stored in", () => {
+    const r = rule("highest_grade", "is_one_of", ["diploma_or_higher", "grade_12"]); // stored sorted by key
+
+    expect(describeRule(r, ctx)).toBe("highest grade completed is one of Grade 12, Diploma or higher");
+    expect(defaultMessage(r, ctx)).toBe("Highest grade completed must be one of: Grade 12, Diploma or higher.");
+  });
+
+  it("puts provinces in the campaign's A to Z order", () => {
+    const r = rule("province", "is_one_of", ["17", "2"]); // "17" sorts before "2" as text
+
+    expect(describeRule(r, ctx)).toBe("province is one of Battambang, Siem Reap");
+  });
+
+  it("puts values it does not know last, rather than dropping them", () => {
+    const r = rule("province", "is_one_of", ["99", "17"]);
+
+    expect(describeRule(r, ctx)).toBe("province is one of Siem Reap, 99");
+  });
+
+  it("does not change the stored values", () => {
+    const r = rule("highest_grade", "is_none_of", ["grade_9", "grade_10"]);
+
+    describeRule(r, ctx);
+
+    expect(r.values).toEqual(["grade_9", "grade_10"]);
+  });
+});
+
 describe("summarize", () => {
   it("says nothing is set when there are no rules", () => {
     expect(summarize([], ctx)).toEqual({ isEmpty: true, eligibleSentence: null, optionalSentence: null });
