@@ -200,4 +200,95 @@ public sealed class CampaignTests
         Assert.True(complete.IsFailure);
         Assert.Equal(StepStatus.InProgress, campaign.GetStep(SetupStepKey.CampaignInfo).Status);
     }
+
+    // ---------- Copy settings from another campaign ----------
+
+    /// <summary>A finished-looking campaign to copy from: dates, numbers, provinces and a description.</summary>
+    private static Campaign SourceCampaign()
+    {
+        var source = Campaign.Create("Selection 2026", "2026–2027", "Last year's description", "user-2", "Dara Manager", Now);
+        source.CompleteInfo(FullInfo("Selection 2026", 2, 17), Now);
+        return source;
+    }
+
+    private static Campaign BlankCampaign(string? description = null) =>
+        Campaign.Create("Selection 2027", "2027–2028", description, "user-1", "Sreyneang Chea", Later);
+
+    [Fact]
+    public void CopySettingsFrom_CopiesTheNumbersAndTheDescriptionWhenDetailsAreChosen()
+    {
+        var campaign = BlankCampaign();
+
+        var result = campaign.CopySettingsFrom(SourceCampaign(), details: true, provinces: false, Later);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("A description", campaign.Description);
+        Assert.Equal(1500, campaign.ExpectedCandidates);
+        Assert.Equal(150, campaign.SeatsAvailable);
+        Assert.Empty(campaign.Provinces);
+    }
+
+    [Fact]
+    public void CopySettingsFrom_KeepsTheDescriptionTheUserTypedForTheNewCampaign()
+    {
+        var campaign = BlankCampaign("Typed for the new cycle");
+
+        campaign.CopySettingsFrom(SourceCampaign(), details: true, provinces: false, Later);
+
+        Assert.Equal("Typed for the new cycle", campaign.Description);
+    }
+
+    [Fact]
+    public void CopySettingsFrom_CopiesTheProvincesWhenChosen_AndOnlyThen()
+    {
+        var withProvinces = BlankCampaign();
+        var without = BlankCampaign();
+
+        withProvinces.CopySettingsFrom(SourceCampaign(), details: false, provinces: true, Later);
+        without.CopySettingsFrom(SourceCampaign(), details: true, provinces: false, Later);
+
+        Assert.Equal(new short[] { 2, 17 }, withProvinces.Provinces.Select(p => p.ProvinceId).Order().ToArray());
+        Assert.Null(withProvinces.ExpectedCandidates);
+        Assert.Empty(without.Provinces);
+    }
+
+    [Fact]
+    public void CopySettingsFrom_NeverCopiesTheNameTheYearOrTheDates()
+    {
+        var campaign = BlankCampaign();
+
+        campaign.CopySettingsFrom(SourceCampaign(), details: true, provinces: true, Later);
+
+        Assert.Equal("Selection 2027", campaign.Name);
+        Assert.Equal("2027–2028", campaign.AcademicYear);
+        Assert.Null(campaign.StartDate);
+        Assert.Null(campaign.EndDate);
+    }
+
+    [Fact]
+    public void CopySettingsFrom_DoesNotCompleteStep1_AndLeavesTheSourceAlone()
+    {
+        var source = SourceCampaign();
+        var before = (source.Name, source.Description, source.ExpectedCandidates, source.StartDate, source.UpdatedAt, Provinces: source.Provinces.Count);
+        var campaign = BlankCampaign();
+
+        campaign.CopySettingsFrom(source, details: true, provinces: true, Later);
+
+        Assert.Equal(StepStatus.InProgress, campaign.GetStep(SetupStepKey.CampaignInfo).Status);
+        Assert.Equal(before, (source.Name, source.Description, source.ExpectedCandidates, source.StartDate, source.UpdatedAt, Provinces: source.Provinces.Count));
+        Assert.Equal(Later, campaign.UpdatedAt);
+    }
+
+    [Fact]
+    public void CopySettingsFrom_IsRejectedOnceTheCampaignIsNoLongerADraft()
+    {
+        var campaign = BlankCampaign();
+        typeof(Campaign).GetProperty(nameof(Campaign.Status))!.SetValue(campaign, CampaignStatus.Active);
+
+        var result = campaign.CopySettingsFrom(SourceCampaign(), details: true, provinces: true, Later);
+
+        Assert.Equal(CampaignErrors.NotEditable, result.Error);
+        Assert.Null(campaign.ExpectedCandidates);
+        Assert.Empty(campaign.Provinces);
+    }
 }

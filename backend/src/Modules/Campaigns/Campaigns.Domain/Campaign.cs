@@ -137,6 +137,39 @@ public sealed class Campaign : BaseEntity<Guid>
         return Result.Success();
     }
 
+    /// <summary>
+    /// Copies chosen settings of another campaign into this one, when it is created from a copy. The name,
+    /// academic year and dates are never copied (they belong to the new cycle), the source is not changed, and
+    /// Step 1 is not completed: the copy still has to be reviewed and saved on its own page.
+    /// </summary>
+    /// <param name="details">Copy the expected candidates and seats, and the description when this one has none.</param>
+    /// <param name="provinces">Copy the target provinces (added to any already chosen).</param>
+    public Result CopySettingsFrom(Campaign source, bool details, bool provinces, DateTimeOffset now)
+    {
+        if (!IsEditable)
+        {
+            return Result.Failure(CampaignErrors.NotEditable);
+        }
+
+        if (details)
+        {
+            Description ??= source.Description;
+            ExpectedCandidates = source.ExpectedCandidates;
+            SeatsAvailable = source.SeatsAvailable;
+        }
+
+        if (provinces)
+        {
+            foreach (var id in source.Provinces.Select(p => p.ProvinceId).Where(id => _provinces.All(p => p.ProvinceId != id)))
+            {
+                _provinces.Add(new CampaignProvince(Id, id));
+            }
+        }
+
+        UpdatedAt = now;
+        return Result.Success();
+    }
+
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
