@@ -30,6 +30,10 @@ public sealed class AuthorizationAndLockingTests
         client.CompleteAsync(id, Completable()),
         client.TestAsync(id, new TestRequest(Completable(), new())),
         client.GetAsync($"/api/campaigns/{id}/eligibility/suggested"),
+        client.GetSubjectsAsync(id),
+        client.AddSubjectAsync(id, "Physics"),
+        client.RenameSubjectAsync(id, "exam_0", "Physics"),
+        client.RemoveSubjectAsync(id, "exam_0"),
     ];
 
     // ---------- Not signed in, wrong role ----------
@@ -73,6 +77,19 @@ public sealed class AuthorizationAndLockingTests
     }
 
     [Fact]
+    public async Task AnOfficer_CanSeeTheExamSubjects_ButNotChangeThem()
+    {
+        var id = await NewCampaignAsync();
+        var officer = _fixture.CreateClient("Vanna Sok", Roles.SelectionOfficer);
+        var key = (await officer.LoadSubjectsAsync(id)).Subjects[0].Key;
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await officer.AddSubjectAsync(id, "Physics")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await officer.RenameSubjectAsync(id, key, "Physics")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await officer.RemoveSubjectAsync(id, key)).StatusCode);
+        Assert.Equal(["Math", "Logic", "English"], (await officer.LoadSubjectsAsync(id)).Subjects.Select(s => s.Name));
+    }
+
+    [Fact]
     public async Task AnOfficersRefusedSave_ChangesNothing()
     {
         var id = await NewCampaignAsync();
@@ -111,6 +128,8 @@ public sealed class AuthorizationAndLockingTests
             client.GetRulesAsync(id),
             client.TestAsync(id, new TestRequest(Completable(), new())),
             client.GetAsync($"/api/campaigns/{id}/eligibility/suggested"),
+            client.GetSubjectsAsync(id),
+            client.AddSubjectAsync(id, "Physics"),
         ]);
         var draft = await client.SaveDraftAsync(id, Completable());
         var complete = await client.CompleteAsync(id, Completable(await draft.ReadRuleSetAsync() is { } d ? d.Version : null));
@@ -199,6 +218,23 @@ public sealed class AuthorizationAndLockingTests
         Assert.Equal(HttpStatusCode.OK, test.StatusCode);
         Assert.True((await test.Content.ReadFromJsonAsync<TestResultDto>())!.Eligible);
         Assert.Equal(HttpStatusCode.OK, suggested.StatusCode);
+    }
+
+    [Fact]
+    public async Task OnceTheCampaignIsActive_TheExamSubjectsCannotBeChanged_ButCanBeSeen()
+    {
+        var manager = _fixture.CreateManagerClient();
+        var id = (await manager.CreateCampaignAsync()).Id;
+        var key = (await manager.LoadSubjectsAsync(id)).Subjects[0].Key;
+        await _fixture.ExecuteAsync("update campaigns.campaigns set status = 1 where id = @id", ("id", id)); // Active
+
+        var add = await manager.AddSubjectAsync(id, "Physics");
+        var rename = await manager.RenameSubjectAsync(id, key, "Mathematics");
+        var remove = await manager.RemoveSubjectAsync(id, key);
+
+        Assert.All([add, rename, remove], r => Assert.Equal(HttpStatusCode.Conflict, r.StatusCode));
+        Assert.Equal("campaign.not_editable", (await add.ReadProblemAsync()).Code);
+        Assert.Equal(["Math", "Logic", "English"], (await manager.LoadSubjectsAsync(id)).Subjects.Select(s => s.Name));
     }
 
     [Fact]

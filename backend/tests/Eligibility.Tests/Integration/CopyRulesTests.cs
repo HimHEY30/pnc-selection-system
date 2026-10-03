@@ -136,6 +136,35 @@ public sealed class CopyRulesTests
     }
 
     [Fact]
+    public async Task Copy_BringsTheExamSubjects_AndPointsTheCopiedRulesAtTheNewOnes()
+    {
+        var source = (await _manager.CreateCampaignAsync()).Id;
+        var target = (await _manager.CreateCampaignAsync()).Id;
+        await _manager.AddSubjectAsync(source, "Physics");
+        var sourceSubjects = (await _manager.LoadSubjectsAsync(source)).Subjects;
+        var physics = sourceSubjects[^1].Key;
+        var math = sourceSubjects[0].Key;
+        await _manager.SaveDraftAsync(source, Request(ReferenceDate, null, Group(rules:
+        [
+            Rule(physics, "at_least", ["55"]),
+            Rule(math, "between", ["40", "90"]),
+            Rule("exam_average", "at_least", ["60"]),
+        ])));
+
+        var result = await CopyAsync(source, target);
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Message : "");
+        var targetSetup = await _manager.LoadSubjectsAsync(target);
+        Assert.Equal(["Math", "Logic", "English", "Physics"], targetSetup.Subjects.Select(s => s.Name));
+        Assert.Empty(targetSetup.Subjects.Select(s => s.Key).Intersect(sourceSubjects.Select(s => s.Key)));
+        var copied = (await _manager.LoadRulesAsync(target)).Groups[0].Rules;
+        Assert.Equal([targetSetup.Subjects[3].Key, targetSetup.Subjects[0].Key, "exam_average"], copied.Select(r => r.FieldKey));
+        Assert.Equal([1, 0, 0, 1], targetSetup.Subjects.Select(s => s.RuleCount)); // Math and Physics each have a rule
+        Assert.Equal(1, await _fixture.ScalarAsync<long>(
+            "select count(*) from eligibility.audit_log where campaign_id = @id and entity = 3 and changed_by_name = 'Copy Person'", ("id", target)));
+    }
+
+    [Fact]
     public async Task Copy_FromACampaignWithNoRules_SaysThereIsNothingToCopy()
     {
         var source = (await _manager.CreateCampaignAsync()).Id;

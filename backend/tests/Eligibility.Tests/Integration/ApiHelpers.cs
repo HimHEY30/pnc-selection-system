@@ -42,6 +42,27 @@ public static class ApiHelpers
     public static Task<HttpResponseMessage> TestAsync(this HttpClient client, Guid campaignId, TestRequest body) =>
         client.PostAsJsonAsync($"/api/campaigns/{campaignId}/eligibility/test", body);
 
+    public static Task<HttpResponseMessage> GetSubjectsAsync(this HttpClient client, Guid campaignId) =>
+        client.GetAsync($"/api/campaigns/{campaignId}/eligibility/exam-subjects");
+
+    public static Task<HttpResponseMessage> AddSubjectAsync(this HttpClient client, Guid campaignId, string? name) =>
+        client.PostAsJsonAsync($"/api/campaigns/{campaignId}/eligibility/exam-subjects", new SubjectRequest(name));
+
+    public static Task<HttpResponseMessage> RenameSubjectAsync(this HttpClient client, Guid campaignId, string key, string? name) =>
+        client.PutAsJsonAsync($"/api/campaigns/{campaignId}/eligibility/exam-subjects/{key}", new SubjectRequest(name));
+
+    public static Task<HttpResponseMessage> RemoveSubjectAsync(this HttpClient client, Guid campaignId, string key) =>
+        client.DeleteAsync($"/api/campaigns/{campaignId}/eligibility/exam-subjects/{key}");
+
+    public static async Task<ExamSetupDto> ReadSetupAsync(this HttpResponseMessage response)
+    {
+        Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
+        return (await response.Content.ReadFromJsonAsync<ExamSetupDto>())!;
+    }
+
+    public static async Task<ExamSetupDto> LoadSubjectsAsync(this HttpClient client, Guid campaignId) =>
+        await (await client.GetSubjectsAsync(campaignId)).ReadSetupAsync();
+
     public static async Task<RuleSetDto> ReadRuleSetAsync(this HttpResponseMessage response)
     {
         Assert.True(response.IsSuccessStatusCode, await response.Content.ReadAsStringAsync());
