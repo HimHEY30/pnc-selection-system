@@ -6,10 +6,10 @@ type Props = {
   label: string;
 };
 
-/** One segment per step: complete first (dark blue), then in progress (yellow), then empty. */
+/** One segment per step: complete first (dark blue), then in progress (orange), then empty. */
 export default function ProgressBar({ total, complete, inProgress, label }: Props) {
   const segments = Array.from({ length: total }, (_, i) =>
-    i < complete ? "bg-primary" : i < complete + inProgress ? "bg-brand-yellow" : "bg-line",
+    i < complete ? "bg-primary" : i < complete + inProgress ? "bg-brand-orange" : "bg-line",
   );
 
   return (

@@ -91,7 +91,9 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
                             aria-current={active ? "page" : undefined}
                             onClick={() => setDrawerOpen(false)}
                             className={`${base} transition focus-ring ${
-                              active ? "bg-primary-soft font-semibold text-primary" : "text-ink-muted hover:bg-canvas"
+                              active
+                                ? "bg-primary-soft font-semibold text-primary shadow-[inset_3px_0_0_var(--color-brand-blue)]"
+                                : "text-ink-muted hover:bg-canvas hover:text-ink"
                             }`}
                           >
                             {icon}
@@ -115,7 +117,7 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
               onClick={() => setDrawerOpen((o) => !o)}
               aria-label={t.nav.toggle}
               aria-expanded={drawerOpen}
-              className="rounded-lg p-2 text-ink-muted transition hover:bg-canvas focus-ring lg:hidden"
+              className="-ml-1 rounded-lg p-2.5 text-ink-muted transition hover:bg-canvas focus-ring lg:hidden"
             >
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <path d="M4 6h16M4 12h16M4 18h16" />

@@ -38,7 +38,7 @@ export default function ProfileMenu({ name, email, roles, signOutAction }: Props
         aria-expanded={open}
         className="flex items-center gap-3 rounded-lg p-1 pr-2 text-left transition hover:bg-canvas focus-ring"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-ink">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-orange text-sm font-bold text-ink">
           {initials || "?"}
         </span>
         <span className="hidden min-w-0 sm:block">

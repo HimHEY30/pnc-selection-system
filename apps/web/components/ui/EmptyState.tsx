@@ -21,7 +21,7 @@ function Illustration() {
         <div className="ml-4 mt-2.5 h-1.5 w-[88px] rounded-full bg-primary-line" />
         <div className="ml-4 mt-2 h-1.5 w-[88px] rounded-full bg-primary-line" />
       </div>
-      <span className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-yellow text-ink">
+      <span className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-orange text-ink">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M12 5v14M5 12h14" />
         </svg>

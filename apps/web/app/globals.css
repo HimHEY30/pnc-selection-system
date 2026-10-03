@@ -1,47 +1,47 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 /*
- * PNC brand tokens. Use these (bg-primary, text-ink, border-line, ...) instead of
- * raw hex values so the palette can change in one place.
+ * PNC design tokens. Use these (bg-primary, text-ink, border-line, rounded-lg, ...) instead of raw
+ * values, so a branding change is made here and nowhere else.
  *
- * Contrast rules: white text is only for the dark blue (primary) and red. The light
- * blue and the yellow are fills for dark text (ink) - never put white text on them.
+ * Brand: primary blue #009DE1, secondary orange #FF9933, font Open Sans.
+ *
+ * Contrast rules
+ *  - The exact brand blue (brand-blue) is for non-text accents: the focus ring, the active-nav marker,
+ *    borders, illustrations. White on it is only 3:1, too faint for small text.
+ *  - `primary` is the same blue, one step deeper, for anything that carries text: buttons (white text),
+ *    links and badges on primary-soft. It passes 4.5:1 both ways.
+ *  - The orange is a fill for dark text (ink), never a text colour and never behind white text.
+ *  - Blue marks primary actions and "you are here"; orange marks secondary highlights and "in progress".
  */
 @theme {
+  /* Typography: Open Sans is loaded in app/layout.tsx and exposed as --font-open-sans. */
+  --font-sans: var(--font-open-sans), "Open Sans", ui-sans-serif, system-ui, sans-serif;
+
   /* Brand colours */
-  --color-brand-blue: #7ac0da;
-  --color-brand-yellow: #f1cd55;
+  --color-brand-blue: #009de1;
+  --color-brand-orange: #ff9933;
   --color-brand-red: #e85353;
 
-  /* Primary action colour: dark blue with white text */
-  --color-primary: #25708d;
-  --color-primary-hover: #1e5c74;
+  /* Primary action colour: the brand blue, deepened for white text */
+  --color-primary: #006ca3;
+  --color-primary-hover: #005783;
 
-  /* Soft fills for dark text: active nav item, selected card, "Complete" badge */
-  --color-primary-soft: #e6f3f8;
-  --color-primary-line: #b9dcea;
-  --color-warning-soft: #fdf3cf;
+  /* Soft blue fills for dark or primary text: active nav item, selected card, "Complete" badge */
+  --color-primary-soft: #e5f5fc;
+  --color-primary-line: #b3def5;
+
+  /* Soft orange fill for dark text: "in progress", notices */
+  --color-warning-soft: #fff0de;
 
   /* Text, borders and surfaces */
-  --color-ink: #1f2d3a;
-  --color-ink-muted: #566675;
-  --color-line: #dfe5ea;
-  --color-line-strong: #c3ccd4;
+  --color-ink: #1b2733;
+  --color-ink-muted: #556372;
+  --color-line: #dde4ea;
+  --color-line-strong: #c2ccd5;
   --color-surface: #ffffff;
-  --color-canvas: #f5f7f9;
-  --color-neutral-soft: #edf1f4;
+  --color-canvas: #f4f7fa;
+  --color-neutral-soft: #ecf0f4;
 
   /* Errors: red as a border/dot, a darker red for text so it passes contrast on white */
   --color-danger: #e85353;
@@ -51,27 +51,31 @@
   /* A darker red for solid buttons: white text on the brand red alone is too faint for small text. */
   --color-danger-strong: #b42318;
   --color-danger-strong-hover: #912018;
+
+  /* Shape and depth: components use rounded-lg (controls), rounded-2xl (cards) and rounded-full (pills). */
+  --radius-lg: 0.5rem;
+  --radius-2xl: 1rem;
+  --shadow-card: 0 1px 2px rgb(27 39 51 / 0.06);
+  --shadow-overlay: 0 8px 24px rgb(27 39 51 / 0.14);
 }
 
 /* One visible focus style for every interactive element. */
 @utility focus-ring {
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-brand-blue);
     outline-offset: 2px;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* The application is light-only: every screen is built from the light tokens above. */
+:root {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
 
 @media (prefers-reduced-motion: reduce) {

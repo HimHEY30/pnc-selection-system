@@ -92,10 +92,10 @@ describe("ProgressBar", () => {
     render(<ProgressBar total={5} complete={2} inProgress={1} label="x" />);
 
     const segments = screen.getByRole("progressbar").children;
-    expect(Array.from(segments, (s) => s.className.match(/bg-(primary|brand-yellow|line)\b/)?.[0])).toEqual([
+    expect(Array.from(segments, (s) => s.className.match(/bg-(primary|brand-orange|line)\b/)?.[0])).toEqual([
       "bg-primary",
       "bg-primary",
-      "bg-brand-yellow",
+      "bg-brand-orange",
       "bg-line",
       "bg-line",
     ]);
