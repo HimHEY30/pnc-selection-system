@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { guideFor, seenCookie } from "@/lib/guide/guide";
+import { seenCookie, tourFor } from "@/lib/guide/guide";
 import GuideTour from "./GuideTour";
 
 type GuideContext = {
@@ -37,7 +37,7 @@ export function GuideProvider({ roles, startOpen, children }: { roles: readonly 
   return (
     <Context.Provider value={value}>
       {children}
-      <GuideTour key={openCount} open={isOpen} steps={guideFor(roles).steps} onClose={close} />
+      <GuideTour key={openCount} open={isOpen} steps={tourFor(roles)} onClose={close} />
     </Context.Provider>
   );
 }

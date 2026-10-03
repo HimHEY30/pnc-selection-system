@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import CampaignSwitcher from "@/app/admin/campaigns/_components/CampaignSwitcher";
 import { CreateCampaignProvider } from "@/app/admin/campaigns/_components/CreateCampaignProvider";
 import type { CampaignSummary } from "@/lib/campaigns/types";
+import { GUIDE_NAV_EVENT, type GuideNavDetail } from "@/lib/guide/guide";
 import { t } from "@/lib/messages";
 import { NAV_GROUPS } from "./nav";
 import ProfileMenu from "./ProfileMenu";
@@ -36,6 +37,13 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // The welcome tour asks for the drawer on a phone, when a step points at a sidebar link that is off the screen.
+  useEffect(() => {
+    const onGuideNav = (e: Event) => setDrawerOpen((e as CustomEvent<GuideNavDetail>).detail.open);
+    window.addEventListener(GUIDE_NAV_EVENT, onGuideNav);
+    return () => window.removeEventListener(GUIDE_NAV_EVENT, onGuideNav);
   }, []);
 
   return (
