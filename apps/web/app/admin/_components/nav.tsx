@@ -94,4 +94,19 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
       },
     ],
   },
+  {
+    title: t.guide.navGroup,
+    items: [
+      {
+        href: "/admin/guide",
+        label: t.guide.nav,
+        icon: (
+          <Icon>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 3.8M12 17h.01" />
+          </Icon>
+        ),
+      },
+    ],
+  },
 ];
