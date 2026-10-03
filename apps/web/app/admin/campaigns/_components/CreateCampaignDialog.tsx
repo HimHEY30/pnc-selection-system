@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import FormField from "@/components/ui/FormField";
 import { Select, TextInput, Textarea } from "@/components/ui/inputs";
 import { academicYearOptions, defaultAcademicYear } from "@/lib/campaigns/academic-years";
@@ -53,7 +54,8 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
   const partsRef = useRef<HTMLFieldSetElement>(null);
 
   const [name, setName] = useState("");
-  const [academicYear, setAcademicYear] = useState(() => defaultAcademicYear());
+  const [initialYear] = useState(() => defaultAcademicYear());
+  const [academicYear, setAcademicYear] = useState(initialYear);
   const [description, setDescription] = useState("");
   const [startMode, setStartMode] = useState<"scratch" | "copy">("scratch");
   const [sourceId, setSourceId] = useState("");
@@ -67,6 +69,15 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
   const latestSource = useRef("");
 
   const canCopy = copySources.length > 0;
+
+  // Something typed or chosen that closing would lose. Once the campaign exists there is nothing left to lose.
+  const dirty = !created && (name.trim() !== "" || description.trim() !== "" || academicYear !== initialYear || sourceId !== "");
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  // Every way of closing by hand (Escape, the X, the backdrop) comes through here; Cancel is an explicit "throw it away".
+  const requestClose = () => {
+    if (dirty) setConfirmingDiscard(true);
+    else dialogRef.current?.close();
+  };
 
   // The `open` prop is the source of truth; the DOM dialog follows it.
   useEffect(() => {
@@ -171,14 +182,23 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
     <dialog
       ref={dialogRef}
       aria-labelledby="create-campaign-title"
-      onClose={onClose}
-      // Esc must not discard a save that is in flight.
+      // React passes a dialog's close and cancel events up to the dialog around it, though the browser does not:
+      // without the target check, answering the discard question would close this dialog a second time.
+      onClose={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      // Esc must not discard a save that is in flight, and asks before it discards typing.
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (pending) event.preventDefault();
+        else if (dirty) {
+          event.preventDefault();
+          setConfirmingDiscard(true);
+        }
       }}
       // A click on the dialog element itself (not its content) is a click on the backdrop.
       onClick={(event) => {
-        if (event.target === dialogRef.current && !pending) dialogRef.current?.close();
+        if (event.target === dialogRef.current && !pending) requestClose();
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-[580px] rounded-2xl bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/60"
     >
@@ -193,7 +213,7 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
             </div>
             <button
               type="button"
-              onClick={() => dialogRef.current?.close()}
+              onClick={requestClose}
               aria-label={t.common.close}
               className="-mr-2 -mt-1 rounded-lg p-2 text-ink-muted transition hover:bg-canvas focus-ring"
             >
@@ -391,6 +411,19 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
           )}
         </div>
       </form>
+      <ConfirmDialog
+        open={open && confirmingDiscard}
+        title={t.common.discard.title}
+        description={t.common.discard.body}
+        confirmLabel={t.common.discard.confirm}
+        cancelLabel={t.common.discard.keep}
+        destructive
+        onConfirm={() => {
+          setConfirmingDiscard(false);
+          dialogRef.current?.close();
+        }}
+        onCancel={() => setConfirmingDiscard(false)}
+      />
     </dialog>
   );
 }

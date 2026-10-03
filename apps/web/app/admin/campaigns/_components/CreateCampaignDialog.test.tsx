@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -169,6 +169,69 @@ describe("CreateCampaignDialog", () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  describe("with something typed", () => {
+    const asking = () => screen.queryByRole("dialog", { name: "Discard your changes?" });
+
+    it("asks before the X button throws it away, and Keep editing keeps what was typed", async () => {
+      const { user, onClose } = renderDialog();
+      await user.type(screen.getByLabelText("Campaign name"), "Selection 2027");
+
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(asking()).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button", { name: "Keep editing" }));
+      expect(asking()).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Campaign name")).toHaveValue("Selection 2027");
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("closes once, on Discard", async () => {
+      const { user, onClose } = renderDialog();
+      await user.type(screen.getByLabelText("Campaign name"), "Selection 2027");
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      await user.click(screen.getByRole("button", { name: "Discard" }));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks on the backdrop and on Escape, and holds Escape back", async () => {
+      const { user } = renderDialog();
+      await user.type(screen.getByLabelText("Campaign name"), "Selection 2027");
+
+      const escape = new Event("cancel", { cancelable: true });
+      await act(async () => {
+        document.querySelector("dialog")!.dispatchEvent(escape);
+      });
+
+      expect(escape.defaultPrevented).toBe(true);
+      expect(asking()).toBeInTheDocument();
+    });
+
+    it("treats a chosen source campaign as something to lose too", async () => {
+      const { user, onClose } = renderDialog([SOURCE]);
+      previewAction.mockResolvedValue({ ok: true, data: PREVIEW });
+      await user.click(screen.getByRole("radio", { name: /Copy settings from an existing campaign/ }));
+      await user.selectOptions(screen.getByLabelText("Copy from"), SOURCE.id);
+
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(asking()).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("leaves Cancel as an explicit way out that does not ask", async () => {
+      const { user, onClose } = renderDialog();
+      await user.type(screen.getByLabelText("Campaign name"), "Selection 2027");
+
+      await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(asking()).not.toBeInTheDocument();
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });
 
