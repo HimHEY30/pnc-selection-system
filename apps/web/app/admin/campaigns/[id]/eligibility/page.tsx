@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { loadCampaign } from "@/lib/campaigns/api";
-import { loadCatalogue, loadEligibility } from "@/lib/eligibility/api";
+import { loadEligibility, loadExamSetup } from "@/lib/eligibility/api";
 import { t } from "@/lib/messages";
 import { canManageCampaigns } from "@/lib/permissions";
 import EligibilityBuilder from "../../_components/eligibility/EligibilityBuilder";
@@ -12,13 +12,15 @@ export const metadata: Metadata = { title: "Step 2: Eligibility rules" };
 
 export default async function EligibilityPage({ params }: PageProps<"/admin/campaigns/[id]/eligibility">) {
   const { id } = await params;
-  const [session, campaign, rules, catalogue] = await Promise.all([
+  // The exam setup is the campaign's own catalogue: the shared fields plus its exam subjects. Reading it
+  // is also what gives a new draft campaign Math, Logic and English, so it runs with the rules, not after.
+  const [session, campaign, rules, examSetup] = await Promise.all([
     auth(),
     loadCampaign(id),
     loadEligibility(id),
-    loadCatalogue(),
+    loadExamSetup(id),
   ]);
-  if (!campaign || !rules) notFound();
+  if (!campaign || !rules || !examSetup) notFound();
 
   // Admin and manager may edit, and only while the campaign is a draft. Everyone else
   // who can open the admin area sees the same page, read only.
@@ -35,7 +37,7 @@ export default async function EligibilityPage({ params }: PageProps<"/admin/camp
       </div>
 
       {/* Keyed by id so moving between campaigns never carries one page's working copy into another. */}
-      <EligibilityBuilder key={campaign.id} campaignId={campaign.id} initial={rules} catalogue={catalogue} steps={campaign.steps} canEdit={canEdit} />
+      <EligibilityBuilder key={campaign.id} campaignId={campaign.id} initial={rules} examSetup={examSetup} steps={campaign.steps} canEdit={canEdit} />
     </div>
   );
 }

@@ -1,16 +1,9 @@
 import "server-only";
 import { apiRequest, ApiError } from "@/lib/api/client";
-import type { Catalogue, ExamSetup, RuleSetData } from "./types";
+import type { ExamSetup, RuleSetData } from "./types";
 
 // Read-side calls used by server components. Writes and the test panel go through the server
 // actions (app/admin/campaigns/eligibility-actions.ts), which report field errors back.
-
-/** The fields a rule can check, with the operators and options each allows. */
-export async function loadCatalogue(): Promise<Catalogue> {
-  const result = await apiRequest<Catalogue>("/api/eligibility/catalogue");
-  if (!result.ok) throw new ApiError(result.problem);
-  return result.data;
-}
 
 /**
  * A campaign's exam subjects and the fields its rules can check (the shared fields, the subjects, and the

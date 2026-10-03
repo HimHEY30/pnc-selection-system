@@ -132,7 +132,6 @@ export default function SubjectsPanel({ subjects, maxSubjects, usage, canEdit, o
         <p className="text-sm text-ink-muted">{text.count(subjects.length, maxSubjects)}</p>
       </div>
       <p className="mt-1 text-sm text-ink-muted">{text.intro}</p>
-      {!canEdit && <p className="mt-3 rounded-lg bg-warning-soft px-4 py-2.5 text-sm text-ink">{text.readOnly}</p>}
 
       {subjects.length === 0 ? (
         <p className="mt-4 text-sm text-ink-muted">{text.empty}</p>

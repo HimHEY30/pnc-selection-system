@@ -96,7 +96,6 @@ describe("SubjectsPanel: reading the list", () => {
   it("is read only for someone who cannot edit: the list and what uses it, but no way to change it", () => {
     render(<Harness canEdit={false} usage={{ [MATH]: 1 }} />);
 
-    expect(screen.getByText(/only a selection manager or a system admin can change them/)).toBeInTheDocument();
     expect(rows()).toHaveLength(3);
     expect(screen.getByText("Used by 1 rule")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Rename|Remove|Add subject/ })).not.toBeInTheDocument();
@@ -276,7 +275,7 @@ describe("SubjectsPanel: renaming", () => {
   it("explains that messages already written keep the old name", () => {
     render(<Harness />);
 
-    expect(screen.getByText(/A failure message already written for a rule keeps the old name/)).toBeInTheDocument();
+    expect(screen.getByText(/A message you wrote yourself keeps the old name/)).toBeInTheDocument();
   });
 });
 

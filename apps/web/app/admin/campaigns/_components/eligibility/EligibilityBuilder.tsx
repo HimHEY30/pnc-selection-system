@@ -22,20 +22,29 @@ import {
   type DraftRule,
 } from "@/lib/eligibility/draft";
 import { describeRule } from "@/lib/eligibility/phrases";
-import type { Catalogue, RuleSetData } from "@/lib/eligibility/types";
+import type { ExamSetup, RuleSetData } from "@/lib/eligibility/types";
 import { validateRuleSet, type ErrorMap, type SaveMode } from "@/lib/eligibility/validation";
 import { useUnsavedChangesGuard } from "@/lib/hooks/useUnsavedChangesGuard";
 import { t } from "@/lib/messages";
-import { loadSuggestedRulesAction, saveEligibilityAction, testEligibilityAction } from "../../eligibility-actions";
+import {
+  addSubjectAction,
+  loadSuggestedRulesAction,
+  removeSubjectAction,
+  renameSubjectAction,
+  saveEligibilityAction,
+  testEligibilityAction,
+} from "../../eligibility-actions";
 import StepTabs from "../StepTabs";
 import RuleGroupCard from "./RuleGroupCard";
+import SubjectsPanel from "./SubjectsPanel";
 import SummaryPanel from "./SummaryPanel";
 import TestPanel from "./TestPanel";
 
 type Props = {
   campaignId: string;
   initial: RuleSetData;
-  catalogue: Catalogue;
+  /** The campaign's exam subjects and the fields its rules can check. */
+  examSetup: ExamSetup;
   steps: CampaignStep[];
   /** Admin or manager, and the campaign is still a draft. */
   canEdit: boolean;
@@ -44,6 +53,10 @@ type Props = {
 const ui = t.eligibility.ui;
 const RULE_KEY = /^rules\.([0-9a-f-]{36})/i;
 
+/** How many of these rules check the field with this key. */
+const countUses = (groups: { rules: { fieldKey: string }[] }[], fieldKey: string): number =>
+  groups.reduce((n, g) => n + g.rules.filter((r) => r.fieldKey === fieldKey).length, 0);
+
 /**
  * Step 2 of campaign setup: build the eligibility rules.
  *
@@ -51,10 +64,15 @@ const RULE_KEY = /^rules\.([0-9a-f-]{36})/i;
  * "Save draft" or "Save and continue" (and leaving with unsaved work asks first). The same
  * checks run here, for inline messages, and on the server, which also finds contradictions.
  */
-export default function EligibilityBuilder({ campaignId, initial, catalogue, steps: initialSteps, canEdit }: Props) {
+export default function EligibilityBuilder({ campaignId, initial, examSetup, steps: initialSteps, canEdit }: Props) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [pending, startTransition] = useTransition();
+
+  // The subjects can change while the page is open (they are saved at once), and so does the catalogue
+  // that follows from them: a subject added here is a field the rules can use straight away.
+  const [setup, setSetup] = useState(examSetup);
+  const catalogue = setup.catalogue;
 
   const provinces = initial.targetProvinces;
   const ctx = useMemo(() => ({ catalogue, provinces }), [catalogue, provinces]);
@@ -134,6 +152,8 @@ export default function EligibilityBuilder({ campaignId, initial, catalogue, ste
 
       if (result.ok) {
         rawDispatch({ type: "saved", data: result.data });
+        // Which subjects the saved rules use has changed, and that decides which can be removed.
+        setSetup((s) => ({ ...s, subjects: s.subjects.map((sub) => ({ ...sub, ruleCount: countUses(result.data.groups, sub.key) })) }));
         setSavedAt(result.data.updatedAt);
         setSteps((all) => all.map((s) => (s.step === "EligibilityRules" ? { ...s, status: result.data.stepStatus } : s)));
         if (mode === "complete") router.push(`/admin/campaigns/${campaignId}`);
@@ -166,6 +186,22 @@ export default function EligibilityBuilder({ campaignId, initial, catalogue, ste
     else setBanner(result.message || ui.builder.suggestedFailed);
   }
 
+  // ---------- Exam subjects ----------
+
+  // A subject cannot be removed while a rule uses it. The server only knows the saved rules, but the
+  // rules on screen count too: removing a subject a rule on screen uses would leave that rule with no field.
+  const subjectUse = useMemo(
+    () => Object.fromEntries(setup.subjects.map((s) => [s.key, Math.max(s.ruleCount, countUses(state.groups, s.key))])),
+    [setup.subjects, state.groups],
+  );
+
+  // The server saved a change and sent back the list and catalogue. A rename changes the wording of
+  // the failure messages that were filled in for the user, so those are rewritten too.
+  const subjectsChanged = useCallback((next: ExamSetup) => {
+    setSetup(next);
+    rawDispatch({ type: "refreshMessages", catalogue: next.catalogue });
+  }, []);
+
   // ---------- Pieces of the page ----------
 
   const usesAge = allRules(state).some((r) => catalogue.fields.find((f) => f.key === r.fieldKey)?.derivation === "AgeFromBirthDate");
@@ -191,6 +227,17 @@ export default function EligibilityBuilder({ campaignId, initial, catalogue, ste
               {message}
             </p>
           ))}
+
+          <SubjectsPanel
+            subjects={setup.subjects}
+            maxSubjects={setup.maxSubjects}
+            usage={subjectUse}
+            canEdit={canEdit}
+            onAdd={(name) => addSubjectAction(campaignId, name)}
+            onRename={(key, name) => renameSubjectAction(campaignId, key, name)}
+            onRemove={(key) => removeSubjectAction(campaignId, key)}
+            onChanged={subjectsChanged}
+          />
 
           {state.groups.length === 0 ? (
             <EmptyState

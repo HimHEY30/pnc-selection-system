@@ -390,9 +390,8 @@ export const en = {
         inUse: "Rules use this subject. Delete those rules and save them first.",
         totalsHint: "The total and average scores become available once there are two or more subjects.",
         renameNote:
-          "Renaming a subject changes its name in the rule builder and the summary. A failure message already written for a rule keeps the old name.",
+          "Renaming a subject changes its name in the rule builder, the summary, and any failure message that was filled in for you (save the rules to keep that). A message you wrote yourself keeps the old name.",
         full: (max: number) => `A campaign can have at most ${max} subjects.`,
-        readOnly: "You can view the subjects but only a selection manager or a system admin can change them.",
         failed: "We could not save this change. Try again.",
       },
 

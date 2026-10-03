@@ -2,7 +2,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Group, RuleSetData } from "@/lib/eligibility/types";
+import type { ExamSetup, Group, RuleSetData } from "@/lib/eligibility/types";
 import { CATALOGUE, group, PROVINCES, rule } from "@/test-utils/eligibility-fixtures";
 import { makeSteps } from "@/test-utils/fixtures";
 
@@ -12,7 +12,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const saveAction = vi.fn();
 const testAction = vi.fn();
 const suggestedAction = vi.fn();
+const addSubject = vi.fn();
+const renameSubject = vi.fn();
+const removeSubject = vi.fn();
 vi.mock("../../eligibility-actions", () => ({
+  addSubjectAction: (...args: unknown[]) => addSubject(...args),
+  renameSubjectAction: (...args: unknown[]) => renameSubject(...args),
+  removeSubjectAction: (...args: unknown[]) => removeSubject(...args),
   saveEligibilityAction: (...args: unknown[]) => saveAction(...args),
   testEligibilityAction: (...args: unknown[]) => testAction(...args),
   loadSuggestedRulesAction: (...args: unknown[]) => suggestedAction(...args),
@@ -38,12 +44,15 @@ const data = (groups: Group[] = [], overrides: Partial<RuleSetData> = {}): RuleS
   ...overrides,
 });
 
-function setup(initial: RuleSetData = data(), canEdit = true) {
+/** A campaign with no exam subjects: the shared fields only, as before subjects existed. */
+const NO_SUBJECTS: ExamSetup = { subjects: [], maxSubjects: 12, catalogue: CATALOGUE };
+
+function setup(initial: RuleSetData = data(), canEdit = true, examSetup: ExamSetup = NO_SUBJECTS) {
   const user = userEvent.setup();
   const view = render(
     <>
       <a href="/admin/campaigns/other">Elsewhere</a>
-      <EligibilityBuilder campaignId={ID} initial={initial} catalogue={CATALOGUE} steps={makeSteps()} canEdit={canEdit} />
+      <EligibilityBuilder campaignId={ID} initial={initial} examSetup={examSetup} steps={makeSteps()} canEdit={canEdit} />
     </>,
   );
   return { user, ...view };
@@ -59,6 +68,9 @@ beforeEach(() => {
   saveAction.mockReset();
   testAction.mockReset();
   suggestedAction.mockReset();
+  addSubject.mockReset();
+  renameSubject.mockReset();
+  removeSubject.mockReset();
 });
 
 const rowOf = (name: string | RegExp) => screen.getByRole("group", { name });
