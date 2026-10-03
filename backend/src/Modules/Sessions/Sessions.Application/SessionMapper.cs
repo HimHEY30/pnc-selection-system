@@ -17,7 +17,7 @@ internal static class SessionMapper
 
     /// <param name="province">The session's province with its name, when it has one.</param>
     /// <param name="host">The directory record, for an alumnus or a partner host.</param>
-    public static SessionDto ToDto(InformationSession s, ProvinceDto? province, SessionHost? host)
+    public static SessionDto ToDto(InformationSession s, SessionProvinceDto? province, SessionHost? host)
     {
         var sessionHost = s.HostType == HostType.Officer
             ? new SessionHostDto(nameof(HostType.Officer), s.HostUserName ?? string.Empty, s.HostUserId, null, null, null, null, true)

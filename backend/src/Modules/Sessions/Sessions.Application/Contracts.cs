@@ -53,7 +53,7 @@ public sealed record AttendanceRequest(int? Female, int? Male);
 
 public sealed record PersonDto(string Id, string Name);
 
-public sealed record ProvinceDto(short Id, string Name);
+public sealed record SessionProvinceDto(short Id, string Name);
 
 /// <summary>Who runs a session. An officer has a user id; an alumnus or a partner has a directory id and the host's details.</summary>
 public sealed record SessionHostDto(
@@ -83,7 +83,7 @@ public sealed record SessionDto(
     string Format,
     string? Venue,
     string? MeetingLink,
-    ProvinceDto? Province,
+    SessionProvinceDto? Province,
     string? Notes,
     PersonDto Assignee,
     SessionHostDto Host,
@@ -111,7 +111,7 @@ public sealed record SessionListDto(
     string CampaignName,
     string CampaignStatus,
     bool IsEditable,
-    IReadOnlyList<ProvinceDto> TargetProvinces,
+    IReadOnlyList<SessionProvinceDto> TargetProvinces,
     IReadOnlyList<SessionDto> Sessions,
     SessionSummaryDto Summary);
 

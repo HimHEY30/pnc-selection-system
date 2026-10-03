@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.TryAddSingleton<IClock, SystemClock>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IHostService, HostService>();
+        services.AddScoped<ISessionService, SessionService>();
 
         return services;
     }
