@@ -475,6 +475,7 @@ export const en = {
       format: { InPerson: "In person", Online: "Online", Hybrid: "Hybrid" },
       hostType: { Officer: "Officer", Alumni: "Alumnus", Partner: "Partner" },
       partnerKind: { Ngo: "NGO", HighSchool: "High school", University: "University", Other: "Other" },
+      role: { "system-admin": "Admin", "selection-manager": "Manager", "selection-officer": "Officer" },
     },
 
     summary: {
