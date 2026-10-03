@@ -47,6 +47,10 @@
   --color-danger: #e85353;
   --color-danger-text: #b42318;
   --color-danger-soft: #fdecec;
+
+  /* A darker red for solid buttons: white text on the brand red alone is too faint for small text. */
+  --color-danger-strong: #b42318;
+  --color-danger-strong-hover: #912018;
 }
 
 /* One visible focus style for every interactive element. */

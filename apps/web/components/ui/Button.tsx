@@ -1,16 +1,18 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
-export type ButtonVariant = "primary" | "secondary";
+export type ButtonVariant = "primary" | "secondary" | "danger";
 export type ButtonSize = "md" | "lg";
 
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition focus-ring disabled:cursor-not-allowed";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  // White text is only ever used on the dark blue.
+  // White text is only used on the dark blue and the dark red, never on the light blue or yellow.
   primary: "bg-primary text-white hover:bg-primary-hover disabled:bg-neutral-soft disabled:text-ink-muted",
   secondary:
     "border border-line-strong bg-surface text-ink hover:bg-canvas disabled:bg-neutral-soft disabled:text-ink-muted",
+  danger:
+    "bg-danger-strong text-white hover:bg-danger-strong-hover disabled:bg-neutral-soft disabled:text-ink-muted",
 };
 
 const SIZES: Record<ButtonSize, string> = {
@@ -23,7 +25,8 @@ export function buttonClasses(variant: ButtonVariant = "secondary", size: Button
   return `${BASE} ${VARIANTS[variant]} ${SIZES[size]}`;
 }
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
+// ComponentProps includes ref, which React 19 accepts as an ordinary prop.
+type Props = ComponentProps<"button"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 };
