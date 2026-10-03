@@ -36,17 +36,22 @@ describe("SetupStepList", () => {
     expect(within(first()).getByRole("link", { name: "Review" })).toBeInTheDocument();
   });
 
-  it("shows the steps that have no page yet as disabled buttons, not as links to pages that do not exist", () => {
+  it("shows the step that has no page yet as a disabled button, not as a link to a page that does not exist", () => {
     render(<SetupStepList campaignId={ID} steps={makeSteps()} canEdit />);
 
     const disabled = screen.getAllByRole("button");
-    expect(disabled).toHaveLength(2); // steps 4 and 5
-    for (const button of disabled) {
-      expect(button).toBeDisabled();
-      expect(button).toHaveTextContent("Start");
-      expect(button).toHaveTextContent("Coming soon");
-    }
-    expect(screen.getAllByRole("link")).toHaveLength(3); // steps 1, 2 and 3
+    expect(disabled).toHaveLength(1); // step 5
+    expect(disabled[0]).toBeDisabled();
+    expect(disabled[0]).toHaveTextContent("Start");
+    expect(disabled[0]).toHaveTextContent("Coming soon");
+    expect(screen.getAllByRole("link")).toHaveLength(4); // steps 1 to 4
+  });
+
+  it("links Step 4 to the candidates page", () => {
+    render(<SetupStepList campaignId={ID} steps={makeSteps("Complete")} canEdit />);
+
+    const step4 = screen.getAllByRole("listitem")[3];
+    expect(within(step4).getByRole("link", { name: "Start" })).toHaveAttribute("href", `/admin/campaigns/${ID}/candidates`);
   });
 
   it("links Step 2 to the eligibility rules page", () => {
