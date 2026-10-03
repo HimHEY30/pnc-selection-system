@@ -9,6 +9,8 @@ type Props = {
   session: InformationSession;
   /** Shown above the title when sessions of several campaigns are listed together. */
   campaign?: { id: string; name: string };
+  /** One of several cards side by side: the details stack in one column instead of three. */
+  compact?: boolean;
   /** Edit and cancel are for someone who may manage, on a planned session of a campaign that is not closed. */
   canChange: boolean;
   /** Entering the numbers is open to officers too, on any session that is not cancelled. */
@@ -51,7 +53,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** One information session: when, where, who is responsible and who runs it, the numbers, and what can be done. */
-export default function SessionCard({ session, campaign, canChange, canEnterNumbers, onEdit, onCancel, onNumbers }: Props) {
+export default function SessionCard({ session, campaign, compact, canChange, canEnterNumbers, onEdit, onCancel, onNumbers }: Props) {
   const cancelled = session.status === "Cancelled";
   const titleId = `session-${session.id}`;
   const host = session.host;
@@ -83,7 +85,7 @@ export default function SessionCard({ session, campaign, canChange, canEnterNumb
         <p className="mt-3 rounded-lg bg-neutral-soft px-3 py-2 text-sm text-ink">{text.cancelReason(session.cancelReason)}</p>
       )}
 
-      <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className={`mt-4 grid gap-x-6 gap-y-3 ${compact ? "" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {session.venue && <Detail label={text.venue}>{session.venue}</Detail>}
         {session.meetingLink && (
           <Detail label={text.link}>
@@ -134,7 +136,7 @@ export default function SessionCard({ session, campaign, canChange, canEnterNumb
           )}
         </Detail>
         {session.notes && (
-          <div className="min-w-0 sm:col-span-2 lg:col-span-3">
+          <div className={`min-w-0 ${compact ? "" : "sm:col-span-2 lg:col-span-3"}`}>
             <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{text.notes}</dt>
             <dd className="mt-0.5 whitespace-pre-line break-words text-[15px] text-ink">{session.notes}</dd>
           </div>

@@ -499,6 +499,35 @@ export const en = {
       showing: (shown: number, total: number) => `Showing ${shown} of ${total}`,
     },
 
+    upcoming: {
+      title: "Coming up",
+      none: "No planned sessions from today on.",
+      more: (count: number) => `${count} more in the table below`,
+    },
+
+    table: {
+      title: "All sessions",
+      search: "Search",
+      searchPlaceholder: "Title, venue or person",
+      date: "Date",
+      session: "Session",
+      runBy: "Run by",
+      responsible: "Responsible",
+      status: "Status",
+      expected: "Expected",
+      attended: "Attended",
+      actions: "Actions",
+      sortedAsc: "Sorted by date, earliest first. Press to show the latest first.",
+      sortedDesc: "Sorted by date, latest first. Press to show the earliest first.",
+      pageLabel: "Pages",
+      previous: "Previous",
+      next: "Next",
+      pageOf: (page: number, count: number) => `Page ${page} of ${count}`,
+      rows: (from: number, to: number, total: number) => `${from}–${to} of ${total}`,
+      notSet: "–",
+      rowAction: (action: string, title: string) => `${action}: ${title}`,
+    },
+
     add: "Add session",
     empty: {
       title: "No information sessions yet",
