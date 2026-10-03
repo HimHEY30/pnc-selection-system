@@ -112,6 +112,16 @@ PostgreSQL, and the HTTP API end to end: the lifecycle, the audit lines, Step 3'
 two people saving at once, and every role. The web tests cover the form logic, each dialog, the list with its filters and
 what each role is offered, My sessions, the host directory, and the server actions' role checks.
 
+## Sessions that are not scheduled yet (added with "create a campaign by copying")
+
+A session now has a fourth status, **Unscheduled**: a copy from another campaign that has a title, format, venue or link,
+province and notes, but no date, times, person responsible or host. It is made only by copying. `Schedule` (the Edit
+form, relabelled) gives all four at once and makes it Planned, running the same checks and clash test as a new session.
+It can also be cancelled. It has no attendance (the date comes first), is not in Coming up or My sessions, and Step 3 is
+Complete only once a session is Planned or Done. In the database the date, times, person and host are all there or all
+empty (`ck_sessions_scheduled`), and a Planned or Done session always has them. The migration's `Down` refuses to run
+while any session has no date.
+
 ## What was actually verified
 
 - Both test suites pass (numbers above), `tsc` and lint are clean. Weakening the attendance date check was caught by four
@@ -143,7 +153,8 @@ what each role is offered, My sessions, the host directory, and the server actio
 - **No history screen** for sessions or hosts: every change is in the audit log, but nothing shows it.
 - **A clash is checked by the service, not the database.** Two managers saving overlapping sessions for the same host at
   the very same moment could both succeed; an exclusion constraint would need a PostgreSQL extension.
-- **Sessions are not copied** when a campaign copies its settings from another, and the directory is shared by all campaigns.
+- The host directory is shared by all campaigns. Sessions are copied into a new campaign without a date, host or person
+  responsible (see `features/campaign-clone`), so they have to be scheduled one by one; there is no "schedule many at once".
 - The staff list is cached for a minute, so a person added in Keycloak shows up within a minute.
 - Two people editing the same session at once: the second is told to reload (the server holds a version), but the form does
   not offer to merge.
