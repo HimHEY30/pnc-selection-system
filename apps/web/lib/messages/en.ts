@@ -41,7 +41,7 @@ export const en = {
   },
 
   // The first-login tour and the Guide page share these steps: the tour shows one at a time, the page shows all.
-  // Only describe what the app does today; Candidates and Entrance exam are not open yet.
+  // Only describe what the app does today; the Entrance exam is not open yet.
   guide: {
     navGroup: "Help",
     nav: "Guide",
@@ -69,7 +69,7 @@ export const en = {
           target: "nav-campaigns",
           side: "right",
           title: "All your campaigns",
-          body: "Open a campaign to see its setup steps: campaign info, eligibility rules and information sessions. Candidates and the entrance exam are not open yet.",
+          body: "Open a campaign to see its setup steps: campaign info, eligibility rules, information sessions and candidates. The entrance exam is not open yet.",
         },
         {
           target: "nav-sessions",
@@ -151,7 +151,8 @@ export const en = {
           "Step 1, Campaign info: dates, expected candidates, seats and target provinces.",
           "Step 2, Eligibility rules: who can apply. Rules are grouped, and can check things such as age, province and exam scores.",
           "Step 3, Information sessions: visits to schools and communities.",
-          "Step 4, Candidates, and Step 5, Entrance exam, are not open yet.",
+          "Step 4, Candidates: the people applying. Add each one with their names, phone, address and school.",
+          "Step 5, Entrance exam, is not open yet.",
         ],
       },
       {
@@ -162,6 +163,17 @@ export const en = {
           "A host can be an officer, an alumnus or a partner such as an NGO or a high school. Alumni and partners are kept in the host directory, so you can use them again.",
           "The same host cannot run two sessions at the same time.",
           "After a session, enter how many females and males came.",
+        ],
+      },
+      {
+        title: "Add candidates",
+        body: "Add each person who applies, in the campaign's Step 4, Candidates.",
+        points: [
+          "Enter the name in Khmer and in English, gender, date of birth and phone number. A phone number can belong to only one candidate in a campaign.",
+          "Choose the province, district, commune and village from the lists. If a list will not load, you can type the names instead.",
+          "Choose the high school from the list, or choose Other and type it. Choose the information session the candidate came to, if you know it.",
+          "Say whether an NGO supports the candidate and, if so, which one.",
+          "Only selection managers and system admins can delete a candidate. Every change is recorded.",
         ],
       },
       {
@@ -202,6 +214,14 @@ export const en = {
         ],
       },
       {
+        title: "Add candidates",
+        body: "You can add and change candidates, for example after an information session. Open a campaign and choose Step 4, Candidates.",
+        points: [
+          "Enter the name in Khmer and in English, gender, date of birth and phone number, then choose the address, the high school and the session the candidate came to.",
+          "If you made a mistake, change the candidate from its ⋯ menu. Only selection managers and system admins can delete a candidate.",
+        ],
+      },
+      {
         title: "Find this again",
         body: "Open Guide in the sidebar at any time to read this again or to start the tour again.",
         points: ["Press Escape or the × to close a form. If you typed something, you are asked before it is thrown away."],
@@ -213,6 +233,7 @@ export const en = {
       { term: "Setup step", meaning: "One of the five parts of preparing a campaign. Each is Not started, In progress or Complete." },
       { term: "Eligibility rule", meaning: "A condition a candidate must meet to apply, such as an age limit or a minimum exam score." },
       { term: "Rule group", meaning: "Several rules together. A group says whether a candidate must meet all of its rules or any one of them." },
+      { term: "Candidate", meaning: "A person applying in a campaign. Someone who applies again in a later campaign is a new candidate there." },
       { term: "Information session", meaning: "A visit to a school or community to tell young people about the programme." },
       { term: "Host", meaning: "Who runs a session: an officer, an alumnus or a partner such as an NGO or a high school." },
       { term: "Not scheduled", meaning: "A session copied from another campaign that still needs a date, times, a person responsible and a host." },
