@@ -77,7 +77,6 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
       {
         href: "/admin/candidates",
         label: t.nav.candidates,
-        disabled: true,
         icon: (
           <Icon>
             <circle cx="9" cy="8" r="3.5" />
