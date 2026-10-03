@@ -22,7 +22,7 @@ export default function StepTabs({ steps, current }: Props) {
             }`}
           >
             <p className={`text-xs ${isCurrent ? "font-semibold text-ink" : "text-ink-muted"}`}>
-              {isCurrent ? t.info.currentStep(t.status[step.status]) : t.info.tabLabel(step.order)}
+              {isCurrent ? t.info.currentStep(step.order, t.status[step.status]) : t.info.tabLabel(step.order)}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-ink">{stepTitle(step.step)}</p>
           </li>

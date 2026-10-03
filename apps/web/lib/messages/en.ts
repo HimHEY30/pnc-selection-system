@@ -141,7 +141,7 @@ export const en = {
     title: "Step 1: Campaign info",
     subtitle: "The basic facts about this selection cycle. Other steps use these dates and numbers.",
     stepTabsLabel: "Campaign setup steps",
-    currentStep: (status: string) => `Step 1 · ${status}`,
+    currentStep: (order: number, status: string) => `Step ${order} · ${status}`,
     tabLabel: (n: number) => `Step ${n}`,
     identity: "Identity",
     name: "Campaign name",

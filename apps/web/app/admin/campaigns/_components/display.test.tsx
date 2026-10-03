@@ -98,6 +98,18 @@ describe("StepTabs", () => {
   });
 });
 
+describe("StepTabs on another step", () => {
+  it("numbers the current step by its own number, not always Step 1", () => {
+    render(<StepTabs steps={makeSteps("Complete")} current="EligibilityRules" />);
+
+    const items = screen.getAllByRole("listitem");
+    expect(items[1]).toHaveAttribute("aria-current", "step");
+    expect(items[1]).toHaveTextContent("Step 2 · Not started");
+    expect(items[0]).not.toHaveAttribute("aria-current");
+    expect(items[0]).toHaveTextContent("Step 1");
+  });
+});
+
 describe("TimelinePreview", () => {
   it("shows the start date and a placeholder for the end date", () => {
     render(<TimelinePreview startDate="2026-11-02" endDate="" />);
