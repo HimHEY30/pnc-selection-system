@@ -54,15 +54,9 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
           </Icon>
         ),
       },
-    ],
-  },
-  {
-    title: t.nav.afterSetup,
-    items: [
       {
         href: "/admin/sessions",
         label: t.nav.sessions,
-        disabled: true,
         icon: (
           <Icon>
             <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -70,6 +64,11 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
           </Icon>
         ),
       },
+    ],
+  },
+  {
+    title: t.nav.afterSetup,
+    items: [
       {
         href: "/admin/candidates",
         label: t.nav.candidates,
