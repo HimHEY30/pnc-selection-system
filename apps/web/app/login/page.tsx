@@ -1,4 +1,5 @@
 import { signIn } from "@/auth";
+import { buttonClasses } from "@/components/ui/Button";
 import { AutoSubmit } from "./AutoSubmit";
 
 const FORM_ID = "pnc-signin-redirect";
@@ -18,8 +19,8 @@ export default async function LoginPage({
   const { callbackUrl } = await searchParams;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-zinc-50 dark:bg-black">
-      <p className="text-sm text-zinc-500">Redirecting to sign in…</p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-4">
+      <p role="status" className="text-sm text-ink-muted">Redirecting to sign in…</p>
       <form
         id={FORM_ID}
         action={async () => {
@@ -28,10 +29,7 @@ export default async function LoginPage({
         }}
       >
         <noscript>
-          <button
-            type="submit"
-            className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900"
-          >
+          <button type="submit" className={buttonClasses("primary", "lg")}>
             Continue to sign in
           </button>
         </noscript>
