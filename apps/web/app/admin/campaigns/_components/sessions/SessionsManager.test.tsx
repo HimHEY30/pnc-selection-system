@@ -56,6 +56,12 @@ function renderManager(list: SessionList, options: { canManage?: boolean; assign
 
 const table = () => screen.getByRole("table", { name: "Information sessions" });
 const rowOf = (title: string) => within(table()).getByRole("row", { name: new RegExp(title) });
+/** The three-dots button of a row, and the actions in its menu once it is open. */
+const menuButtonOf = (title: string) => within(rowOf(title)).queryByRole("button", { name: `Actions for ${title}` });
+const menuActions = () => screen.queryAllByRole("menuitem").map((item) => item.textContent);
+async function openMenu(user: ReturnType<typeof userEvent.setup>, title: string) {
+  await user.click(menuButtonOf(title)!);
+}
 const tableTitles = () =>
   within(table())
     .getAllByRole("row")
@@ -81,45 +87,63 @@ describe("SessionsManager: what is shown", () => {
     expect(screen.getByText("Showing 3 of 3")).toBeInTheDocument();
   });
 
-  it("offers a manager add, edit, cancel and numbers where they apply", () => {
-    renderManager(listFixture([planned, done, cancelled]));
+  it("offers a manager add, edit, cancel and numbers where they apply, in each row's menu", async () => {
+    const { user } = renderManager(listFixture([planned, done, cancelled]));
 
     expect(screen.getByRole("button", { name: "Add session" })).toBeInTheDocument();
+    // The actions stay out of sight until a row's three dots are pressed.
+    expect(menuActions()).toEqual([]);
 
-    const plannedRow = within(rowOf(planned.title));
-    expect(plannedRow.getByRole("button", { name: `Enter numbers: ${planned.title}` })).toBeInTheDocument();
-    expect(plannedRow.getByRole("button", { name: `Edit: ${planned.title}` })).toBeInTheDocument();
-    expect(plannedRow.getByRole("button", { name: `Cancel session: ${planned.title}` })).toBeInTheDocument();
+    await openMenu(user, planned.title);
+    expect(menuActions()).toEqual(["Enter numbers", "Edit", "Cancel session"]);
+    await user.keyboard("{Escape}");
 
     // A done session can still have its numbers corrected, but not its details.
-    const doneRow = within(rowOf(done.title));
-    expect(doneRow.getByRole("button", { name: /Enter numbers/ })).toBeInTheDocument();
-    expect(doneRow.queryByRole("button", { name: /Edit/ })).not.toBeInTheDocument();
-    expect(doneRow.queryByRole("button", { name: /Cancel session/ })).not.toBeInTheDocument();
+    await openMenu(user, done.title);
+    expect(menuActions()).toEqual(["Enter numbers"]);
+    await user.keyboard("{Escape}");
 
-    // A cancelled session has no actions at all.
-    expect(within(rowOf(cancelled.title)).queryByRole("button")).not.toBeInTheDocument();
+    // A cancelled session has no actions, so no menu button either.
+    expect(menuButtonOf(cancelled.title)).not.toBeInTheDocument();
   });
 
-  it("lets an officer see everything and enter numbers, but not add, edit or cancel", () => {
-    renderManager(listFixture([planned, done]), { canManage: false });
+  it("lets an officer see everything and enter numbers, but not add, edit or cancel", async () => {
+    const { user } = renderManager(listFixture([planned, done]), { canManage: false });
 
     expect(screen.getByText(/Only a selection manager or a system admin can add or change sessions/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add session" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Edit/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Cancel session/ })).not.toBeInTheDocument();
-    // Both table rows, and the card of the one that is coming up.
-    expect(screen.getAllByRole("button", { name: /Enter numbers/ })).toHaveLength(3);
+
+    await openMenu(user, planned.title);
+    expect(menuActions()).toEqual(["Enter numbers"]);
   });
 
-  it("locks the details of a closed campaign but leaves the numbers open", () => {
-    renderManager(listFixture([planned], { campaignStatus: "Closed", isEditable: false }));
+  it("locks the details of a closed campaign but leaves the numbers open", async () => {
+    const { user } = renderManager(listFixture([planned], { campaignStatus: "Closed", isEditable: false }));
 
     expect(screen.getByText(/This campaign is closed, so sessions can no longer be added or changed/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add session" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Edit/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Cancel session/ })).not.toBeInTheDocument();
-    expect(within(rowOf(planned.title)).getByRole("button", { name: /Enter numbers/ })).toBeInTheDocument();
+
+    await openMenu(user, planned.title);
+    expect(menuActions()).toEqual(["Enter numbers"]);
+  });
+
+  it("closes the menu on Escape, on an outside click and after an action is chosen", async () => {
+    const { user } = renderManager(listFixture([planned]));
+    const trigger = () => menuButtonOf(planned.title)!;
+
+    await user.click(trigger());
+    expect(trigger()).toHaveAttribute("aria-expanded", "true");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    await user.click(trigger());
+    await user.click(document.body);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    await user.click(trigger());
+    await user.click(screen.getByRole("menuitem", { name: "Edit" }));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Edit information session" })).toBeInTheDocument();
   });
 });
 
@@ -267,7 +291,8 @@ describe("SessionsManager: dialogs", () => {
   it("opens the form for the session whose Edit was pressed, filled in", async () => {
     const { user } = renderManager(listFixture([planned, withAlumnus]));
 
-    await user.click(within(rowOf(withAlumnus.title)).getByRole("button", { name: /^Edit/ }));
+    await openMenu(user, withAlumnus.title);
+    await user.click(screen.getByRole("menuitem", { name: "Edit" }));
 
     const dialog = within(screen.getByRole("dialog", { name: "Edit information session" }));
     expect(dialog.getByLabelText("Title")).toHaveValue("Alumni talk");
@@ -277,7 +302,8 @@ describe("SessionsManager: dialogs", () => {
   it("opens the cancel dialog for that session", async () => {
     const { user } = renderManager(listFixture([planned]));
 
-    await user.click(within(rowOf(planned.title)).getByRole("button", { name: /^Cancel session/ }));
+    await openMenu(user, planned.title);
+    await user.click(screen.getByRole("menuitem", { name: "Cancel session" }));
 
     const dialog = screen.getByRole("dialog", { name: "Cancel this session?" });
     expect(within(dialog).getByText(/Open day at Kampong Cham High School will be marked as cancelled/)).toBeInTheDocument();
@@ -286,7 +312,8 @@ describe("SessionsManager: dialogs", () => {
   it("opens the numbers dialog for that session", async () => {
     const { user } = renderManager(listFixture([planned, done]));
 
-    await user.click(within(rowOf(done.title)).getByRole("button", { name: /Enter numbers/ }));
+    await openMenu(user, done.title);
+    await user.click(screen.getByRole("menuitem", { name: "Enter numbers" }));
 
     const dialog = screen.getByRole("dialog", { name: "Enter numbers" });
     expect(within(dialog).getByLabelText("Females")).toHaveValue("18");
@@ -295,14 +322,16 @@ describe("SessionsManager: dialogs", () => {
   it("opens the numbers dialog for an officer too", async () => {
     const { user } = renderManager(listFixture([planned]), { canManage: false });
 
-    await user.click(within(rowOf(planned.title)).getByRole("button", { name: /Enter numbers/ }));
+    await openMenu(user, planned.title);
+    await user.click(screen.getByRole("menuitem", { name: "Enter numbers" }));
 
     expect(screen.getByRole("dialog", { name: "Enter numbers" })).toBeInTheDocument();
   });
 
   it("closes a dialog whose session is gone after the page refreshes", async () => {
     const { user, rerender } = renderManager(listFixture([planned, withAlumnus]));
-    await user.click(within(rowOf(withAlumnus.title)).getByRole("button", { name: /^Edit/ }));
+    await openMenu(user, withAlumnus.title);
+    await user.click(screen.getByRole("menuitem", { name: "Edit" }));
     expect(screen.getByRole("dialog", { name: "Edit information session" })).toBeInTheDocument();
 
     rerender(listFixture([planned]));

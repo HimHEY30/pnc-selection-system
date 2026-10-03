@@ -525,7 +525,7 @@ export const en = {
       pageOf: (page: number, count: number) => `Page ${page} of ${count}`,
       rows: (from: number, to: number, total: number) => `${from}–${to} of ${total}`,
       notSet: "–",
-      rowAction: (action: string, title: string) => `${action}: ${title}`,
+      actionsFor: (title: string) => `Actions for ${title}`,
     },
 
     add: "Add session",

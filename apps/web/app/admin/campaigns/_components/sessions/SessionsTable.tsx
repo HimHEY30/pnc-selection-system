@@ -1,4 +1,4 @@
-import Button from "@/components/ui/Button";
+import RowActionsMenu from "@/components/ui/RowActionsMenu";
 import { formatDate, formatTimeRange } from "@/lib/sessions/format";
 import type { SortDirection } from "@/lib/sessions/list";
 import type { InformationSession } from "@/lib/sessions/types";
@@ -99,25 +99,18 @@ export default function SessionsTable({ sessions, direction, onToggleSort, canCh
                   )}
                 </td>
                 <td className={CELL}>
-                  {(numbers || changeable) && (
-                    <div className="flex flex-wrap gap-2">
-                      {numbers && (
-                        <Button variant="primary" aria-label={text.rowAction(card.numbers, session.title)} onClick={() => onNumbers(session)}>
-                          {card.numbers}
-                        </Button>
-                      )}
-                      {changeable && (
-                        <>
-                          <Button aria-label={text.rowAction(card.edit, session.title)} onClick={() => onEdit(session)}>
-                            {card.edit}
-                          </Button>
-                          <Button aria-label={text.rowAction(card.cancel, session.title)} onClick={() => onCancel(session)}>
-                            {card.cancel}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <RowActionsMenu
+                    label={text.actionsFor(session.title)}
+                    actions={[
+                      ...(numbers ? [{ label: card.numbers, onSelect: () => onNumbers(session) }] : []),
+                      ...(changeable
+                        ? [
+                            { label: card.edit, onSelect: () => onEdit(session) },
+                            { label: card.cancel, onSelect: () => onCancel(session) },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </td>
               </tr>
             );
