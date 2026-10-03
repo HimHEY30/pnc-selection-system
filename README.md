@@ -44,10 +44,11 @@ Keycloak-db (Postgres)   Mailpit (fake SMTP, dev only)
 │   │   │                      Infrastructure/Api split - see below)
 │   │   ├── Modules/Campaigns/ Campaigns, setup steps, provinces (own database)
 │   │   ├── Modules/Eligibility/ Eligibility rules and the evaluator (Step 2)
+│   │   ├── Modules/Sessions/    Information sessions, hosts and attendance (Step 3)
 │   │   └── Host/              Composition root: wires modules together,
 │   │                           contains no business logic of its own
 │   ├── tests/                 xUnit + Testcontainers (real PostgreSQL):
-│   │                          Campaigns.Tests, Eligibility.Tests, Ssms.TestSupport (shared)
+│   │                          Campaigns.Tests, Eligibility.Tests, Identity.Tests, Sessions.Tests, Ssms.TestSupport (shared)
 │   └── ownership-matrix.md    Which module owns what, what it publishes
 ├── infra/keycloak/
 │   ├── realm-export.json      The pnc-selection realm: roles, groups,
@@ -151,6 +152,7 @@ the reasoning behind any non-obvious decision in the code.
 - [keycloak-forgot-password-email](features/keycloak-forgot-password-email/README.md) — SMTP delivery for password-reset emails (Mailpit in dev).
 - [campaigns](features/campaigns/README.md) — create a campaign, the 5-step setup overview, and Step 1 (Campaign info).
 - [eligibility-rules](features/eligibility-rules/README.md) — Step 2: who may apply, the rule builder, the test panel, and the evaluator the Candidates step will reuse.
+- [information-sessions](features/information-sessions/README.md) — Step 3: sessions assigned to staff and run by officers, alumni or partners, with expected and actual (female/male) attendance.
 
 ## Security note
 

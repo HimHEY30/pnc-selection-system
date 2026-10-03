@@ -10,9 +10,14 @@ Owns:
 Publishes (Application Contracts other modules may depend on):
 - `ICurrentUserService` — who is making the current request
 - `AuthorizationPolicies` — policy name constants for `[Authorize(Policy = ...)]`
+- `IStaffDirectory` — the admins, managers and officers, by name (who a session can be assigned to). Implemented against
+  Keycloak's admin API with a read-only service client and cached for a minute; fails with an "unavailable" error when
+  Keycloak cannot be asked. Also `GET /api/staff/assignable` (management tier).
 
 Consumes:
-- Keycloak (external identity provider) — never a local database for credentials
+- Keycloak (external identity provider) — never a local database for credentials. Credentials and roles come from the
+  token; the staff list comes from the admin API (`selection-system-staff-reader`, roles `view-users`, `query-users`,
+  `query-groups`).
 
 No module may reference `Identity.Infrastructure` directly. Only `Identity.Application`'s
 contracts (`ICurrentUserService`, `AuthorizationPolicies`) and `Identity.Domain`'s types
@@ -75,6 +80,34 @@ Written by hand: the foreign keys from `rule_sets`, `audit_log`, `exam_setups` a
 Campaigns migrations first for that reason. Also by hand, because EF cannot describe them: the unique subject name per
 campaign (an expression index) and the rule-to-field key, which is checked when the transaction commits so a campaign's
 subjects and rules can be deleted together.
+
+---
+
+## Sessions
+
+Owns (schema `sessions` in the `ssms` database):
+- `InformationSession` (Sessions.Domain): when and where, who is responsible, who runs it, status (Planned, Done,
+  Cancelled), the expected number and the actual attendance (females and males). Every change goes through it, so a
+  session cannot hold an impossible combination.
+- `SessionHost`: the directory of alumni and partners. Officers are not directory records: a session points at the staff
+  member's Keycloak id and keeps a name snapshot.
+- The append-only `audit_log` (sessions and hosts)
+- The rules: validation, the host clash check, the attendance date rule on the Cambodia clock, Step 3's status
+  (Sessions.Domain / Sessions.Application)
+
+Publishes:
+- HTTP API: `/api/campaigns/{id}/sessions[/{sessionId}[/cancel|/expected|/attendance]]`, `/api/sessions/mine`,
+  `/api/session-hosts[/{id}[/active]]`
+- `ISessionService`, `IHostService` (Sessions.Application), for the Candidates step later
+
+Consumes:
+- Campaigns: `ICampaignSetupGateway` (the campaign's status and target provinces; set Step 3's status)
+- Identity: `ICurrentUserService`, `IStaffDirectory`, `AuthorizationPolicies` (`OperationsTier` to read and to enter
+  the numbers, `ManagementTier` to add, change and cancel sessions and to change the host directory)
+
+Written by hand: the foreign keys from `information_sessions` and `audit_log` to `campaigns.campaigns`, and from
+`information_sessions` to `campaigns.provinces` (other modules' tables, which EF cannot model). The Host runs the
+Campaigns migrations first for that reason.
 
 ---
 
