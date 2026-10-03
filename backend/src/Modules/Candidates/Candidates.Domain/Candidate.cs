@@ -112,6 +112,12 @@ public sealed class Candidate
         return Result.Success();
     }
 
+    /// <summary>
+    /// Checks details against the rules without creating or changing anything, so the service can look for a duplicate
+    /// phone before it touches a candidate it loaded. Returns the tidied details, or every problem found.
+    /// </summary>
+    public static Result<CandidateDetails> Validate(CandidateDetails details, DateTimeOffset now) => Check(details, now);
+
     /// <summary>The phone as it is stored, or null if it is not a Cambodian number. The service uses this to look for a duplicate.</summary>
     public static string? NormalizePhone(string? phone)
     {

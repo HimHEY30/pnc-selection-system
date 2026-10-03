@@ -14,6 +14,9 @@ public static class CandidateErrors
     public static readonly Error NotFound =
         Error.NotFound("candidates.not_found", "This candidate does not exist.");
 
+    public static readonly Error NoUser =
+        Error.Forbidden("candidates.no_user", "You must be signed in.");
+
     public static readonly Error ConcurrentEdit =
         Error.Conflict("candidates.concurrent_edit", "Someone else changed this. Reload the page and try again.");
 

@@ -323,6 +323,25 @@ public sealed class CandidateTests
     public void The_ngo_name_is_limited() =>
         Assert.Single(Errors(Try(Valid(ngo: true, ngoName: new string('a', CandidateLimits.NgoNameMax + 1))), "ngoName"));
 
+    // ---------- validating without applying ----------
+
+    [Fact]
+    public void Validate_returns_the_tidied_details_and_changes_nothing()
+    {
+        var c = Created();
+
+        var result = Candidate.Validate(Valid(nameEn: "  Sok   Dara ", phone: "097 123 4567"), Now);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Sok Dara", result.Value.NameEn);
+        Assert.Equal("0971234567", result.Value.Phone);
+        Assert.Equal("Sok Chenda", c.NameEn);
+    }
+
+    [Fact]
+    public void Validate_reports_the_same_problems_as_create() =>
+        Assert.Single(Errors(Candidate.Validate(Valid(phone: "bad"), Now), "phone"));
+
     // ---------- changing ----------
 
     [Fact]
