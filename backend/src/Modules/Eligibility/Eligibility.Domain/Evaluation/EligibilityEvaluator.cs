@@ -73,7 +73,7 @@ public static class EligibilityEvaluator
             return Result(RuleOutcome.Failed);
         }
 
-        var actual = ReadActual(field, candidate, ageReferenceDate);
+        var actual = ReadActual(field, catalogue, candidate, ageReferenceDate);
         if (actual is null)
         {
             return Result(RuleOutcome.Failed, missing: true);
@@ -83,8 +83,13 @@ public static class EligibilityEvaluator
     }
 
     /// <summary>The candidate's value in the field's own type, or null when it is missing or unreadable.</summary>
-    private static object? ReadActual(FieldDefinition field, CandidateData candidate, DateOnly? ageReferenceDate)
+    private static object? ReadActual(FieldDefinition field, FieldCatalogue catalogue, CandidateData candidate, DateOnly? ageReferenceDate)
     {
+        if (ExamSubjects.IsTotalOrAverage(field))
+        {
+            return ReadExamAggregate(field, catalogue, candidate);
+        }
+
         var text = candidate.Get(field.CandidateAttribute);
         if (text is null)
         {
@@ -107,6 +112,37 @@ public static class EligibilityEvaluator
             FieldValueType.YesNo => ParseYesNo(text),
             _ => text,
         };
+    }
+
+    /// <summary>
+    /// The total or the average of every exam subject the campaign has. A score the candidate has not
+    /// got (or that is not a number) makes the whole value missing: half a total would let a candidate
+    /// pass a "total at least" rule by skipping a subject. The average is rounded to the field's decimals,
+    /// the same precision a rule's value can have.
+    /// </summary>
+    private static decimal? ReadExamAggregate(FieldDefinition field, FieldCatalogue catalogue, CandidateData candidate)
+    {
+        var scores = new List<decimal>();
+        foreach (var subject in catalogue.Subjects)
+        {
+            var text = candidate.Get(subject.CandidateAttribute);
+            if (text is null || !RuleValueParser.TryParseDecimal(text, out var score))
+            {
+                return null;
+            }
+
+            scores.Add(score);
+        }
+
+        if (scores.Count == 0)
+        {
+            return null;
+        }
+
+        var total = scores.Sum();
+        return field.Derivation == FieldDerivation.ExamTotal
+            ? total
+            : Math.Round(total / scores.Count, field.Decimals, MidpointRounding.AwayFromZero);
     }
 
     /// <summary>Whole years completed on <paramref name="reference"/>. Null if born after it.</summary>
