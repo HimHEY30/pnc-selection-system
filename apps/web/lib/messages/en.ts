@@ -362,6 +362,40 @@ export const en = {
         hint: "Age is counted in whole years on this date. It starts as the campaign start date.",
       },
 
+      // The campaign's exam subjects (Math, Logic, English, ...). These are saved at once, not with the rules.
+      subjects: {
+        title: "Exam subjects",
+        intro:
+          "Rules can check a candidate's score in each subject, and their total or average. Scores are points from 0 to 100. Changes to this list are saved straight away.",
+        listLabel: "Exam subjects",
+        count: (n: number, max: number) => `${n} of ${max} subjects`,
+        empty: "No subjects yet. Add one to write rules about exam scores.",
+        usedBy: (n: number) => (n === 1 ? "Used by 1 rule" : `Used by ${n} rules`),
+        nameLabel: "Subject name",
+        namePlaceholder: "For example, Physics",
+        add: "Add subject",
+        adding: "Adding…",
+        rename: "Rename",
+        renameLabel: (name: string) => `Rename ${name}`,
+        renameField: (name: string) => `New name for ${name}`,
+        save: "Save",
+        saving: "Saving…",
+        cancel: "Cancel",
+        remove: "Remove",
+        removeLabel: (name: string) => `Remove ${name}`,
+        removeTitle: (name: string) => `Remove "${name}"?`,
+        removeBody: (name: string) => `${name} is removed from this campaign now, not when you save the rules.`,
+        confirmRemove: "Remove subject",
+        keep: "Keep subject",
+        inUse: "Rules use this subject. Delete those rules and save them first.",
+        totalsHint: "The total and average scores become available once there are two or more subjects.",
+        renameNote:
+          "Renaming a subject changes its name in the rule builder and the summary. A failure message already written for a rule keeps the old name.",
+        full: (max: number) => `A campaign can have at most ${max} subjects.`,
+        readOnly: "You can view the subjects but only a selection manager or a system admin can change them.",
+        failed: "We could not save this change. Try again.",
+      },
+
       actions: {
         saveDraft: "Save draft",
         saveContinue: "Save and continue to Step 3",
@@ -385,6 +419,7 @@ export const en = {
         title: "Test a sample candidate",
         intro: "Enter a candidate's details to see what the rules on screen would decide. Nothing is saved.",
         noRules: "Add a rule to test it.",
+        derivedFromScores: "The total and average are worked out from the subject scores below. Leave a score blank to see how a missing score is handled.",
         dateOfBirth: "Date of birth",
         notProvided: "Not provided",
         yes: "Yes",
