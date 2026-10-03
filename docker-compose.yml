@@ -89,6 +89,11 @@ services:
       Keycloak__Issuer: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
       Keycloak__Audience: ${KEYCLOAK_API_CLIENT_ID}
       Keycloak__RequireHttpsMetadata: "false"
+      # A read-only service client the backend uses to list staff (who a session can be assigned to).
+      # Must match infra/keycloak/realm-export.json. Without it the staff picker is empty, and a
+      # manager can still choose themselves.
+      Keycloak__StaffDirectory__ClientId: ${KEYCLOAK_STAFF_CLIENT_ID:-selection-system-staff-reader}
+      Keycloak__StaffDirectory__ClientSecret: ${KEYCLOAK_STAFF_CLIENT_SECRET:-dev-staff-client-secret-change-me}
       Frontend__Origin: ${FRONTEND_ORIGIN}
       # Inside Docker the database is reached by service name, not localhost.
       ConnectionStrings__Campaigns: Host=ssms-db;Port=5432;Database=${SSMS_DB_NAME};Username=${SSMS_DB_USER};Password=${SSMS_DB_PASSWORD}
