@@ -283,6 +283,136 @@ export const en = {
       needReferenceDate: "Choose the date ages are calculated on.",
     },
 
+    // Text on the Step 2 screen.
+    ui: {
+      title: "Step 2: Eligibility rules",
+      subtitle: "Say who is allowed to apply in this campaign. Candidates are checked against these rules later.",
+
+      empty: {
+        title: "No eligibility rules yet",
+        body: "Eligibility rules say who is allowed to apply in this campaign, for example an age range or the grade a candidate must have completed. You can change them every year from this page.",
+        addFirst: "Add first rule",
+        useSuggested: "Use suggested rules",
+        suggestedHint: "Suggested rules are a starting point. You can change or delete every one of them.",
+        readOnly: "No rules have been set for this campaign yet.",
+      },
+
+      builder: {
+        rules: "Rules",
+        addGroup: "Add group",
+        suggestedFailed: "We could not load the suggested rules. Try again.",
+      },
+
+      group: {
+        name: "Group name",
+        logic: "How the rules in this group combine",
+        all: "ALL of these must pass",
+        any: "ANY one of these must pass",
+        rulesLabel: (name: string) => `Rules in ${name}`,
+        empty: "No rules in this group yet.",
+        addRule: "Add rule",
+        moveUp: "Move group up",
+        moveDown: "Move group down",
+        delete: "Delete group",
+        deleteTitle: (name: string) => `Delete "${name}"?`,
+        deleteBody: (rules: number) =>
+          rules === 0
+            ? "This group is empty. It will be removed when you save."
+            : `This also removes its ${rules} ${rules === 1 ? "rule" : "rules"}. It will be removed when you save.`,
+        confirmDelete: "Delete group",
+        keep: "Keep group",
+        itemLabel: (name: string) => `Group: ${name}`,
+      },
+
+      rule: {
+        field: "Field",
+        operator: "Comparison",
+        value: "Value",
+        type: "Type",
+        mandatory: "Mandatory",
+        optional: "Optional",
+        active: "Active",
+        activeLabel: (summary: string) => `Rule active: ${summary}`,
+        handle: "Drag to reorder",
+        handleLabel: (summary: string) => `Reorder: ${summary}`,
+        moveUp: "Move rule up",
+        moveDown: "Move rule down",
+        edit: "Details",
+        details: "Rule details",
+        message: "Message shown when a candidate fails this rule",
+        moveToGroup: "Group",
+        delete: "Delete rule",
+        deleteTitle: "Delete this rule?",
+        deleteBody: (summary: string) => `"${summary}" will be removed when you save.`,
+        confirmDelete: "Delete rule",
+        keep: "Keep rule",
+        choose: "Choose…",
+        valueFrom: "From",
+        valueTo: "To",
+        valueNone: "No value needed",
+        valueList: "Choose one or more",
+        pickOptions: "Choose",
+        listLabel: (field: string) => `${field}: options`,
+        inactiveHint: "Switched off. This rule is ignored.",
+        optionalHint: "A candidate who fails this is only given a warning.",
+      },
+
+      reference: {
+        label: "Ages are calculated on",
+        hint: "Age is counted in whole years on this date. It starts as the campaign start date.",
+      },
+
+      actions: {
+        saveDraft: "Save draft",
+        saveContinue: "Save and continue to Step 3",
+        saving: "Saving…",
+      },
+
+      banners: {
+        fixErrors: "Some rules need your attention. They are marked below.",
+        readOnly: "You can view these rules but only a selection manager or a system admin can change them.",
+        locked: "This campaign is no longer a draft, so its rules can no longer be changed.",
+      },
+
+      leave: {
+        title: "Leave without saving?",
+        body: "You have changes that are not saved. If you leave now they will be lost.",
+        stay: "Keep editing",
+        leave: "Leave page",
+      },
+
+      test: {
+        title: "Test a sample candidate",
+        intro: "Enter a candidate's details to see what the rules on screen would decide. Nothing is saved.",
+        noRules: "Add a rule to test it.",
+        dateOfBirth: "Date of birth",
+        notProvided: "Not provided",
+        yes: "Yes",
+        no: "No",
+        run: "Run test",
+        running: "Running…",
+        resultLabel: "Test result",
+        eligible: "Eligible",
+        notEligible: "Not eligible",
+        warnings: (n: number) => (n === 1 ? "1 warning" : `${n} warnings`),
+        passed: "Passed",
+        failed: "Failed",
+        skipped: "Skipped (switched off)",
+        missing: "Not provided",
+        mandatory: "Mandatory",
+        optional: "Optional",
+        groupPassed: "Group passes",
+        groupFailed: "Group fails",
+        groupIgnored: "Group has no mandatory rule, so it is ignored",
+        unavailable: "We could not run the test. Try again.",
+      },
+
+      tip: {
+        title: "Tip",
+        body: "Mandatory rules decide who is eligible. Optional rules never block anyone; they only give a warning. Switch a rule off to keep it without using it.",
+      },
+    },
+
     summary: {
       title: "Summary",
       empty: "Add a rule to see who would be eligible.",
