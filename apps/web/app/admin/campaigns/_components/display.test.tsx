@@ -40,13 +40,13 @@ describe("SetupStepList", () => {
     render(<SetupStepList campaignId={ID} steps={makeSteps()} canEdit />);
 
     const disabled = screen.getAllByRole("button");
-    expect(disabled).toHaveLength(3); // steps 3, 4 and 5
+    expect(disabled).toHaveLength(2); // steps 4 and 5
     for (const button of disabled) {
       expect(button).toBeDisabled();
       expect(button).toHaveTextContent("Start");
       expect(button).toHaveTextContent("Coming soon");
     }
-    expect(screen.getAllByRole("link")).toHaveLength(2); // steps 1 and 2
+    expect(screen.getAllByRole("link")).toHaveLength(3); // steps 1, 2 and 3
   });
 
   it("links Step 2 to the eligibility rules page", () => {
@@ -54,6 +54,13 @@ describe("SetupStepList", () => {
 
     const step2 = screen.getAllByRole("listitem")[1];
     expect(within(step2).getByRole("link", { name: "Start" })).toHaveAttribute("href", `/admin/campaigns/${ID}/eligibility`);
+  });
+
+  it("links Step 3 to the information sessions page", () => {
+    render(<SetupStepList campaignId={ID} steps={makeSteps("Complete")} canEdit />);
+
+    const step3 = screen.getAllByRole("listitem")[2];
+    expect(within(step3).getByRole("link", { name: "Start" })).toHaveAttribute("href", `/admin/campaigns/${ID}/sessions`);
   });
 
   it("highlights Step 2 as the next one once Step 1 is complete", () => {
