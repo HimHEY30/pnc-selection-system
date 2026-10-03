@@ -1,4 +1,4 @@
-import type { Catalogue, CatalogueField, CatalogueOperator, Group, Rule, TargetProvince } from "@/lib/eligibility/types";
+import type { Catalogue, CatalogueField, CatalogueOperator, ExamSetup, Group, Rule, Subject, TargetProvince } from "@/lib/eligibility/types";
 
 // A copy of the launch catalogue, in the shape the backend sends it. Keep in step with
 // LaunchCatalogue.cs and OperatorDefinition.Defaults on the backend.
@@ -74,6 +74,49 @@ export const CATALOGUE: Catalogue = {
     field({ key: "attended_info_session", label: "Attended an information session", valueType: "YesNo", operators: YESNO_OPS }),
   ],
 };
+
+// ---------- Exam subjects ----------
+// What the backend sends for a campaign with Math, Logic and English: each subject is a number field of
+// points (0 to 100), and the total and average are offered once there are two or more subjects.
+
+export const MATH = "exam_00000000000000000000000000000001";
+export const LOGIC = "exam_00000000000000000000000000000002";
+export const ENGLISH = "exam_00000000000000000000000000000003";
+
+export const SUBJECTS: Subject[] = [
+  { key: MATH, name: "Math", ruleCount: 0 },
+  { key: LOGIC, name: "Logic", ruleCount: 0 },
+  { key: ENGLISH, name: "English", ruleCount: 0 },
+];
+
+const subjectField = (subject: Subject): CatalogueField =>
+  field({
+    key: subject.key,
+    label: `${subject.name} score`,
+    valueType: "Number",
+    operators: NUMBER_OPS,
+    derivation: "ExamScore",
+    unit: "points",
+    decimals: 2,
+    minValue: 0,
+    maxValue: 100,
+  });
+
+/** The shared fields, then the subjects, then the total and average (only with two or more subjects). */
+export function examCatalogue(subjects: Subject[] = SUBJECTS): Catalogue {
+  const totals =
+    subjects.length >= 2
+      ? [
+          field({ key: "exam_total", label: "Total exam score", valueType: "Number", operators: NUMBER_OPS, derivation: "ExamTotal", unit: "points", decimals: 2, minValue: 0 }),
+          field({ key: "exam_average", label: "Average exam score", valueType: "Number", operators: NUMBER_OPS, derivation: "ExamAverage", unit: "points", decimals: 2, minValue: 0, maxValue: 100 }),
+        ]
+      : [];
+  return { fields: [...CATALOGUE.fields, ...subjects.map(subjectField), ...totals] };
+}
+
+export function examSetup(subjects: Subject[] = SUBJECTS): ExamSetup {
+  return { subjects, maxSubjects: 12, catalogue: examCatalogue(subjects) };
+}
 
 export const PROVINCES: TargetProvince[] = [
   { id: "2", name: "Battambang" },

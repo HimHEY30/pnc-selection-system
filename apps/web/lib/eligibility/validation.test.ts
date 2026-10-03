@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATALOGUE, group, PROVINCES, rule } from "@/test-utils/eligibility-fixtures";
+import { CATALOGUE, examCatalogue, group, MATH, PROVINCES, rule, SUBJECTS } from "@/test-utils/eligibility-fixtures";
 import { canonicalValues, groupKey, ruleKey, validateRuleSet, validateValues } from "./validation";
 
 const field = (key: string) => CATALOGUE.fields.find((f) => f.key === key)!;
@@ -152,5 +152,70 @@ describe("validateRuleSet", () => {
     expect(validate(groups, "complete", "2026-11-02").ageReferenceDate).toBeUndefined();
     expect(validate(groups, "draft", null).ageReferenceDate).toBeUndefined();
     expect(validate([group([rule("age", "at_least", ["17"], { isActive: false }), rule("gender", "is", ["female"])])], "complete", null).ageReferenceDate).toBeUndefined();
+  });
+});
+
+describe("exam subjects", () => {
+  const exam = examCatalogue();
+  const examField = (key: string) => exam.fields.find((f) => f.key === key)!;
+  const examCheck = (key: string, opKey: string, values: string[]) =>
+    validateValues(examField(key), examField(key).operators.find((o) => o.key === opKey)!, values, null);
+
+  it.each([
+    [MATH, "at_least", ["50"], null],
+    [MATH, "at_least", ["0"], null],
+    [MATH, "at_least", ["100"], null],
+    [MATH, "at_least", ["99.99"], null],
+    [MATH, "between", ["40", "90.5"], null],
+    [MATH, "at_least", ["-0.01"], "Enter 0 or more."],
+    [MATH, "at_least", ["100.01"], "Enter 100 or less."],
+    [MATH, "at_least", ["50.123"], "Use at most 2 decimal places."],
+    [MATH, "at_least", ["fifty"], "Enter a number."],
+    [MATH, "at_least", [], "Enter a value."],
+    [MATH, "between", ["60", "40"], "The first value must be lower than the second."],
+    ["exam_average", "at_least", ["100.01"], "Enter 100 or less."],
+    ["exam_average", "at_least", ["65.5"], null],
+    ["exam_total", "at_least", ["250"], null],
+    ["exam_total", "at_least", ["-1"], "Enter 0 or more."],
+  ])("explains %s %s %j", (key, opKey, values, expected) => {
+    expect(examCheck(key, opKey, values)).toBe(expected);
+  });
+
+  it("accepts a rule on a subject of the campaign's own catalogue", () => {
+    const groups = [group([rule(MATH, "at_least", ["50"])])];
+
+    expect(validateRuleSet({ groups, ageReferenceDate: "" }, exam, PROVINCES, "complete")).toEqual({});
+  });
+
+  it("asks for a field when the rule's subject is no longer in the catalogue", () => {
+    const rules = [rule(MATH, "at_least", ["50"])];
+    const withoutMath = examCatalogue(SUBJECTS.slice(1));
+
+    const errors = validateRuleSet({ groups: [group(rules)], ageReferenceDate: "" }, withoutMath, PROVINCES, "draft");
+
+    expect(errors[ruleKey(rules[0].id, "field")]).toBe("Choose a field.");
+  });
+
+  it("asks for a field when the total is used but fewer than two subjects are left", () => {
+    const rules = [rule("exam_total", "at_least", ["100"])];
+    const oneSubject = examCatalogue(SUBJECTS.slice(0, 1));
+
+    const errors = validateRuleSet({ groups: [group(rules)], ageReferenceDate: "" }, oneSubject, PROVINCES, "draft");
+
+    expect(errors[ruleKey(rules[0].id, "field")]).toBe("Choose a field.");
+  });
+
+  it("finds the same score rule twice in a group", () => {
+    const rules = [rule(MATH, "at_least", ["50"]), rule(MATH, "at_least", ["50.00"])];
+
+    const errors = validateRuleSet({ groups: [group(rules)], ageReferenceDate: "" }, exam, PROVINCES, "draft");
+
+    expect(errors[ruleKey(rules[1].id)]).toBe("The same rule already exists in this group.");
+  });
+
+  it("does not ask for the age date because of an exam rule", () => {
+    const groups = [group([rule(MATH, "at_least", ["50"])])];
+
+    expect(validateRuleSet({ groups, ageReferenceDate: "" }, exam, PROVINCES, "complete").ageReferenceDate).toBeUndefined();
   });
 });

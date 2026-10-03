@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATALOGUE, group, PROVINCES, rule } from "@/test-utils/eligibility-fixtures";
+import { CATALOGUE, ENGLISH, examCatalogue, group, LOGIC, MATH, PROVINCES, rule, SUBJECTS } from "@/test-utils/eligibility-fixtures";
 import { defaultMessage, describeRule, displayValue, findField, summarize } from "./phrases";
 
 const ctx = { catalogue: CATALOGUE, provinces: PROVINCES };
@@ -176,5 +176,41 @@ describe("summarize", () => {
     const groups = [group([rule("age", "between", ["17"])])];
 
     expect(summarize(groups, ctx).eligibleSentence).toBe("A candidate is eligible if: age is between 17 and ….");
+  });
+});
+
+describe("exam subjects", () => {
+  const examCtx = { catalogue: examCatalogue(), provinces: PROVINCES };
+
+  it.each([
+    [rule(MATH, "at_least", ["50"]), "math score is at least 50 points"],
+    [rule(LOGIC, "between", ["40", "90"]), "logic score is between 40 points and 90 points"],
+    [rule(ENGLISH, "less_than", ["30.5"]), "english score is less than 30.5 points"],
+    [rule("exam_total", "at_least", ["200"]), "total exam score is at least 200 points"],
+    [rule("exam_average", "greater_than", ["65"]), "average exam score is greater than 65 points"],
+  ])("reads %# as a sentence", (r, expected) => {
+    expect(describeRule(r, examCtx)).toBe(expected);
+  });
+
+  it.each([
+    [rule(MATH, "at_least", ["50"]), "Math score must be at least 50 points."],
+    [rule("exam_average", "at_least", ["60"]), "Average exam score must be at least 60 points."],
+  ])("pre-fills %# with a plain reason", (r, expected) => {
+    expect(defaultMessage(r, examCtx)).toBe(expected);
+  });
+
+  it("writes subject rules into the summary with the other rules", () => {
+    const groups = [group([rule("age", "at_least", ["17"]), rule(MATH, "at_least", ["50"]), rule("exam_average", "at_least", ["60"], { type: "Optional" })])];
+
+    const summary = summarize(groups, examCtx);
+
+    expect(summary.eligibleSentence).toBe("A candidate is eligible if: age is at least 17, AND math score is at least 50 points.");
+    expect(summary.optionalSentence).toContain("average exam score is at least 60 points");
+  });
+
+  it("follows a renamed subject, because the catalogue label changes and the rule keeps its key", () => {
+    const renamed = examCatalogue(SUBJECTS.map((s) => (s.key === MATH ? { ...s, name: "Mathematics" } : s)));
+
+    expect(describeRule(rule(MATH, "at_least", ["50"]), { catalogue: renamed, provinces: PROVINCES })).toBe("mathematics score is at least 50 points");
   });
 });
