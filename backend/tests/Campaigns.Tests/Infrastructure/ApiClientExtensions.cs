@@ -3,9 +3,6 @@ using Campaigns.Application;
 
 namespace Campaigns.Tests.Infrastructure;
 
-/// <summary>The body of an RFC 7807 problem response as this API writes it.</summary>
-public sealed record ProblemBody(string? Title, int? Status, string? Code, Dictionary<string, string[]>? Errors);
-
 public static class ApiClientExtensions
 {
     public static async Task<CampaignDetailDto> CreateCampaignAsync(this HttpClient client, string? name = null)
@@ -30,7 +27,4 @@ public static class ApiClientExtensions
 
     public static async Task<CampaignDetailDto> ReadCampaignAsync(this HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<CampaignDetailDto>())!;
-
-    public static async Task<ProblemBody> ReadProblemAsync(this HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemBody>())!;
 }

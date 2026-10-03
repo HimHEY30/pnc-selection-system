@@ -4,7 +4,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-namespace Campaigns.Tests.Infrastructure;
+namespace Ssms.TestSupport;
 
 /// <summary>
 /// Stands in for the Keycloak JWT scheme in tests. The caller is described by request

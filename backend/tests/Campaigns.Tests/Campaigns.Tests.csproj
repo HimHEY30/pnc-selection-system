@@ -18,10 +18,12 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Ssms.TestSupport" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Host\Host.csproj" />
+    <ProjectReference Include="..\Ssms.TestSupport\Ssms.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>
