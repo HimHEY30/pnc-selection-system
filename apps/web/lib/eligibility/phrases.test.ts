@@ -1,0 +1,151 @@
+import { describe, expect, it } from "vitest";
+import { CATALOGUE, group, PROVINCES, rule } from "@/test-utils/eligibility-fixtures";
+import { defaultMessage, describeRule, displayValue, findField, summarize } from "./phrases";
+
+const ctx = { catalogue: CATALOGUE, provinces: PROVINCES };
+
+describe("displayValue", () => {
+  it("shows an option by its label", () => {
+    expect(displayValue(findField(ctx, "highest_grade")!, "grade_12", ctx)).toBe("Grade 12");
+  });
+
+  it("shows a province by its name, and an unknown one by its id", () => {
+    const province = findField(ctx, "province")!;
+    expect(displayValue(province, "17", ctx)).toBe("Siem Reap");
+    expect(displayValue(province, "99", ctx)).toBe("99");
+  });
+
+  it("adds the unit to money but not to ages", () => {
+    expect(displayValue(findField(ctx, "family_income")!, "300", ctx)).toBe("300 USD");
+    expect(displayValue(findField(ctx, "age")!, "17", ctx)).toBe("17");
+  });
+
+  it("writes dates the way the rest of the app does", () => {
+    const date = { ...findField(ctx, "age")!, valueType: "Date" as const, unit: null };
+    expect(displayValue(date, "2026-11-02", ctx)).toBe("2 Nov 2026");
+  });
+
+  it("shows a missing value as an ellipsis", () => {
+    expect(displayValue(findField(ctx, "age")!, "  ", ctx)).toBe("…");
+  });
+});
+
+describe("describeRule", () => {
+  it.each([
+    [rule("age", "between", ["17", "23"]), "age is between 17 and 23"],
+    [rule("age", "equals", ["20"]), "age is 20"],
+    [rule("age", "less_than", ["20"]), "age is less than 20"],
+    [rule("age", "at_most", ["20"]), "age is at most 20"],
+    [rule("age", "greater_than", ["20"]), "age is greater than 20"],
+    [rule("age", "at_least", ["20"]), "age is at least 20"],
+    [rule("gender", "is", ["female"]), "gender is Female"],
+    [rule("gender", "is_not", ["male"]), "gender is not Male"],
+    [rule("highest_grade", "is_one_of", ["grade_12", "diploma_or_higher"]), "highest grade completed is one of Grade 12, Diploma or higher"],
+    [rule("highest_grade", "is_none_of", ["grade_9"]), "highest grade completed is none of Grade 9"],
+    [rule("attended_info_session", "is_yes"), "attended an information session is yes"],
+    [rule("attended_info_session", "is_no"), "attended an information session is no"],
+    [rule("province", "is_one_of", ["2", "17"]), "province is one of Battambang, Siem Reap"],
+    [rule("family_income", "at_most", ["300"]), "family monthly income is at most 300 USD"],
+  ])("reads %# as a sentence", (r, expected) => {
+    expect(describeRule(r, ctx)).toBe(expected);
+  });
+
+  it("shows ellipses for values that are not filled in yet", () => {
+    expect(describeRule(rule("age", "between", ["17"]), ctx)).toBe("age is between 17 and …");
+    expect(describeRule(rule("age", "at_least", []), ctx)).toBe("age is at least …");
+  });
+
+  it("shows an ellipsis for a rule with no field yet", () => {
+    expect(describeRule(rule("", "", []), ctx)).toBe("…");
+  });
+});
+
+describe("defaultMessage", () => {
+  it.each([
+    [rule("age", "between", ["17", "23"]), "Age must be between 17 and 23."],
+    [rule("age", "at_least", ["17"]), "Age must be at least 17."],
+    [rule("gender", "is", ["female"]), "Gender must be Female."],
+    [rule("highest_grade", "is_one_of", ["grade_12", "diploma_or_higher"]), "Highest grade completed must be one of: Grade 12, Diploma or higher."],
+    [rule("marital_status", "is_not", ["married"]), "Marital status must not be Married."],
+    [rule("attended_info_session", "is_yes"), "Attended an information session must be yes."],
+    [rule("family_income", "at_most", ["300"]), "Family monthly income must be at most 300 USD."],
+  ])("pre-fills %# with a plain reason", (r, expected) => {
+    expect(defaultMessage(r, ctx)).toBe(expected);
+  });
+
+  it("falls back to a general sentence when the rule is not filled in", () => {
+    expect(defaultMessage(rule("", "", []), ctx)).toBe("The candidate does not meet this rule.");
+  });
+});
+
+describe("summarize", () => {
+  it("says nothing is set when there are no rules", () => {
+    expect(summarize([], ctx)).toEqual({ isEmpty: true, eligibleSentence: null, optionalSentence: null });
+    expect(summarize([group([])], ctx).isEmpty).toBe(true);
+  });
+
+  it("writes the example from the brief", () => {
+    const groups = [
+      group([
+        rule("age", "between", ["17", "23"]),
+        rule("highest_grade", "is", ["grade_12"]),
+        rule("province", "is_one_of", ["2", "17"]),
+      ]),
+    ];
+
+    expect(summarize(groups, ctx).eligibleSentence).toBe(
+      "A candidate is eligible if: age is between 17 and 23, AND highest grade completed is Grade 12, AND province is one of Battambang, Siem Reap.",
+    );
+  });
+
+  it("brackets an ANY group as one OR part", () => {
+    const groups = [
+      group([rule("age", "at_least", ["17"])]),
+      group([rule("province", "is", ["2"]), rule("province", "is", ["17"])], { logic: "Any" }),
+    ];
+
+    expect(summarize(groups, ctx).eligibleSentence).toBe(
+      "A candidate is eligible if: age is at least 17, AND (province is Battambang OR province is Siem Reap).",
+    );
+  });
+
+  it("does not bracket an ANY group that has a single rule", () => {
+    const groups = [group([rule("age", "at_least", ["17"])], { logic: "Any" })];
+
+    expect(summarize(groups, ctx).eligibleSentence).toBe("A candidate is eligible if: age is at least 17.");
+  });
+
+  it("leaves out inactive rules and puts optional rules on their own line", () => {
+    const groups = [
+      group([
+        rule("age", "at_least", ["17"]),
+        rule("gender", "is", ["female"], { isActive: false }),
+        rule("attended_info_session", "is_yes", [], { type: "Optional" }),
+        rule("marital_status", "is", ["single"], { type: "Optional" }),
+      ]),
+    ];
+
+    const summary = summarize(groups, ctx);
+
+    expect(summary.eligibleSentence).toBe("A candidate is eligible if: age is at least 17.");
+    expect(summary.optionalSentence).toBe(
+      "Optional rules (a candidate who fails these is only given a warning): attended an information session is yes; marital status is Single.",
+    );
+  });
+
+  it("has no eligibility sentence when only optional or inactive rules exist", () => {
+    const groups = [group([rule("gender", "is", ["female"], { type: "Optional" }), rule("age", "at_least", ["17"], { isActive: false })])];
+
+    const summary = summarize(groups, ctx);
+
+    expect(summary.isEmpty).toBe(false);
+    expect(summary.eligibleSentence).toBeNull();
+    expect(summary.optionalSentence).not.toBeNull();
+  });
+
+  it("works while a rule is half filled in", () => {
+    const groups = [group([rule("age", "between", ["17"])])];
+
+    expect(summarize(groups, ctx).eligibleSentence).toBe("A candidate is eligible if: age is between 17 and ….");
+  });
+});

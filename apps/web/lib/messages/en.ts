@@ -216,6 +216,59 @@ export const en = {
     provincesRequired: "Choose at least one target province.",
   },
 
+  eligibility: {
+    // How a rule reads inside the summary sentence: operator key -> (field, value(s)).
+    phrase: {
+      equals: (f: string, v: string[]) => `${f} is ${v[0]}`,
+      less_than: (f: string, v: string[]) => `${f} is less than ${v[0]}`,
+      at_most: (f: string, v: string[]) => `${f} is at most ${v[0]}`,
+      greater_than: (f: string, v: string[]) => `${f} is greater than ${v[0]}`,
+      at_least: (f: string, v: string[]) => `${f} is at least ${v[0]}`,
+      between: (f: string, v: string[]) => `${f} is between ${v[0]} and ${v[1]}`,
+      is: (f: string, v: string[]) => `${f} is ${v[0]}`,
+      is_not: (f: string, v: string[]) => `${f} is not ${v[0]}`,
+      is_one_of: (f: string, v: string[]) => `${f} is one of ${v.join(", ")}`,
+      is_none_of: (f: string, v: string[]) => `${f} is none of ${v.join(", ")}`,
+      is_yes: (f: string) => `${f} is yes`,
+      is_no: (f: string) => `${f} is no`,
+      before: (f: string, v: string[]) => `${f} is before ${v[0]}`,
+      after: (f: string, v: string[]) => `${f} is after ${v[0]}`,
+      date_between: (f: string, v: string[]) => `${f} is between ${v[0]} and ${v[1]}`,
+    } as Record<string, (field: string, values: string[]) => string>,
+
+    // The failure message pre-filled for a new rule: operator key -> (field, value(s)).
+    defaultMessage: {
+      equals: (f: string, v: string[]) => `${f} must be equal to ${v[0]}.`,
+      less_than: (f: string, v: string[]) => `${f} must be less than ${v[0]}.`,
+      at_most: (f: string, v: string[]) => `${f} must be at most ${v[0]}.`,
+      greater_than: (f: string, v: string[]) => `${f} must be greater than ${v[0]}.`,
+      at_least: (f: string, v: string[]) => `${f} must be at least ${v[0]}.`,
+      between: (f: string, v: string[]) => `${f} must be between ${v[0]} and ${v[1]}.`,
+      is: (f: string, v: string[]) => `${f} must be ${v[0]}.`,
+      is_not: (f: string, v: string[]) => `${f} must not be ${v[0]}.`,
+      is_one_of: (f: string, v: string[]) => `${f} must be one of: ${v.join(", ")}.`,
+      is_none_of: (f: string, v: string[]) => `${f} must not be any of: ${v.join(", ")}.`,
+      is_yes: (f: string) => `${f} must be yes.`,
+      is_no: (f: string) => `${f} must be no.`,
+      before: (f: string, v: string[]) => `${f} must be before ${v[0]}.`,
+      after: (f: string, v: string[]) => `${f} must be after ${v[0]}.`,
+      date_between: (f: string, v: string[]) => `${f} must be between ${v[0]} and ${v[1]}.`,
+    } as Record<string, (field: string, values: string[]) => string>,
+    fallbackMessage: "The candidate does not meet this rule.",
+
+    summary: {
+      title: "Summary",
+      empty: "Add a rule to see who would be eligible.",
+      intro: "A candidate is eligible if:",
+      and: ", AND ",
+      or: " OR ",
+      noMandatory: "There is no active mandatory rule yet, so every candidate would be eligible.",
+      optionalIntro: "Optional rules (a candidate who fails these is only given a warning):",
+      optionalSeparator: "; ",
+      missingValue: "…",
+    },
+  },
+
   errors: {
     pageTitle: "We could not load this page",
     pageBody: "Something went wrong on our side. Your saved work is safe.",
