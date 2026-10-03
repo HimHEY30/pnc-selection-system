@@ -57,6 +57,10 @@ public abstract class ApiFixture : IAsyncLifetime
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
             });
         });
+
+        // The app starts (and applies the migrations) the first time anything touches the server.
+        // Do it now, so a test that goes straight to the database never runs before the schema exists.
+        _ = _factory.Server;
     }
 
     public async Task DisposeAsync()
