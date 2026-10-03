@@ -37,6 +37,32 @@ and the Create campaign dialog.
 Spotlight tour, tooltips on fields, a per-user setting that follows the person across devices, Khmer text, a video, a
 "what's new" feed, hints inside empty states.
 
-## Not verified (to be updated when done)
+## What was built
 
-Nothing is verified in a browser yet.
+- **Tour:** `GuideProvider` (in the admin layout) owns one `GuideTour`, a `FormDialog` showing one step at a time with a
+  progress bar. The admin layout reads the `pnc_guide_seen` cookie on the server, so the tour opens on the first visit with
+  no flash. Closing it any way (Got it, Skip the tour, the ×, Escape) sets the cookie from the browser.
+- **Guide page:** `/admin/guide`, a **Help › Guide** link in the sidebar, the same steps as sections for the person's role,
+  **Show the tour again**, and a glossary. Text is `t.guide` in `lib/messages/en.ts`; which steps a person gets is
+  `guideFor(roles)` in `lib/guide/guide.ts` (admin or manager: campaign guide; anyone else: officer guide).
+- **Unsaved changes:** `FormDialog` has `dirty`; the session, host, attendance-numbers and cancel-session forms and the
+  Create campaign dialog report it. The numbers form compares with its last save because it stays open after saving.
+  The Create campaign dialog has its own `<dialog>`, so it carries the same question itself.
+- Behaviour you might not expect: the cookie is **per browser, not per person**. Two people sharing one browser profile
+  see the tour once between them. The guide text only describes what exists today: Steps 4 and 5 (Candidates, Entrance
+  exam) are said to be "not open yet".
+
+## Tests
+
+`cd apps/web && npm test && npx tsc --noEmit && npm run lint` (820 tests, 39 new): the discard question for every way of
+closing, each of the five forms, which steps each role gets, the tour's navigation, the cookie being set only on close,
+and reopening from the Guide page. `npx next build` also compiles, with `/admin/guide` as a dynamic route.
+
+## Not verified
+
+- **No browser.** Nothing was looked at: the tour and Guide page layout, phone width, keyboard and screen-reader use, or the
+  tour opening on a real first login. The running Docker stack still has the old build.
+- **Escape in a real browser.** Chrome may refuse to hold back a second Escape press that follows the first with no click or
+  key in between. The tests send the `cancel` event by hand; they do not prove how each browser behaves.
+- The server-side parts (the layout reading the cookie, the Guide page) have no unit test; only the build covers them.
+- The guide's wording is mine and has not been read by PNC staff.
