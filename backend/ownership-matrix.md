@@ -49,15 +49,20 @@ Not owned: users (Keycloak). `created_by_name` is a snapshot, not a reference.
 Owns (schema `eligibility` in the `ssms` database):
 - The field catalogue: `fields`, `field_options`, `operators` (seeded by the first migration). A field is a row, so a
   new field needs no change to the rule builder. A new operator also needs code in the evaluator.
+- Each campaign's **exam subjects** (Math, Logic, English, ...): rows of `fields` that carry a `campaign_id` and a
+  `subject_name`, plus `exam_setups` (marks that a campaign's defaults were added). The shared catalogue also holds the
+  total and average of a campaign's subjects. Subject rules live with the other rules; the subjects are Eligibility's, not
+  a Campaigns concept.
 - `RuleSet` (one per campaign) with its `RuleGroup`s and `Rule`s, and the append-only `audit_log` of who changed what
 - `EligibilityEvaluator` (Eligibility.Domain): decides whether a candidate is eligible under a rule set and returns
   the result of every rule. Pure (no database, no web request), so the Candidates step can call it for every candidate.
 - Rule validation, contradiction and duplicate detection, the suggested starter rules (Eligibility.Domain / Application)
 
 Publishes:
-- HTTP API: `/api/eligibility/catalogue`, `/api/campaigns/{id}/eligibility[/draft|/test|/suggested]`
-- `IEligibilityService` (Eligibility.Application), including `CopyRulesAsync` for the Create dialog's future
-  "copy settings" option
+- HTTP API: `/api/eligibility/catalogue`, `/api/campaigns/{id}/eligibility[/draft|/test|/suggested]`,
+  `/api/campaigns/{id}/eligibility/exam-subjects[/{key}]` (the campaign's subjects and its own catalogue)
+- `IEligibilityService` (Eligibility.Application), including `CopyRulesAsync` (which also copies the subjects) for the
+  Create dialog's future "copy settings" option; `IExamSubjectService` for the subject list
 - `EligibilityEvaluator`, `RuleSetContent`, `CandidateData`, `EligibilityResult` (Eligibility.Domain), for the
   Candidates step
 
@@ -65,8 +70,11 @@ Consumes:
 - Campaigns: `ICampaignSetupGateway` (is the campaign a draft, its target provinces and start date; set Step 2's status)
 - Identity: `ICurrentUserService`, `AuthorizationPolicies` (`OperationsTier` to read and test, `ManagementTier` to save)
 
-Written by hand: the foreign keys from `rule_sets` and `audit_log` to `campaigns.campaigns` (that table belongs to
-another module's context, so EF cannot model them). The Host runs the Campaigns migrations first for that reason.
+Written by hand: the foreign keys from `rule_sets`, `audit_log`, `exam_setups` and a subject's `fields` row to
+`campaigns.campaigns` (that table belongs to another module's context, so EF cannot model them). The Host runs the
+Campaigns migrations first for that reason. Also by hand, because EF cannot describe them: the unique subject name per
+campaign (an expression index) and the rule-to-field key, which is checked when the transaction commits so a campaign's
+subjects and rules can be deleted together.
 
 ---
 
