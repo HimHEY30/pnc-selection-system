@@ -23,4 +23,7 @@ internal static class Names
         TimeOnly.TryParseExact(text?.Trim(), TimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? time : null;
 
     public static string Time(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>Null stays null: a session that is not scheduled has no times.</summary>
+    public static string? Time(TimeOnly? time) => time is { } value ? Time(value) : null;
 }

@@ -77,16 +77,17 @@ public sealed record SessionDto(
     Guid Id,
     Guid CampaignId,
     string Title,
-    DateOnly Date,
-    string StartTime,
-    string EndTime,
+    // Date, times, assignee and host are null while the session is Unscheduled (or was cancelled before it was scheduled).
+    DateOnly? Date,
+    string? StartTime,
+    string? EndTime,
     string Format,
     string? Venue,
     string? MeetingLink,
     SessionProvinceDto? Province,
     string? Notes,
-    PersonDto Assignee,
-    SessionHostDto Host,
+    PersonDto? Assignee,
+    SessionHostDto? Host,
     string Status,
     string? CancelReason,
     int? ExpectedCandidates,
@@ -94,7 +95,10 @@ public sealed record SessionDto(
     string CreatedByName,
     DateTimeOffset UpdatedAt);
 
-/// <summary>The totals across a campaign's sessions that are not cancelled.</summary>
+/// <summary>
+/// The totals across a campaign's sessions that are not cancelled. <paramref name="Unscheduled"/> are copies that have
+/// no date yet; they are part of <paramref name="Total"/> but not of <paramref name="Planned"/>.
+/// </summary>
 public sealed record SessionSummaryDto(
     int Total,
     int Planned,
@@ -103,7 +107,8 @@ public sealed record SessionSummaryDto(
     int ExpectedCandidates,
     int ActualFemale,
     int ActualMale,
-    int ActualTotal);
+    int ActualTotal,
+    int Unscheduled = 0);
 
 /// <summary>A campaign's sessions, and what the page needs to show and change them.</summary>
 public sealed record SessionListDto(

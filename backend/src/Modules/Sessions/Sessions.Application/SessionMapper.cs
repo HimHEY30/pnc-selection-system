@@ -19,17 +19,20 @@ internal static class SessionMapper
     /// <param name="host">The directory record, for an alumnus or a partner host.</param>
     public static SessionDto ToDto(InformationSession s, SessionProvinceDto? province, SessionHost? host)
     {
-        var sessionHost = s.HostType == HostType.Officer
-            ? new SessionHostDto(nameof(HostType.Officer), s.HostUserName ?? string.Empty, s.HostUserId, null, null, null, null, true)
-            : new SessionHostDto(
-                s.HostType.ToString(),
+        var sessionHost = s.HostType switch
+        {
+            null => null,
+            HostType.Officer => new SessionHostDto(nameof(HostType.Officer), s.HostUserName ?? string.Empty, s.HostUserId, null, null, null, null, true),
+            var type => new SessionHostDto(
+                type.ToString()!,
                 host?.Name ?? string.Empty,
                 null,
                 s.HostId,
                 host?.PartnerKind?.ToString(),
                 host?.Phone,
                 host?.Email,
-                host?.IsActive ?? false);
+                host?.IsActive ?? false),
+        };
 
         var attendance = s is { ActualFemale: { } female, ActualMale: { } male, AttendanceRecordedAt: { } at }
             ? new AttendanceDto(female, male, female + male, at, s.AttendanceRecordedByName ?? string.Empty)
@@ -47,7 +50,7 @@ internal static class SessionMapper
             s.MeetingLink,
             province,
             s.Notes,
-            new PersonDto(s.AssigneeId, s.AssigneeName),
+            s.AssigneeId is { } assigneeId ? new PersonDto(assigneeId, s.AssigneeName ?? string.Empty) : null,
             sessionHost,
             s.Status.ToString(),
             s.CancelReason,

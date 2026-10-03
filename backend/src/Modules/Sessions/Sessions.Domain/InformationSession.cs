@@ -1,4 +1,5 @@
 using SharedKernel;
+using Kind = Sessions.Domain.HostType;
 
 namespace Sessions.Domain;
 
@@ -20,10 +21,22 @@ public sealed record SessionDetails(
     string AssigneeName,
     HostRef Host);
 
+/// <summary>What a copied session keeps: everything except when it happens and who is responsible or runs it.</summary>
+public sealed record SessionTemplate(
+    string Title,
+    SessionFormat Format,
+    string? Venue,
+    string? MeetingLink,
+    short? ProvinceId,
+    string? Notes);
+
 /// <summary>
 /// One information session of a campaign: when, where, who is responsible, who runs it, how many
 /// candidates are expected and, afterwards, how many came (females and males). Every change goes
 /// through this class so a session can never hold an impossible combination.
+/// The date, times, person responsible and host go together: a Planned or Done session has all of them, and only a
+/// session that was copied and not yet scheduled (<see cref="SessionStatus.Unscheduled"/>), or cancelled before it
+/// was scheduled, has none.
 /// </summary>
 public sealed class InformationSession
 {
@@ -31,9 +44,11 @@ public sealed class InformationSession
     public Guid CampaignId { get; private set; }
 
     public string Title { get; private set; } = string.Empty;
-    public DateOnly Date { get; private set; }
-    public TimeOnly StartTime { get; private set; }
-    public TimeOnly EndTime { get; private set; }
+    /// <summary>Null until the session is scheduled.</summary>
+    public DateOnly? Date { get; private set; }
+
+    public TimeOnly? StartTime { get; private set; }
+    public TimeOnly? EndTime { get; private set; }
     public SessionFormat Format { get; private set; }
     public string? Venue { get; private set; }
     public string? MeetingLink { get; private set; }
@@ -44,12 +59,13 @@ public sealed class InformationSession
     public string? Notes { get; private set; }
 
     /// <summary>Keycloak subject of the staff member responsible for the session.</summary>
-    public string AssigneeId { get; private set; } = string.Empty;
+    public string? AssigneeId { get; private set; }
 
     /// <summary>Display name at the time of assigning. Keycloak owns users, so this is a snapshot.</summary>
-    public string AssigneeName { get; private set; } = string.Empty;
+    public string? AssigneeName { get; private set; }
 
-    public HostType HostType { get; private set; }
+    /// <summary>Null until the session is scheduled.</summary>
+    public HostType? HostType { get; private set; }
 
     /// <summary>The directory record, for an alumnus or a partner. Null for an officer.</summary>
     public Guid? HostId { get; private set; }
@@ -108,6 +124,60 @@ public sealed class InformationSession
         };
         session.Apply(cleaned.Value, now);
         return session;
+    }
+
+    /// <summary>
+    /// Creates a session without a date, times, host or person responsible, for a copy of another campaign's sessions.
+    /// The title, format, venue or link, province and notes are checked as for any session.
+    /// </summary>
+    public static Result<InformationSession> CreateUnscheduled(
+        Guid campaignId, SessionTemplate template, string createdById, string createdByName, DateTimeOffset now)
+    {
+        var errors = new Dictionary<string, string[]>();
+        var content = CheckContent(template.Title, template.Format, template.Venue, template.MeetingLink, template.Notes, errors);
+        if (errors.Count > 0)
+        {
+            return Result.Failure<InformationSession>(SessionErrors.Invalid(errors));
+        }
+
+        return new InformationSession
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = campaignId,
+            Status = SessionStatus.Unscheduled,
+            Title = content.Title,
+            Format = template.Format,
+            Venue = content.Venue,
+            MeetingLink = content.MeetingLink,
+            ProvinceId = template.ProvinceId,
+            Notes = content.Notes,
+            CreatedById = createdById,
+            CreatedByName = createdByName,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+    }
+
+    /// <summary>
+    /// Gives an unscheduled session its date, times, person responsible and host, all at once, and makes it Planned.
+    /// The details are checked exactly as for a new session.
+    /// </summary>
+    public Result Schedule(SessionDetails details, DateTimeOffset now)
+    {
+        if (Status != SessionStatus.Unscheduled)
+        {
+            return Result.Failure(SessionErrors.NotUnscheduled);
+        }
+
+        var cleaned = Validate(details);
+        if (cleaned.IsFailure)
+        {
+            return Result.Failure(cleaned.Error);
+        }
+
+        Apply(cleaned.Value, now);
+        Status = SessionStatus.Planned;
+        return Result.Success();
     }
 
     /// <summary>Changes the details of a planned session.</summary>
@@ -187,6 +257,11 @@ public sealed class InformationSession
             return Result.Failure(SessionErrors.AlreadyCancelled);
         }
 
+        if (Date is not { } date)
+        {
+            return Result.Failure(SessionErrors.NotScheduled);
+        }
+
         var errors = new Dictionary<string, string[]>();
         if (female is < 0 or > SessionLimits.CountMax)
         {
@@ -203,7 +278,7 @@ public sealed class InformationSession
             return Result.Failure(SessionErrors.Invalid(errors));
         }
 
-        if (Date > SessionLimits.LocalToday(now))
+        if (date > SessionLimits.LocalToday(now))
         {
             return Result.Failure(SessionErrors.NotHeldYet);
         }
@@ -246,55 +321,12 @@ public sealed class InformationSession
     {
         var errors = new Dictionary<string, string[]>();
 
-        var title = SessionLimits.Clean(d.Title);
-        if (title is null)
-        {
-            errors["title"] = ["Enter a title."];
-        }
-        else if (title.Length > SessionLimits.TitleMax)
-        {
-            errors["title"] = [$"Use at most {SessionLimits.TitleMax} characters."];
-        }
+        var content = CheckContent(d.Title, d.Format, d.Venue, d.MeetingLink, d.Notes, errors);
+        var (title, venue, link, notes) = content;
 
         if (d.EndTime <= d.StartTime)
         {
             errors["endTime"] = ["The end must be after the start."];
-        }
-
-        if (!Enum.IsDefined(d.Format))
-        {
-            errors["format"] = ["Choose in person, online or hybrid."];
-        }
-
-        var needsVenue = d.Format is SessionFormat.InPerson or SessionFormat.Hybrid;
-        var needsLink = d.Format is SessionFormat.Online or SessionFormat.Hybrid;
-
-        var venue = needsVenue ? SessionLimits.Clean(d.Venue) : null;
-        if (needsVenue && venue is null)
-        {
-            errors["venue"] = ["Enter where the session takes place."];
-        }
-        else if (venue is { Length: > SessionLimits.VenueMax })
-        {
-            errors["venue"] = [$"Use at most {SessionLimits.VenueMax} characters."];
-        }
-
-        var link = needsLink ? d.MeetingLink?.Trim() : null;
-        link = string.IsNullOrEmpty(link) ? null : link;
-        if (needsLink && link is null)
-        {
-            errors["meetingLink"] = ["Enter the link people will join with."];
-        }
-        else if (link is not null && (link.Length > SessionLimits.MeetingLinkMax || !IsWebAddress(link)))
-        {
-            errors["meetingLink"] = [$"Enter a web address starting with https:// (at most {SessionLimits.MeetingLinkMax} characters)."];
-        }
-
-        // Notes keep their line breaks, so they are trimmed, not collapsed.
-        var notes = string.IsNullOrWhiteSpace(d.Notes) ? null : d.Notes.Trim();
-        if (notes is { Length: > SessionLimits.NotesMax })
-        {
-            errors["notes"] = [$"Use at most {SessionLimits.NotesMax} characters."];
         }
 
         if (string.IsNullOrWhiteSpace(d.AssigneeId) || string.IsNullOrWhiteSpace(d.AssigneeName))
@@ -318,22 +350,75 @@ public sealed class InformationSession
             });
     }
 
+    /// <summary>What a session says about itself, without when or who: tidied, and every problem added to <paramref name="errors"/>.</summary>
+    private static (string? Title, string? Venue, string? MeetingLink, string? Notes) CheckContent(
+        string? rawTitle, SessionFormat format, string? rawVenue, string? rawLink, string? rawNotes, Dictionary<string, string[]> errors)
+    {
+        var title = SessionLimits.Clean(rawTitle);
+        if (title is null)
+        {
+            errors["title"] = ["Enter a title."];
+        }
+        else if (title.Length > SessionLimits.TitleMax)
+        {
+            errors["title"] = [$"Use at most {SessionLimits.TitleMax} characters."];
+        }
+
+        if (!Enum.IsDefined(format))
+        {
+            errors["format"] = ["Choose in person, online or hybrid."];
+        }
+
+        var needsVenue = format is SessionFormat.InPerson or SessionFormat.Hybrid;
+        var needsLink = format is SessionFormat.Online or SessionFormat.Hybrid;
+
+        var venue = needsVenue ? SessionLimits.Clean(rawVenue) : null;
+        if (needsVenue && venue is null)
+        {
+            errors["venue"] = ["Enter where the session takes place."];
+        }
+        else if (venue is { Length: > SessionLimits.VenueMax })
+        {
+            errors["venue"] = [$"Use at most {SessionLimits.VenueMax} characters."];
+        }
+
+        var link = needsLink ? rawLink?.Trim() : null;
+        link = string.IsNullOrEmpty(link) ? null : link;
+        if (needsLink && link is null)
+        {
+            errors["meetingLink"] = ["Enter the link people will join with."];
+        }
+        else if (link is not null && (link.Length > SessionLimits.MeetingLinkMax || !IsWebAddress(link)))
+        {
+            errors["meetingLink"] = [$"Enter a web address starting with https:// (at most {SessionLimits.MeetingLinkMax} characters)."];
+        }
+
+        // Notes keep their line breaks, so they are trimmed, not collapsed.
+        var notes = string.IsNullOrWhiteSpace(rawNotes) ? null : rawNotes.Trim();
+        if (notes is { Length: > SessionLimits.NotesMax })
+        {
+            errors["notes"] = [$"Use at most {SessionLimits.NotesMax} characters."];
+        }
+
+        return (title, venue, link, notes);
+    }
+
     private static HostRef CheckHost(HostRef host, Dictionary<string, string[]> errors)
     {
         switch (host.Type)
         {
-            case HostType.Officer:
+            case Kind.Officer:
                 if (string.IsNullOrWhiteSpace(host.UserId) || string.IsNullOrWhiteSpace(host.UserName))
                 {
                     errors["hostUserId"] = ["Choose the officer who runs the session."];
                 }
 
-                return new HostRef(HostType.Officer, null, host.UserId?.Trim(), host.UserName?.Trim());
+                return new HostRef(Kind.Officer, null, host.UserId?.Trim(), host.UserName?.Trim());
 
-            case HostType.Alumni or HostType.Partner:
+            case Kind.Alumni or Kind.Partner:
                 if (host.HostId is null || host.HostId == Guid.Empty)
                 {
-                    errors["hostId"] = [host.Type == HostType.Alumni ? "Choose the alumnus who runs the session." : "Choose the partner who runs the session."];
+                    errors["hostId"] = [host.Type == Kind.Alumni ? "Choose the alumnus who runs the session." : "Choose the partner who runs the session."];
                 }
 
                 return new HostRef(host.Type, host.HostId, null, null);

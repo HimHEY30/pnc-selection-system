@@ -184,7 +184,10 @@ public sealed class SessionService : ISessionService
         }
 
         var (context, session, user) = opened.Value;
-        if (session.Status != SessionStatus.Planned)
+
+        // Saving the form of an unscheduled session schedules it: it needs everything, and becomes Planned.
+        var scheduling = session.Status == SessionStatus.Unscheduled;
+        if (session.Status != SessionStatus.Planned && !scheduling)
         {
             return Result.Failure<SessionDto>(SessionErrors.NotPlanned);
         }
@@ -196,7 +199,9 @@ public sealed class SessionService : ISessionService
         }
 
         var before = Snapshot(session);
-        var updated = session.Update(prepared.Value.Details, _clock.UtcNow);
+        var updated = scheduling
+            ? session.Schedule(prepared.Value.Details, _clock.UtcNow)
+            : session.Update(prepared.Value.Details, _clock.UtcNow);
         if (updated.IsFailure)
         {
             return Result.Failure<SessionDto>(updated.Error);
@@ -211,7 +216,14 @@ public sealed class SessionService : ISessionService
         AddAudit(session, AuditAction.Updated, before, after, user);
 
         var saved = await _repository.SaveChangesAsync(ct);
-        return saved.IsFailure ? Result.Failure<SessionDto>(saved.Error) : await ToDtoAsync(session, context, ct);
+        if (saved.IsFailure)
+        {
+            return Result.Failure<SessionDto>(saved.Error);
+        }
+
+        // Scheduling the first copy is what completes the step, so it is refreshed here, not only on create and cancel.
+        var step = scheduling ? await RefreshStepAsync(context, ct) : Result.Success();
+        return step.IsFailure ? Result.Failure<SessionDto>(step.Error) : await ToDtoAsync(session, context, ct);
     }
 
     public async Task<Result<SessionDto>> CancelAsync(Guid campaignId, Guid sessionId, CancelRequest request, CancellationToken ct)
@@ -558,8 +570,9 @@ public sealed class SessionService : ISessionService
     }
 
     /// <summary>
-    /// Keeps Step 3's status true to the sessions: complete once there is a session that is not cancelled, in progress
-    /// when there are only cancelled ones. The campaign only lets a draft change its steps, so a running campaign is left alone.
+    /// Keeps Step 3's status true to the sessions: complete once there is a scheduled session (planned or done), in
+    /// progress when there are only cancelled or unscheduled ones (a copy still has to be scheduled), not started when
+    /// there are none. The campaign only lets a draft change its steps, so a running campaign is left alone.
     /// </summary>
     private async Task<Result> RefreshStepAsync(CampaignSetupContext context, CancellationToken ct)
     {
@@ -569,7 +582,7 @@ public sealed class SessionService : ISessionService
         }
 
         var sessions = await _repository.ListSessionsAsync(context.CampaignId, ct);
-        var status = sessions.Any(s => s.Status != SessionStatus.Cancelled)
+        var status = sessions.Any(s => s.Status is SessionStatus.Planned or SessionStatus.Done)
             ? StepStatus.Complete
             : sessions.Count > 0 ? StepStatus.InProgress : StepStatus.NotStarted;
 
@@ -611,7 +624,8 @@ public sealed class SessionService : ISessionService
             counted.Sum(s => s.ExpectedCandidates ?? 0),
             female,
             male,
-            female + male);
+            female + male,
+            counted.Count(s => s.Status == SessionStatus.Unscheduled));
     }
 
     private void AddAudit(InformationSession session, AuditAction action, string? before, string? after, AuthenticatedUser user) =>
@@ -623,7 +637,7 @@ public sealed class SessionService : ISessionService
         new
         {
             title = s.Title,
-            date = s.Date.ToString("yyyy-MM-dd"),
+            date = s.Date?.ToString("yyyy-MM-dd"),
             startTime = Names.Time(s.StartTime),
             endTime = Names.Time(s.EndTime),
             format = s.Format.ToString(),
@@ -633,7 +647,7 @@ public sealed class SessionService : ISessionService
             notes = s.Notes,
             assigneeId = s.AssigneeId,
             assigneeName = s.AssigneeName,
-            hostType = s.HostType.ToString(),
+            hostType = s.HostType?.ToString(),
             hostId = s.HostId,
             hostUserId = s.HostUserId,
             hostUserName = s.HostUserName,

@@ -138,9 +138,76 @@ public sealed class SchemaTests
 
     [Theory]
     [InlineData((short)0)]
-    [InlineData((short)4)]
+    [InlineData((short)5)]
     public async Task ASession_NeedsAKnownStatus(short status) =>
         await AssertViolationAsync(InsertSessionAsync(await CampaignAsync(), status: status), "ck_sessions_status");
+
+    // ---------- Sessions that are not scheduled yet ----------
+
+    /// <summary>A copied session: a title, format and venue, and no date, times, person responsible or host.</summary>
+    private Task<int> InsertUnscheduledAsync(
+        Guid campaignId,
+        short status = 4,
+        string? date = null,
+        string? assignee = null,
+        short? hostType = null,
+        string? hostUserId = null,
+        string? cancelReason = null,
+        int? female = null,
+        int? male = null) => _fixture.ExecuteAsync(
+        """
+        insert into sessions.information_sessions
+            (id, campaign_id, title, session_date, start_time, end_time, format, venue, assignee_id, assignee_name,
+             host_type, host_user_id, host_user_name, status, cancel_reason, actual_female, actual_male,
+             attendance_recorded_at, created_by_id, created_by_name, created_at, updated_at)
+        values
+            (@id, @c, 'Open day', @d::date, null, null, 1, 'Hall', @a, @a,
+             @ht, @hu, @hu, @st, @cr, @fe, @ma,
+             case when @fe::int is not null then now() else null end, 'u', 'U', now(), now())
+        """,
+        ("id", Guid.NewGuid()), ("c", campaignId), ("d", date), ("a", assignee), ("ht", hostType), ("hu", hostUserId),
+        ("st", status), ("cr", cancelReason), ("fe", female), ("ma", male));
+
+    [Fact]
+    public async Task AnUnscheduledSession_HasNoDateTimesPersonOrHost_AndIsAccepted()
+    {
+        var campaign = await CampaignAsync();
+
+        await InsertUnscheduledAsync(campaign);
+        // One cancelled before it was ever scheduled has none either.
+        await InsertUnscheduledAsync(campaign, status: 3, cancelReason: "Not needed");
+
+        Assert.Equal(2, await _fixture.ScalarAsync<long>(
+            "select count(*) from sessions.information_sessions where campaign_id = @c and session_date is null", ("c", campaign)));
+    }
+
+    [Fact]
+    public async Task APlannedOrDoneSession_CannotLackADate()
+    {
+        var campaign = await CampaignAsync();
+
+        await AssertViolationAsync(InsertUnscheduledAsync(campaign, status: 1), "ck_sessions_scheduled");
+        await AssertViolationAsync(InsertUnscheduledAsync(campaign, status: 2, female: 3, male: 4), "ck_sessions_scheduled");
+    }
+
+    [Theory]
+    [InlineData("date")]
+    [InlineData("assignee")]
+    [InlineData("host")]
+    public async Task TheDateTimesPersonAndHost_AreAllThereOrAllEmpty(string givenOnly)
+    {
+        var campaign = await CampaignAsync();
+
+        var half = givenOnly switch
+        {
+            "date" => InsertUnscheduledAsync(campaign, date: "2027-03-20"),
+            "assignee" => InsertUnscheduledAsync(campaign, assignee: "officer-1"),
+            _ => InsertUnscheduledAsync(campaign, hostType: 1, hostUserId: "officer-1"),
+        };
+
+        var ex = await Assert.ThrowsAsync<PostgresException>(() => half);
+        Assert.Contains(ex.ConstraintName, new[] { "ck_sessions_scheduled", "ck_sessions_host_shape" });
+    }
 
     [Fact]
     public async Task ASession_NeedsAKnownFormat() =>

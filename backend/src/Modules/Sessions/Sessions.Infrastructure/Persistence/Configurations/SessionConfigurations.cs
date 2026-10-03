@@ -52,20 +52,34 @@ internal sealed class InformationSessionConfiguration : IEntityTypeConfiguration
     {
         builder.ToTable("information_sessions", table =>
         {
-            table.HasCheckConstraint("ck_sessions_status", "status IN (1, 2, 3)");
+            table.HasCheckConstraint("ck_sessions_status", "status IN (1, 2, 3, 4)");
             table.HasCheckConstraint("ck_sessions_format", "format IN (1, 2, 3)");
-            table.HasCheckConstraint("ck_sessions_host_type", "host_type IN (1, 2, 3)");
+            table.HasCheckConstraint("ck_sessions_host_type", "host_type IS NULL OR host_type IN (1, 2, 3)");
             table.HasCheckConstraint("ck_sessions_title", "length(btrim(title)) > 0");
             table.HasCheckConstraint("ck_sessions_times", "end_time > start_time");
+
+            // The date, times, person responsible and host go together: all there, or all empty. Only an Unscheduled
+            // session (a copy not yet scheduled), or one cancelled before it was scheduled, has them empty; a Planned or
+            // Done session always has them.
+            table.HasCheckConstraint(
+                "ck_sessions_scheduled",
+                "(session_date IS NULL) = (start_time IS NULL) "
+                + "AND (session_date IS NULL) = (end_time IS NULL) "
+                + "AND (session_date IS NULL) = (assignee_id IS NULL) "
+                + "AND (session_date IS NULL) = (assignee_name IS NULL) "
+                + "AND (session_date IS NULL) = (host_type IS NULL) "
+                + "AND (session_date IS NOT NULL OR status IN (3, 4))");
 
             // In person and hybrid need a venue; online and hybrid need a link.
             table.HasCheckConstraint("ck_sessions_venue", "format = 2 OR venue IS NOT NULL");
             table.HasCheckConstraint("ck_sessions_link", "format = 1 OR meeting_link IS NOT NULL");
 
-            // An officer host is a user; an alumnus or a partner is a directory record. Never both, never neither.
+            // An officer host is a user; an alumnus or a partner is a directory record. Never both, and neither only
+            // while the session has no host yet.
             table.HasCheckConstraint(
                 "ck_sessions_host_shape",
-                "(host_type = 1 AND host_user_id IS NOT NULL AND host_user_name IS NOT NULL AND host_id IS NULL) "
+                "(host_type IS NULL AND host_user_id IS NULL AND host_user_name IS NULL AND host_id IS NULL) "
+                + "OR (host_type = 1 AND host_user_id IS NOT NULL AND host_user_name IS NOT NULL AND host_id IS NULL) "
                 + "OR (host_type IN (2, 3) AND host_id IS NOT NULL AND host_user_id IS NULL AND host_user_name IS NULL)");
 
             // A cancelled session has a reason, and only a cancelled one does.
@@ -99,10 +113,10 @@ internal sealed class InformationSessionConfiguration : IEntityTypeConfiguration
         // A foreign key to campaigns.provinces is added by hand in the migration, for the same reason.
         builder.Property(s => s.ProvinceId).HasColumnName("province_id");
         builder.Property(s => s.Notes).HasColumnName("notes").HasMaxLength(SessionLimits.NotesMax);
-        builder.Property(s => s.AssigneeId).HasColumnName("assignee_id").HasMaxLength(100).IsRequired();
-        builder.Property(s => s.AssigneeName).HasColumnName("assignee_name").HasMaxLength(200).IsRequired();
+        builder.Property(s => s.AssigneeId).HasColumnName("assignee_id").HasMaxLength(100);
+        builder.Property(s => s.AssigneeName).HasColumnName("assignee_name").HasMaxLength(200);
 
-        builder.Property(s => s.HostType).HasColumnName("host_type").HasConversion<short>();
+        builder.Property(s => s.HostType).HasColumnName("host_type").HasConversion<short?>();
         builder.Property(s => s.HostId).HasColumnName("host_id");
         builder.Property(s => s.HostUserId).HasColumnName("host_user_id").HasMaxLength(100);
         builder.Property(s => s.HostUserName).HasColumnName("host_user_name").HasMaxLength(200);

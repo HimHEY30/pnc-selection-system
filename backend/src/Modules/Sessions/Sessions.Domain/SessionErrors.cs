@@ -26,6 +26,12 @@ public static class SessionErrors
     public static readonly Error NotPlanned =
         Error.Conflict("sessions.not_planned", "Only a planned session can be changed. This one is done or cancelled.");
 
+    public static readonly Error NotUnscheduled =
+        Error.Conflict("sessions.not_unscheduled", "This session already has a date. Edit it instead of scheduling it.");
+
+    public static readonly Error NotScheduled =
+        Error.Conflict("sessions.not_scheduled", "This session has no date yet. Schedule it first.");
+
     public static readonly Error AlreadyCancelled =
         Error.Conflict("sessions.cancelled", "This session was cancelled, so its numbers can no longer be changed.");
 

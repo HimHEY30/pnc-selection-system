@@ -11,6 +11,12 @@ public enum SessionStatus : short
 
     /// <summary>Called off, with a reason. Final.</summary>
     Cancelled = 3,
+
+    /// <summary>
+    /// Copied from another campaign: it has a title, a format, a venue or link and notes, but no date, times, host or
+    /// person responsible yet. It becomes Planned when somebody schedules it, giving all of those at once.
+    /// </summary>
+    Unscheduled = 4,
 }
 
 /// <summary>How people take part. Stored as a smallint.</summary>
