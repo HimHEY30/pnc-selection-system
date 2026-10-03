@@ -42,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IHostService, HostService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<ICampaignCopyPart, SessionCopyPart>();
+        services.AddScoped<ISessionChoices, SessionChoices>();
+        services.AddScoped<ISchoolDirectory, SchoolDirectory>();
 
         return services;
     }
