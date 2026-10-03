@@ -1,3 +1,4 @@
+using Campaigns.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IHostService, HostService>();
         services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<ICampaignCopyPart, SessionCopyPart>();
 
         return services;
     }

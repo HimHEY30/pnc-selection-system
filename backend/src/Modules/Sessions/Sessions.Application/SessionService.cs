@@ -633,7 +633,7 @@ public sealed class SessionService : ISessionService
             session.CampaignId, AuditEntity.Session, session.Id, action, before, after, user.Subject, user.DisplayName, _clock.UtcNow));
 
     /// <summary>What an audit line keeps of a session: everything a person can change or record.</summary>
-    private static string Snapshot(InformationSession s) => JsonSerializer.Serialize(
+    internal static string Snapshot(InformationSession s) => JsonSerializer.Serialize(
         new
         {
             title = s.Title,
