@@ -156,6 +156,34 @@ public sealed class CampaignTests
         Assert.False(campaign.CanActivate);
     }
 
+    [Fact]
+    public void SetStepStatus_ChangesOnlyThatStep()
+    {
+        var campaign = NewCampaign();
+
+        var result = campaign.SetStepStatus(SetupStepKey.EligibilityRules, StepStatus.InProgress, Later);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(StepStatus.InProgress, campaign.GetStep(SetupStepKey.EligibilityRules).Status);
+        Assert.Equal(Later, campaign.GetStep(SetupStepKey.EligibilityRules).UpdatedAt);
+        Assert.Equal(StepStatus.InProgress, campaign.GetStep(SetupStepKey.CampaignInfo).Status);
+        Assert.Equal(StepStatus.NotStarted, campaign.GetStep(SetupStepKey.Candidates).Status);
+        Assert.Equal(Later, campaign.UpdatedAt);
+    }
+
+    [Fact]
+    public void SetStepStatus_IsRejectedOnceTheCampaignIsNoLongerADraft()
+    {
+        var campaign = NewCampaign();
+        typeof(Campaign).GetProperty(nameof(Campaign.Status))!.SetValue(campaign, CampaignStatus.Active);
+
+        var result = campaign.SetStepStatus(SetupStepKey.EligibilityRules, StepStatus.Complete, Later);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(CampaignErrors.NotEditable, result.Error);
+        Assert.Equal(StepStatus.NotStarted, campaign.GetStep(SetupStepKey.EligibilityRules).Status);
+    }
+
     [Theory]
     [InlineData(CampaignStatus.Active)]
     [InlineData(CampaignStatus.Closed)]

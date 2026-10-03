@@ -86,6 +86,23 @@ public sealed class Campaign : BaseEntity<Guid>
     /// <summary>True when the campaign is a Draft and all five steps are Complete.</summary>
     public bool CanActivate => IsEditable && _steps.All(s => s.Status == StepStatus.Complete);
 
+    /// <summary>
+    /// Sets the stored status of a setup step. Steps 2-5 call this (through the setup
+    /// gateway) when their own page saves; step 1 sets its own status through
+    /// <see cref="SaveInfoDraft"/> and <see cref="CompleteInfo"/>.
+    /// </summary>
+    public Result SetStepStatus(SetupStepKey key, StepStatus status, DateTimeOffset now)
+    {
+        if (!IsEditable)
+        {
+            return Result.Failure(CampaignErrors.NotEditable);
+        }
+
+        GetStep(key).SetStatus(status, now);
+        UpdatedAt = now;
+        return Result.Success();
+    }
+
     /// <summary>Stores partial Step 1 data and marks the step In progress.</summary>
     public Result SaveInfoDraft(CampaignInfo info, DateTimeOffset now) => ApplyInfo(info, StepStatus.InProgress, now);
 

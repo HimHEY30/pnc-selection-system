@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.TryAddSingleton<IClock, SystemClock>();
         services.AddScoped<ICampaignRepository, CampaignRepository>();
         services.AddScoped<ICampaignService, CampaignService>();
+        services.AddScoped<ICampaignSetupGateway, CampaignSetupGateway>();
 
         return services;
     }

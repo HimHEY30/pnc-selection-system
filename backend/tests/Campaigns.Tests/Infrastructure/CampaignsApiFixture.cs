@@ -26,6 +26,9 @@ public sealed class CampaignsApiFixture : IAsyncLifetime
 
     public string ConnectionString => _postgres.GetConnectionString();
 
+    /// <summary>The running app's service container, for tests that call a service directly.</summary>
+    public IServiceProvider Services => _factory!.Services;
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
