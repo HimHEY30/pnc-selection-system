@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FormDialog from "@/components/ui/FormDialog";
 import FormField from "@/components/ui/FormField";
 import { TextInput } from "@/components/ui/inputs";
+import { hasChanged, useReportDirty } from "@/lib/hooks/useReportDirty";
 import { formatDate, hasTakenPlace } from "@/lib/sessions/format";
 import { parseCount } from "@/lib/sessions/form";
 import { COUNT_MAX, type InformationSession } from "@/lib/sessions/types";
@@ -26,20 +27,39 @@ const text = t.sessions.numbers;
  */
 export default function NumbersDialog({ session, onClose }: Props) {
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   return (
-    <FormDialog open={session !== null} title={text.title} description={session ? text.intro(session.title) : undefined} busy={busy} onClose={onClose}>
-      {session && <NumbersBody session={session} onBusy={setBusy} onClose={onClose} />}
+    <FormDialog
+      open={session !== null}
+      title={text.title}
+      description={session ? text.intro(session.title) : undefined}
+      busy={busy}
+      dirty={dirty}
+      onClose={onClose}
+    >
+      {session && <NumbersBody session={session} onBusy={setBusy} onDirty={setDirty} onClose={onClose} />}
     </FormDialog>
   );
 }
 
 const asText = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n));
 
-function NumbersBody({ session, onBusy, onClose }: { session: InformationSession; onBusy: (busy: boolean) => void; onClose: () => void }) {
+type NumbersBodyProps = {
+  session: InformationSession;
+  onBusy: (busy: boolean) => void;
+  onDirty: (dirty: boolean) => void;
+  onClose: () => void;
+};
+
+function NumbersBody({ session, onBusy, onDirty, onClose }: NumbersBodyProps) {
   const [expected, setExpected] = useState(asText(session.expectedCandidates));
   const [female, setFemale] = useState(asText(session.attendance?.female));
   const [male, setMale] = useState(asText(session.attendance?.male));
+  // What the server holds. Each part is saved on its own and the dialog stays open, so "unsaved" means
+  // different from the last save, not different from when the dialog opened.
+  const [saved, setSaved] = useState({ expected, female, male });
+  useReportDirty(hasChanged({ expected, female, male }, saved), onDirty);
   const [errors, setErrors] = useState<Partial<Record<"expected" | "female" | "male", string>>>({});
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -66,6 +86,7 @@ function NumbersBody({ session, onBusy, onClose }: { session: InformationSession
       const result = await setExpectedAction(session.campaignId, session.id, value);
       onBusy(false);
       if (result.ok) {
+        setSaved((s) => ({ ...s, expected }));
         setNotice({ kind: "ok", message: text.saved });
       } else if (result.fieldErrors?.expected) {
         setErrors({ expected: result.fieldErrors.expected });
@@ -93,6 +114,7 @@ function NumbersBody({ session, onBusy, onClose }: { session: InformationSession
       const result = await recordAttendanceAction(session.campaignId, session.id, femaleCount as number, maleCount as number);
       onBusy(false);
       if (result.ok) {
+        setSaved((s) => ({ ...s, female, male }));
         setNotice({ kind: "ok", message: text.saved });
       } else if (result.fieldErrors?.female || result.fieldErrors?.male) {
         setErrors({ female: result.fieldErrors.female, male: result.fieldErrors.male });

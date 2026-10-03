@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FormDialog from "@/components/ui/FormDialog";
 import FormField from "@/components/ui/FormField";
 import { Select, TextInput } from "@/components/ui/inputs";
+import { hasChanged, useReportDirty } from "@/lib/hooks/useReportDirty";
 import { emptyHostForm, toHostRequest, validateHostForm, type HostField, type HostForm } from "@/lib/sessions/form";
 import { PARTNER_KINDS, type DirectoryHostType, type Host } from "@/lib/sessions/types";
 import { t } from "@/lib/messages";
@@ -29,10 +30,11 @@ export default function HostDialog({ target, onClose, onSaved }: Props) {
       ? text.editTitle
       : text.createTitle(target ? t.sessions.labels.hostType[target.type] : "");
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   return (
-    <FormDialog open={target !== null} title={title} description={text.intro} busy={busy} onClose={onClose}>
-      {target && <HostFormBody target={target} onBusy={setBusy} onClose={onClose} onSaved={onSaved} />}
+    <FormDialog open={target !== null} title={title} description={text.intro} busy={busy} dirty={dirty} onClose={onClose}>
+      {target && <HostFormBody target={target} onBusy={setBusy} onDirty={setDirty} onClose={onClose} onSaved={onSaved} />}
     </FormDialog>
   );
 }
@@ -40,17 +42,19 @@ export default function HostDialog({ target, onClose, onSaved }: Props) {
 function HostFormBody({
   target,
   onBusy,
+  onDirty,
   onClose,
   onSaved,
 }: {
   target: HostDialogTarget;
   onBusy: (busy: boolean) => void;
+  onDirty: (dirty: boolean) => void;
   onClose: () => void;
   onSaved: (host: Host) => void;
 }) {
   const type: DirectoryHostType = target.kind === "edit" ? target.host.type : target.type;
   const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<HostForm>(() =>
+  const [initial] = useState<HostForm>(() =>
     target.kind === "edit"
       ? {
           name: target.host.name,
@@ -61,6 +65,8 @@ function HostFormBody({
         }
       : emptyHostForm,
   );
+  const [form, setForm] = useState<HostForm>(initial);
+  useReportDirty(hasChanged(form, initial), onDirty);
   const [errors, setErrors] = useState<Partial<Record<HostField, string>>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

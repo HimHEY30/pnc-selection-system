@@ -23,6 +23,7 @@ import {
   type InformationSession,
   type ProvinceRef,
 } from "@/lib/sessions/types";
+import { hasChanged, useReportDirty } from "@/lib/hooks/useReportDirty";
 import { isUnscheduled } from "@/lib/sessions/format";
 import { t } from "@/lib/messages";
 import { createSessionAction, updateSessionAction } from "../../sessions-actions";
@@ -45,6 +46,7 @@ const text = t.sessions.form;
 
 export default function SessionFormDialog({ target, campaignId, targetProvinces, hosts, assignable, onClose }: Props) {
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const scheduling = target?.kind === "edit" && isUnscheduled(target.session);
 
   return (
@@ -53,6 +55,7 @@ export default function SessionFormDialog({ target, campaignId, targetProvinces,
       title={scheduling ? text.scheduleTitle : target?.kind === "edit" ? text.editTitle : text.createTitle}
       description={scheduling ? text.scheduleIntro : text.intro}
       busy={busy}
+      dirty={dirty}
       onClose={onClose}
       size="lg"
     >
@@ -64,6 +67,7 @@ export default function SessionFormDialog({ target, campaignId, targetProvinces,
           hosts={hosts}
           assignable={assignable}
           onBusy={setBusy}
+          onDirty={setDirty}
           onClose={onClose}
         />
       )}
@@ -80,12 +84,20 @@ function SessionFormBody({
   hosts,
   assignable,
   onBusy,
+  onDirty,
   onClose,
-}: Omit<Props, "target" | "onClose"> & { target: SessionDialogTarget; onBusy: (busy: boolean) => void; onClose: () => void }) {
+}: Omit<Props, "target" | "onClose"> & {
+  target: SessionDialogTarget;
+  onBusy: (busy: boolean) => void;
+  onDirty: (dirty: boolean) => void;
+  onClose: () => void;
+}) {
   const editing = target.kind === "edit" ? target.session : null;
   const scheduling = editing !== null && isUnscheduled(editing);
   const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<SessionForm>(() => (editing ? formFromSession(editing, assignable.me.id) : emptySessionForm(assignable.me.id)));
+  const [initial] = useState<SessionForm>(() => (editing ? formFromSession(editing, assignable.me.id) : emptySessionForm(assignable.me.id)));
+  const [form, setForm] = useState<SessionForm>(initial);
+  useReportDirty(hasChanged(form, initial), onDirty);
   const [errors, setErrors] = useState<Partial<Record<SessionField, string>>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [hostTarget, setHostTarget] = useState<HostDialogTarget | null>(null);

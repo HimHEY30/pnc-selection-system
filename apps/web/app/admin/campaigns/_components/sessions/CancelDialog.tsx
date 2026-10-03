@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FormDialog from "@/components/ui/FormDialog";
 import FormField from "@/components/ui/FormField";
 import { Textarea } from "@/components/ui/inputs";
+import { useReportDirty } from "@/lib/hooks/useReportDirty";
 import { CANCEL_REASON_MAX } from "@/lib/sessions/form";
 import type { InformationSession } from "@/lib/sessions/types";
 import { t } from "@/lib/messages";
@@ -21,6 +22,7 @@ const text = t.sessions.cancel;
 /** Cancelling is final and needs a reason, so it asks for one instead of a bare "Are you sure?". */
 export default function CancelDialog({ session, onClose }: Props) {
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   return (
     <FormDialog
@@ -28,15 +30,24 @@ export default function CancelDialog({ session, onClose }: Props) {
       title={text.title}
       description={session ? text.description(session.title) : undefined}
       busy={busy}
+      dirty={dirty}
       onClose={onClose}
     >
-      {session && <CancelBody session={session} onBusy={setBusy} onClose={onClose} />}
+      {session && <CancelBody session={session} onBusy={setBusy} onDirty={setDirty} onClose={onClose} />}
     </FormDialog>
   );
 }
 
-function CancelBody({ session, onBusy, onClose }: { session: InformationSession; onBusy: (busy: boolean) => void; onClose: () => void }) {
+type CancelBodyProps = {
+  session: InformationSession;
+  onBusy: (busy: boolean) => void;
+  onDirty: (dirty: boolean) => void;
+  onClose: () => void;
+};
+
+function CancelBody({ session, onBusy, onDirty, onClose }: CancelBodyProps) {
   const [reason, setReason] = useState("");
+  useReportDirty(reason.trim() !== "", onDirty);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
