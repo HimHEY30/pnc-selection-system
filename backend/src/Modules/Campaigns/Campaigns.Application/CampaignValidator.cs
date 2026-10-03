@@ -17,6 +17,8 @@ public static class CampaignValidator
     public const string AcademicYearKey = "academicYear";
     public const string DescriptionKey = "description";
     public const string StartModeKey = "startMode";
+    public const string CopySourceKey = "copyFrom.sourceCampaignId";
+    public const string CopyPartsKey = "copyFrom.parts";
     public const string StartDateKey = "startDate";
     public const string EndDateKey = "endDate";
     public const string ExpectedCandidatesKey = "expectedCandidates";
@@ -31,8 +33,7 @@ public static class CampaignValidator
         var mode = string.IsNullOrWhiteSpace(request.StartMode) ? StartModes.Scratch : request.StartMode;
         if (mode == StartModes.Copy)
         {
-            // Nothing can be Closed yet, so there is never a campaign to copy from.
-            errors.Add(StartModeKey, "Copying settings is available once you have completed a campaign.");
+            CheckCopy(errors, request.CopyFrom);
         }
         else if (mode != StartModes.Scratch)
         {
@@ -40,6 +41,35 @@ public static class CampaignValidator
         }
 
         return errors.ToDictionary();
+    }
+
+    /// <summary>Whether the request starts from a copy (and so carries a source and parts to check).</summary>
+    public static bool IsCopy(CreateCampaignRequest request) => request.StartMode == StartModes.Copy;
+
+    /// <summary>The parts to copy, once validated: known, without repeats.</summary>
+    public static IReadOnlySet<string> RequestedParts(CopyFromRequest? copyFrom) =>
+        (copyFrom?.Parts ?? []).ToHashSet();
+
+    private static void CheckCopy(FieldErrors errors, CopyFromRequest? copyFrom)
+    {
+        if (copyFrom?.SourceCampaignId is null || copyFrom.SourceCampaignId == Guid.Empty)
+        {
+            errors.Add(CopySourceKey, "Choose the campaign to copy from.");
+        }
+
+        var parts = copyFrom?.Parts ?? [];
+        if (parts.Length == 0)
+        {
+            errors.Add(CopyPartsKey, "Choose at least one thing to copy.");
+        }
+        else if (parts.Any(p => !CopyParts.All.Contains(p)))
+        {
+            errors.Add(CopyPartsKey, "One of the things to copy is not one we can copy.");
+        }
+        else if (parts.Distinct().Count() != parts.Length)
+        {
+            errors.Add(CopyPartsKey, "Each thing to copy can only be chosen once.");
+        }
     }
 
     /// <param name="complete">

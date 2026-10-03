@@ -23,12 +23,18 @@ public sealed class CampaignService : ICampaignService
     private readonly ICampaignRepository _repository;
     private readonly ICurrentUserService _currentUser;
     private readonly IClock _clock;
+    private readonly IReadOnlyDictionary<string, ICampaignCopyPart> _copyParts;
 
-    public CampaignService(ICampaignRepository repository, ICurrentUserService currentUser, IClock clock)
+    public CampaignService(
+        ICampaignRepository repository,
+        ICurrentUserService currentUser,
+        IClock clock,
+        IEnumerable<ICampaignCopyPart> copyParts)
     {
         _repository = repository;
         _currentUser = currentUser;
         _clock = clock;
+        _copyParts = copyParts.ToDictionary(p => p.Key);
     }
 
     public async Task<Result<CampaignDetailDto>> CreateAsync(CreateCampaignRequest request, CancellationToken ct)
@@ -41,24 +47,79 @@ public sealed class CampaignService : ICampaignService
 
         var errors = CampaignValidator.ValidateCreate(request);
         await CheckNameIsUniqueAsync(errors, request.Name, excludingCampaignId: null, ct);
+
+        // Only a source that exists can be copied. Any campaign will do, whatever its status: copying only reads it.
+        Campaign? source = null;
+        if (CampaignValidator.IsCopy(request) && !errors.ContainsKey(CampaignValidator.CopySourceKey))
+        {
+            source = await _repository.GetAsync(request.CopyFrom!.SourceCampaignId!.Value, ct);
+            if (source is null)
+            {
+                AddError(errors, CampaignValidator.CopySourceKey, "The campaign to copy from no longer exists.");
+            }
+        }
+
         if (errors.Count > 0)
         {
             return Result.Failure<CampaignDetailDto>(CampaignErrors.Invalid(errors));
         }
 
+        var now = _clock.UtcNow;
         var campaign = Campaign.Create(
             request.Name!,
             request.AcademicYear!,
             request.Description,
             user.Subject,
             user.DisplayName,
-            _clock.UtcNow);
+            now);
+
+        var parts = source is null ? new HashSet<string>() : CampaignValidator.RequestedParts(request.CopyFrom).ToHashSet();
+        var results = new List<CopyPartResult>();
+        if (source is not null)
+        {
+            // Provinces and details belong to the campaign itself, so they are saved with it.
+            var own = campaign.CopySettingsFrom(source, details: parts.Contains(CopyParts.Details), provinces: parts.Contains(CopyParts.Provinces), now);
+            if (own.IsFailure)
+            {
+                return Result.Failure<CampaignDetailDto>(own.Error);
+            }
+
+            if (parts.Contains(CopyParts.Provinces))
+            {
+                results.Add(CopyPartResult.Copied(CopyParts.Provinces, source.Provinces.Count));
+            }
+
+            if (parts.Contains(CopyParts.Details))
+            {
+                results.Add(CopyPartResult.Copied(CopyParts.Details, 1));
+            }
+        }
 
         _repository.Add(campaign);
         var saved = await _repository.SaveChangesAsync(ct);
-        return saved.IsFailure
-            ? Result.Failure<CampaignDetailDto>(NameRaceToFieldError(saved.Error))
-            : CampaignDetailDto.From(campaign);
+        if (saved.IsFailure)
+        {
+            return Result.Failure<CampaignDetailDto>(NameRaceToFieldError(saved.Error));
+        }
+
+        if (source is null)
+        {
+            return CampaignDetailDto.From(campaign);
+        }
+
+        // The rest belong to other modules, which save in their own transaction after the campaign exists. A part that
+        // fails is reported and does not undo the campaign or the other parts.
+        var context = new CopyContext(source.Id, campaign.Id, user.Subject, user.DisplayName);
+        foreach (var key in CopyParts.All.Where(k => parts.Contains(k) && k is not (CopyParts.Provinces or CopyParts.Details)))
+        {
+            results.Add(_copyParts.TryGetValue(key, out var part)
+                ? await part.CopyAsync(context, ct)
+                : CopyPartResult.Failed(key, "Copying this is not available yet."));
+        }
+
+        // Rules and sessions change the campaign's step statuses through their own gateway calls, so read it again.
+        var current = await _repository.GetAsync(campaign.Id, ct) ?? campaign;
+        return CampaignDetailDto.From(current) with { CopyResults = results };
     }
 
     public Task<IReadOnlyList<CampaignSummaryDto>> ListAsync(CancellationToken ct) =>

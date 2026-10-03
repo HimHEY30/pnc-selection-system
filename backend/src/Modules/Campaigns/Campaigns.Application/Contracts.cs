@@ -7,7 +7,8 @@ public sealed record CreateCampaignRequest(
     string? Name,
     string? AcademicYear,
     string? Description,
-    string? StartMode);
+    string? StartMode,
+    CopyFromRequest? CopyFrom = null);
 
 /// <summary>
 /// Request body for saving Step 1. Used for both "Save draft" (partial allowed) and
@@ -60,7 +61,9 @@ public sealed record CampaignDetailDto(
     uint Version,
     IReadOnlyList<StepDto> Steps,
     ProgressDto Progress,
-    bool CanActivate)
+    bool CanActivate,
+    // How each copied part went. Only present in the response to creating a campaign from a copy.
+    IReadOnlyList<CopyPartResult>? CopyResults = null)
 {
     public static CampaignDetailDto From(Campaign campaign)
     {

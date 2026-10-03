@@ -129,15 +129,120 @@ public sealed class CreateCampaignTests
         }
     }
 
+    // ---------- Copy from another campaign ----------
+
+    /// <summary>A campaign with a description, numbers, dates and four provinces, ready to be copied.</summary>
+    private async Task<CampaignDetailDto> CreateSourceAsync(HttpClient client)
+    {
+        var source = await client.CreateCampaignAsync();
+        var saved = await client.CompleteInfoAsync(source.Id, TestData.ValidInfo(source.Name));
+        saved.EnsureSuccessStatusCode();
+        return await client.GetCampaignAsync(source.Id);
+    }
+
+    private static CreateCampaignRequest CopyRequest(Guid source, params string[] parts) =>
+        TestData.ValidCreate() with { StartMode = StartModes.Copy, CopyFrom = new CopyFromRequest(source, parts) };
+
     [Fact]
-    public async Task Create_WithCopyMode_IsRejectedBecauseNoCampaignHasBeenCompleted()
+    public async Task Create_WithCopyMode_AndNoSource_IsRejectedWithFieldErrors()
     {
         var request = TestData.ValidCreate() with { StartMode = StartModes.Copy };
 
         var response = await _fixture.CreateManagerClient().PostAsJsonAsync("/api/campaigns", request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("startMode", (await response.ReadProblemAsync()).Errors!.Keys);
+        var errors = (await response.ReadProblemAsync()).Errors!;
+        Assert.Contains("copyFrom.sourceCampaignId", errors.Keys);
+        Assert.Contains("copyFrom.parts", errors.Keys);
+    }
+
+    [Fact]
+    public async Task Create_WithCopyMode_AndAnUnknownSource_IsRejectedAndCreatesNothing()
+    {
+        var client = _fixture.CreateManagerClient();
+        var request = CopyRequest(Guid.NewGuid(), CopyParts.Provinces);
+
+        var response = await client.PostAsJsonAsync("/api/campaigns", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("copyFrom.sourceCampaignId", (await response.ReadProblemAsync()).Errors!.Keys);
+        Assert.DoesNotContain(await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"), c => c.Name == request.Name);
+    }
+
+    [Fact]
+    public async Task Create_ByCopying_TakesTheProvincesAndDetailsChosen_NotTheDatesOrTheName()
+    {
+        var client = _fixture.CreateManagerClient();
+        var source = await CreateSourceAsync(client);
+        var request = CopyRequest(source.Id, CopyParts.Provinces, CopyParts.Details) with { Description = null };
+
+        var response = await client.PostAsJsonAsync("/api/campaigns", request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var copy = await response.ReadCampaignAsync();
+        Assert.NotEqual(source.Id, copy.Id);
+        Assert.Equal(request.Name, copy.Name);
+        Assert.Equal(TestData.FourProvinces.Order(), copy.ProvinceIds);
+        Assert.Equal(1500, copy.ExpectedCandidates);
+        Assert.Equal(150, copy.SeatsAvailable);
+        Assert.Equal(source.Description, copy.Description);
+        Assert.Null(copy.StartDate);
+        Assert.Null(copy.EndDate);
+        Assert.Equal(
+            [$"{CopyParts.Provinces}:Copied:4", $"{CopyParts.Details}:Copied:1"],
+            copy.CopyResults!.Select(r => $"{r.Part}:{r.Outcome}:{r.Count}"));
+    }
+
+    [Fact]
+    public async Task Create_ByCopying_OnlyWhatWasTicked()
+    {
+        var client = _fixture.CreateManagerClient();
+        var source = await CreateSourceAsync(client);
+
+        var copy = await (await client.PostAsJsonAsync("/api/campaigns", CopyRequest(source.Id, CopyParts.Provinces))).ReadCampaignAsync();
+
+        Assert.Equal(TestData.FourProvinces.Order(), copy.ProvinceIds);
+        Assert.Null(copy.ExpectedCandidates);
+        Assert.Null(copy.SeatsAvailable);
+    }
+
+    [Fact]
+    public async Task Create_ByCopying_LeavesStep1InProgress_AndTheSourceUnchanged()
+    {
+        var client = _fixture.CreateManagerClient();
+        var source = await CreateSourceAsync(client);
+
+        var copy = await (await client.PostAsJsonAsync("/api/campaigns", CopyRequest(source.Id, CopyParts.Provinces, CopyParts.Details))).ReadCampaignAsync();
+
+        Assert.Equal("InProgress", copy.Steps.Single(s => s.Step == "CampaignInfo").Status);
+        var after = await client.GetCampaignAsync(source.Id);
+        Assert.Equal(source.Version, after.Version);
+        Assert.Equal(source.ProvinceIds, after.ProvinceIds);
+        Assert.Equal(source.UpdatedAt, after.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task Create_ByCopying_APartThatIsNotOnTheList_IsRefusedBeforeAnythingIsCreated()
+    {
+        var client = _fixture.CreateManagerClient();
+        var source = await CreateSourceAsync(client);
+        var request = CopyRequest(source.Id, CopyParts.Provinces, "Candidates");
+
+        var response = await client.PostAsJsonAsync("/api/campaigns", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.DoesNotContain(await client.GetFromJsonAsync<List<CampaignSummaryDto>>("/api/campaigns"), c => c.Name == request.Name);
+    }
+
+    [Fact]
+    public async Task Create_ByCopying_AnOfficerCannot()
+    {
+        var source = await CreateSourceAsync(_fixture.CreateManagerClient());
+        var officer = _fixture.CreateClient("Officer", Roles.SelectionOfficer);
+
+        var response = await officer.PostAsJsonAsync("/api/campaigns", CopyRequest(source.Id, CopyParts.Provinces));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

@@ -67,12 +67,56 @@ public sealed class CampaignValidatorTests
         Assert.Equal(["Description must be 500 characters or fewer."], Messages(errors, "description"));
     }
 
+    private static CreateCampaignRequest CopyRequest(Guid? source, params string[] parts) =>
+        TestData.ValidCreate() with { StartMode = StartModes.Copy, CopyFrom = new CopyFromRequest(source, parts) };
+
     [Fact]
-    public void Create_RejectsCopyModeBecauseNoCompletedCampaignCanExistYet()
+    public void Create_AcceptsCopyModeWithASourceAndKnownParts()
+    {
+        var errors = CampaignValidator.ValidateCreate(CopyRequest(Guid.NewGuid(), CopyParts.All.ToArray()));
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Create_CopyModeNeedsASourceAndAtLeastOnePart()
     {
         var errors = CampaignValidator.ValidateCreate(TestData.ValidCreate() with { StartMode = StartModes.Copy });
 
-        Assert.Single(Messages(errors, "startMode"));
+        Assert.Equal(["Choose the campaign to copy from."], Messages(errors, "copyFrom.sourceCampaignId"));
+        Assert.Equal(["Choose at least one thing to copy."], Messages(errors, "copyFrom.parts"));
+    }
+
+    [Fact]
+    public void Create_CopyModeRejectsAnEmptySourceId()
+    {
+        var errors = CampaignValidator.ValidateCreate(CopyRequest(Guid.Empty, CopyParts.Provinces));
+
+        Assert.Single(Messages(errors, "copyFrom.sourceCampaignId"));
+    }
+
+    [Fact]
+    public void Create_CopyModeRejectsAPartThatIsNotOnTheList()
+    {
+        var errors = CampaignValidator.ValidateCreate(CopyRequest(Guid.NewGuid(), CopyParts.Provinces, "Candidates"));
+
+        Assert.Single(Messages(errors, "copyFrom.parts"));
+    }
+
+    [Fact]
+    public void Create_CopyModeRejectsAPartChosenTwice()
+    {
+        var errors = CampaignValidator.ValidateCreate(CopyRequest(Guid.NewGuid(), CopyParts.Provinces, CopyParts.Provinces));
+
+        Assert.Single(Messages(errors, "copyFrom.parts"));
+    }
+
+    [Fact]
+    public void Create_FromScratchIgnoresAnyCopyFromThatCameAlong()
+    {
+        var request = TestData.ValidCreate() with { CopyFrom = new CopyFromRequest(null, ["Nonsense"]) };
+
+        Assert.Empty(CampaignValidator.ValidateCreate(request));
     }
 
     [Fact]
