@@ -1,4 +1,5 @@
 import NextAuth, { customFetch } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import Keycloak from "next-auth/providers/keycloak";
 
 export const GROUPS = {
@@ -18,6 +19,12 @@ declare module "next-auth" {
     // Keycloak's SSO session, so logging out for real means sending the
     // browser to Keycloak's own end_session_endpoint with this as a hint.
     idToken?: string;
+    // The user's Keycloak access token, for server-side calls to the backend
+    // API (see lib/api/client.ts). Kept fresh by the jwt callback below.
+    accessToken?: string;
+    // Set when the access token could not be renewed (refresh token expired or
+    // revoked) - the user has to sign in again.
+    error?: "RefreshTokenError";
   }
 }
 
@@ -25,6 +32,11 @@ declare module "@auth/core/jwt" {
   interface JWT {
     roles?: Group[];
     idToken?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    // Unix seconds at which accessToken expires.
+    expiresAt?: number;
+    error?: "RefreshTokenError";
   }
 }
 
@@ -69,22 +81,85 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // persist them onto our own JWT for every subsequent request.
     async jwt({ token, account }) {
       if (account?.access_token) {
-        const payload = decodeJwtPayload(account.access_token);
-        token.roles = (payload?.realm_access?.roles ?? []).filter(
-          (role: string): role is Group =>
-            Object.values(GROUPS).includes(role as Group),
-        );
+        token.roles = rolesFromAccessToken(account.access_token);
         token.idToken = account.id_token;
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.expiresAt = account.expires_at;
+        token.error = undefined;
+        return token;
       }
-      return token;
+
+      // Keycloak access tokens are short-lived (5 minutes in our realm), and the
+      // backend rejects expired ones, so renew shortly before expiry.
+      const stillValid =
+        token.expiresAt !== undefined &&
+        Date.now() < (token.expiresAt - REFRESH_MARGIN_SECONDS) * 1000;
+      if (stillValid || !token.refreshToken) {
+        return token;
+      }
+      return refreshAccessToken(token);
     },
     async session({ session, token }) {
       session.roles = token.roles ?? [];
       session.idToken = token.idToken;
+      session.accessToken = token.accessToken;
+      session.error = token.error;
       return session;
     },
   },
 });
+
+const REFRESH_MARGIN_SECONDS = 30;
+
+function rolesFromAccessToken(accessToken: string): Group[] {
+  const payload = decodeJwtPayload(accessToken);
+  return (payload?.realm_access?.roles ?? []).filter(
+    (role: string): role is Group => Object.values(GROUPS).includes(role as Group),
+  );
+}
+
+// Trades the refresh token for a new access token at Keycloak's token endpoint.
+// Server-to-server, so (like the login code exchange) it goes to the internal
+// Docker address when one is configured. On any failure the session is marked
+// with an error instead of throwing, so pages can send the user to sign in again.
+async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    const issuer = internalIssuer ?? process.env.AUTH_KEYCLOAK_ISSUER!;
+    const response = await fetch(`${issuer}/protocol/openid-connect/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: process.env.AUTH_KEYCLOAK_ID!,
+        client_secret: process.env.AUTH_KEYCLOAK_SECRET!,
+        refresh_token: token.refreshToken as string,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Token refresh failed with status ${response.status}`);
+    }
+
+    const refreshed = (await response.json()) as {
+      access_token: string;
+      expires_in: number;
+      refresh_token?: string;
+      id_token?: string;
+    };
+    return {
+      ...token,
+      accessToken: refreshed.access_token,
+      expiresAt: Math.floor(Date.now() / 1000) + refreshed.expires_in,
+      refreshToken: refreshed.refresh_token ?? token.refreshToken,
+      idToken: refreshed.id_token ?? token.idToken,
+      roles: rolesFromAccessToken(refreshed.access_token),
+      error: undefined,
+    };
+  } catch (error) {
+    console.error("Could not refresh the Keycloak access token", error);
+    return { ...token, error: "RefreshTokenError" };
+  }
+}
 
 function decodeJwtPayload(jwt: string): { realm_access?: { roles?: string[] } } | null {
   try {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut, keycloakLogoutUrl } from "@/auth";
+import { canAccessAdminArea } from "@/lib/permissions";
 
 export default async function Home() {
   const session = await auth();
@@ -11,6 +12,12 @@ export default async function Home() {
     // a defensive fallback in case this route is ever reached without going
     // through middleware.
     redirect("/login?callbackUrl=/");
+  }
+
+  // Keycloak can't pick a post-login landing page per role (the client has a
+  // single redirect target), so admin-area users are routed to their dashboard here.
+  if (canAccessAdminArea(session.roles)) {
+    redirect("/admin");
   }
 
   return (

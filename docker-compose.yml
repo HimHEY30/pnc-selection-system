@@ -1,4 +1,23 @@
 services:
+  # The application's own database (campaigns today, more modules later).
+  # Deliberately separate from keycloak-db: Keycloak owns that schema and its
+  # upgrades, and the app must never share a database with the identity provider.
+  ssms-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SSMS_DB_NAME}
+      POSTGRES_USER: ${SSMS_DB_USER}
+      POSTGRES_PASSWORD: ${SSMS_DB_PASSWORD}
+    ports:
+      - "${SSMS_DB_PORT}:5432"
+    volumes:
+      - ssms-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SSMS_DB_USER} -d ${SSMS_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   keycloak-db:
     image: postgres:16-alpine
     environment:
@@ -71,16 +90,24 @@ services:
       Keycloak__Audience: ${KEYCLOAK_API_CLIENT_ID}
       Keycloak__RequireHttpsMetadata: "false"
       Frontend__Origin: ${FRONTEND_ORIGIN}
+      # Inside Docker the database is reached by service name, not localhost.
+      ConnectionStrings__Campaigns: Host=ssms-db;Port=5432;Database=${SSMS_DB_NAME};Username=${SSMS_DB_USER};Password=${SSMS_DB_PASSWORD}
+      Seed__DemoCampaigns: ${SEED_DEMO_CAMPAIGNS}
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_started
+      ssms-db:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
     environment:
+      # Server-side only: where the Next.js server calls the backend API.
+      BACKEND_API_URL: http://backend:8080
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: ${AUTH_URL}
       AUTH_KEYCLOAK_ID: ${KEYCLOAK_WEB_CLIENT_ID}
@@ -100,3 +127,4 @@ services:
 
 volumes:
   keycloak-db-data:
+  ssms-db-data:

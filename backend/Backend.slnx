@@ -10,4 +10,13 @@
     <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Campaigns/">
+    <Project Path="src/Modules/Campaigns/Campaigns.Api/Campaigns.Api.csproj" />
+    <Project Path="src/Modules/Campaigns/Campaigns.Application/Campaigns.Application.csproj" />
+    <Project Path="src/Modules/Campaigns/Campaigns.Domain/Campaigns.Domain.csproj" />
+    <Project Path="src/Modules/Campaigns/Campaigns.Infrastructure/Campaigns.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Campaigns.Tests/Campaigns.Tests.csproj" />
+  </Folder>
 </Solution>

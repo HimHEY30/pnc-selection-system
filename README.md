@@ -42,8 +42,10 @@ Keycloak-db (Postgres)   Mailpit (fake SMTP, dev only)
 │   │   ├── SharedKernel/      Cross-module primitives (Result<T>, Error, ...)
 │   │   ├── Modules/Identity/  Auth/authorization module (Domain/Application/
 │   │   │                      Infrastructure/Api split - see below)
+│   │   ├── Modules/Campaigns/ Campaigns, setup steps, provinces (own database)
 │   │   └── Host/              Composition root: wires modules together,
 │   │                           contains no business logic of its own
+│   ├── tests/Campaigns.Tests  xUnit + Testcontainers (real PostgreSQL)
 │   └── ownership-matrix.md    Which module owns what, what it publishes
 ├── infra/keycloak/
 │   ├── realm-export.json      The pnc-selection realm: roles, groups,
@@ -145,6 +147,7 @@ the reasoning behind any non-obvious decision in the code.
 - [keycloak-authentication](features/keycloak-authentication/README.md) — identity provider setup, group-based authorization, sign-in/sign-out.
 - [keycloak-login-theme](features/keycloak-login-theme/README.md) — the branded `pnc-ssms` login theme.
 - [keycloak-forgot-password-email](features/keycloak-forgot-password-email/README.md) — SMTP delivery for password-reset emails (Mailpit in dev).
+- [campaigns](features/campaigns/README.md) — create a campaign, the 5-step setup overview, and Step 1 (Campaign info).
 
 ## Security note
 

@@ -38,7 +38,7 @@ public sealed class CurrentUserService : ICurrentUserService
                 .Select(g => g!.Value)
                 .ToArray();
 
-            return new AuthenticatedUser(subject, username, groups);
+            return new AuthenticatedUser(subject, username, groups, principal.FindFirstValue("name"));
         }
     }
 }

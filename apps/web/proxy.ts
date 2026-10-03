@@ -4,7 +4,9 @@ import { auth, GROUPS, type Group } from "@/auth";
 // Route prefix -> groups allowed to access it. Checked top-to-bottom, first match wins.
 // Anything not listed here only requires a signed-in session.
 const PROTECTED_ROUTES: Array<{ prefix: string; allow: Group[] }> = [
-  { prefix: "/admin", allow: [GROUPS.systemAdmin] },
+  // Same set as the backend's OperationsTier. Creating and editing is narrowed
+  // further inside the pages (lib/permissions.ts), not here.
+  { prefix: "/admin", allow: [GROUPS.systemAdmin, GROUPS.selectionManager, GROUPS.selectionOfficer] },
   { prefix: "/committee", allow: [GROUPS.committeeUser, GROUPS.systemAdmin] },
 ];
 

@@ -20,6 +20,27 @@ contracts (`ICurrentUserService`, `AuthorizationPolicies`) and `Identity.Domain`
 
 ---
 
+## Campaigns
+
+Owns (schema `campaigns` in the `ssms` database):
+- `Campaign` aggregate with its `SetupStep`s and `CampaignProvince` links (Campaigns.Domain)
+- `Province` reference data: Cambodia's 25 provinces, seeded by the first migration
+- `CampaignStatus` (Draft/Active/Closed), `SetupStepKey`, `StepStatus`
+- Campaign business rules: unique name, Step 1 validation, step status transitions (Campaigns.Application)
+- EF Core `CampaignsDbContext`, migrations, repository (Campaigns.Infrastructure)
+
+Publishes:
+- HTTP API: `/api/campaigns`, `/api/campaigns/{id}`, `/api/campaigns/{id}/info[/draft]`, `/api/provinces`
+- `ICampaignService` (Campaigns.Application), for modules that later need campaign data
+
+Consumes:
+- Identity: `ICurrentUserService` (creator's id and display name), `AuthorizationPolicies`
+  (`OperationsTier` to read, `ManagementTier` to create and edit)
+
+Not owned: users (Keycloak). `created_by_name` is a snapshot, not a reference.
+
+---
+
 ## Host (composition root, not a module)
 
 Owns nothing business-related. Only:

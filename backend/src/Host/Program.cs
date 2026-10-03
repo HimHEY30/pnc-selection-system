@@ -1,3 +1,4 @@
+using Campaigns.Infrastructure;
 using Identity.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // controllers living in a referenced class library aren't discovered otherwise.
 builder.Services
     .AddControllers()
-    .AddApplicationPart(typeof(Identity.Api.AuthController).Assembly);
+    .AddApplicationPart(typeof(Identity.Api.AuthController).Assembly)
+    .AddApplicationPart(typeof(Campaigns.Api.CampaignsController).Assembly);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -15,6 +17,7 @@ builder.Services.AddOpenApi();
 // Every module exposes one AddXInfrastructure() extension. Program.cs only ever
 // composes modules together — it must never contain module-specific logic.
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
+builder.Services.AddCampaignsInfrastructure();
 
 builder.Services.AddCors(options =>
 {
@@ -26,6 +29,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Create/upgrade the schema before serving traffic. Turn off with
+// Database:MigrateOnStartup=false when migrations are applied by the pipeline instead.
+if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
+{
+    await CampaignsDatabaseInitializer.InitializeAsync(app.Services);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -43,3 +53,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Makes the entry point visible to WebApplicationFactory in the test project.
+public partial class Program;

@@ -9,6 +9,10 @@ COPY src/Modules/Identity/Identity.Domain/Identity.Domain.csproj src/Modules/Ide
 COPY src/Modules/Identity/Identity.Application/Identity.Application.csproj src/Modules/Identity/Identity.Application/
 COPY src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj src/Modules/Identity/Identity.Infrastructure/
 COPY src/Modules/Identity/Identity.Api/Identity.Api.csproj src/Modules/Identity/Identity.Api/
+COPY src/Modules/Campaigns/Campaigns.Domain/Campaigns.Domain.csproj src/Modules/Campaigns/Campaigns.Domain/
+COPY src/Modules/Campaigns/Campaigns.Application/Campaigns.Application.csproj src/Modules/Campaigns/Campaigns.Application/
+COPY src/Modules/Campaigns/Campaigns.Infrastructure/Campaigns.Infrastructure.csproj src/Modules/Campaigns/Campaigns.Infrastructure/
+COPY src/Modules/Campaigns/Campaigns.Api/Campaigns.Api.csproj src/Modules/Campaigns/Campaigns.Api/
 COPY src/Host/Host.csproj src/Host/
 RUN dotnet restore src/Host/Host.csproj
 

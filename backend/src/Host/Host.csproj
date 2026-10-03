@@ -13,6 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
     <ProjectReference Include="..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Campaigns\Campaigns.Api\Campaigns.Api.csproj" />
+    <ProjectReference Include="..\Modules\Campaigns\Campaigns.Infrastructure\Campaigns.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

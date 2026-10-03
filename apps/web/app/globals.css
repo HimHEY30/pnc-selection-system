@@ -12,6 +12,51 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * PNC brand tokens. Use these (bg-primary, text-ink, border-line, ...) instead of
+ * raw hex values so the palette can change in one place.
+ *
+ * Contrast rules: white text is only for the dark blue (primary) and red. The light
+ * blue and the yellow are fills for dark text (ink) - never put white text on them.
+ */
+@theme {
+  /* Brand colours */
+  --color-brand-blue: #7ac0da;
+  --color-brand-yellow: #f1cd55;
+  --color-brand-red: #e85353;
+
+  /* Primary action colour: dark blue with white text */
+  --color-primary: #25708d;
+  --color-primary-hover: #1e5c74;
+
+  /* Soft fills for dark text: active nav item, selected card, "Complete" badge */
+  --color-primary-soft: #e6f3f8;
+  --color-primary-line: #b9dcea;
+  --color-warning-soft: #fdf3cf;
+
+  /* Text, borders and surfaces */
+  --color-ink: #1f2d3a;
+  --color-ink-muted: #566675;
+  --color-line: #dfe5ea;
+  --color-line-strong: #c3ccd4;
+  --color-surface: #ffffff;
+  --color-canvas: #f5f7f9;
+  --color-neutral-soft: #edf1f4;
+
+  /* Errors: red as a border/dot, a darker red for text so it passes contrast on white */
+  --color-danger: #e85353;
+  --color-danger-text: #b42318;
+  --color-danger-soft: #fdecec;
+}
+
+/* One visible focus style for every interactive element. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -23,4 +68,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
