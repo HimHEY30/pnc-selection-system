@@ -656,6 +656,8 @@ export const en = {
       off: "Switched off",
       empty: "No alumni or partners yet.",
       emptyDescription: "Add the people and organisations that visit schools and communities for PNC.",
+      type: "Type",
+      noMatch: "No hosts match this filter.",
       showOff: "Show switched-off hosts",
       readOnly: "Only a selection manager or a system admin can change this list.",
       offHint: "A switched-off host cannot be chosen for new sessions. Past sessions keep it.",
