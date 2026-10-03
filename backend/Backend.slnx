@@ -16,7 +16,14 @@
     <Project Path="src/Modules/Campaigns/Campaigns.Domain/Campaigns.Domain.csproj" />
     <Project Path="src/Modules/Campaigns/Campaigns.Infrastructure/Campaigns.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Eligibility/">
+    <Project Path="src/Modules/Eligibility/Eligibility.Api/Eligibility.Api.csproj" />
+    <Project Path="src/Modules/Eligibility/Eligibility.Application/Eligibility.Application.csproj" />
+    <Project Path="src/Modules/Eligibility/Eligibility.Domain/Eligibility.Domain.csproj" />
+    <Project Path="src/Modules/Eligibility/Eligibility.Infrastructure/Eligibility.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Campaigns.Tests/Campaigns.Tests.csproj" />
+    <Project Path="tests/Eligibility.Tests/Eligibility.Tests.csproj" />
   </Folder>
 </Solution>
