@@ -405,6 +405,7 @@ export const en = {
         groupFailed: "Group fails",
         groupIgnored: "Group has no mandatory rule, so it is ignored",
         unavailable: "We could not run the test. Try again.",
+        stale: "The rules have changed since this test. Run it again to see the new result.",
       },
 
       tip: {
