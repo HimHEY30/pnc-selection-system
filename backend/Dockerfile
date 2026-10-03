@@ -17,6 +17,10 @@ COPY src/Modules/Eligibility/Eligibility.Domain/Eligibility.Domain.csproj src/Mo
 COPY src/Modules/Eligibility/Eligibility.Application/Eligibility.Application.csproj src/Modules/Eligibility/Eligibility.Application/
 COPY src/Modules/Eligibility/Eligibility.Infrastructure/Eligibility.Infrastructure.csproj src/Modules/Eligibility/Eligibility.Infrastructure/
 COPY src/Modules/Eligibility/Eligibility.Api/Eligibility.Api.csproj src/Modules/Eligibility/Eligibility.Api/
+COPY src/Modules/Sessions/Sessions.Domain/Sessions.Domain.csproj src/Modules/Sessions/Sessions.Domain/
+COPY src/Modules/Sessions/Sessions.Application/Sessions.Application.csproj src/Modules/Sessions/Sessions.Application/
+COPY src/Modules/Sessions/Sessions.Infrastructure/Sessions.Infrastructure.csproj src/Modules/Sessions/Sessions.Infrastructure/
+COPY src/Modules/Sessions/Sessions.Api/Sessions.Api.csproj src/Modules/Sessions/Sessions.Api/
 COPY src/Host/Host.csproj src/Host/
 RUN dotnet restore src/Host/Host.csproj
 
