@@ -28,30 +28,49 @@ describe("SetupStepList", () => {
   });
 
   it("offers Start on a Step 1 that has not begun and Review once it is complete", () => {
+    const first = () => screen.getAllByRole("listitem")[0];
     const { rerender } = render(<SetupStepList campaignId={ID} steps={makeSteps("NotStarted")} canEdit />);
-    expect(screen.getByRole("link", { name: "Start" })).toBeInTheDocument();
+    expect(within(first()).getByRole("link", { name: "Start" })).toBeInTheDocument();
 
     rerender(<SetupStepList campaignId={ID} steps={makeSteps("Complete")} canEdit />);
-    expect(screen.getByRole("link", { name: "Review" })).toBeInTheDocument();
+    expect(within(first()).getByRole("link", { name: "Review" })).toBeInTheDocument();
   });
 
-  it("shows steps 2 to 5 as disabled buttons, not as links to pages that do not exist", () => {
+  it("shows the steps that have no page yet as disabled buttons, not as links to pages that do not exist", () => {
     render(<SetupStepList campaignId={ID} steps={makeSteps()} canEdit />);
 
     const disabled = screen.getAllByRole("button");
-    expect(disabled).toHaveLength(4);
+    expect(disabled).toHaveLength(3); // steps 3, 4 and 5
     for (const button of disabled) {
       expect(button).toBeDisabled();
       expect(button).toHaveTextContent("Start");
       expect(button).toHaveTextContent("Coming soon");
     }
-    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getAllByRole("link")).toHaveLength(2); // steps 1 and 2
+  });
+
+  it("links Step 2 to the eligibility rules page", () => {
+    render(<SetupStepList campaignId={ID} steps={makeSteps("Complete")} canEdit />);
+
+    const step2 = screen.getAllByRole("listitem")[1];
+    expect(within(step2).getByRole("link", { name: "Start" })).toHaveAttribute("href", `/admin/campaigns/${ID}/eligibility`);
+  });
+
+  it("highlights Step 2 as the next one once Step 1 is complete", () => {
+    render(<SetupStepList campaignId={ID} steps={makeSteps("Complete")} canEdit />);
+
+    const step2 = screen.getAllByRole("listitem")[1];
+    expect(within(step2).getByRole("link", { name: "Start" }).className).toContain("bg-primary");
+    // Step 1 is done, so its button is the quiet outlined one.
+    expect(screen.getByRole("link", { name: "Review" }).className).toContain("border-line-strong");
   });
 
   it("says View instead of Start or Continue for people who may not edit", () => {
     render(<SetupStepList campaignId={ID} steps={makeSteps("InProgress")} canEdit={false} />);
 
-    expect(screen.getByRole("link", { name: "View" })).toHaveAttribute("href", `/admin/campaigns/${ID}/info`);
+    const links = screen.getAllByRole("link", { name: "View" });
+    expect(links[0]).toHaveAttribute("href", `/admin/campaigns/${ID}/info`);
+    expect(links[1]).toHaveAttribute("href", `/admin/campaigns/${ID}/eligibility`);
     expect(screen.queryByRole("link", { name: "Continue" })).not.toBeInTheDocument();
   });
 });
