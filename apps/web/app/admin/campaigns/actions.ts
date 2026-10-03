@@ -7,7 +7,9 @@ import type {
   ActionResult,
   CampaignDetail,
   CampaignInfoInput,
+  CopyPreview,
   CreateCampaignInput,
+  CreatedCampaign,
 } from "@/lib/campaigns/types";
 import { t } from "@/lib/messages";
 import { canManageCampaigns } from "@/lib/permissions";
@@ -30,6 +32,8 @@ const FORM_FIELDS = new Set([
   "expectedCandidates",
   "seatsAvailable",
   "provinceIds",
+  "copyFrom.sourceCampaignId",
+  "copyFrom.parts",
 ]);
 
 async function requireManager(): Promise<ActionResult<never> | null> {
@@ -69,17 +73,39 @@ async function call<T>(path: string, method: "POST" | "PUT", body: unknown) {
 
 export async function createCampaignAction(
   input: CreateCampaignInput,
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<CreatedCampaign>> {
   const denied = await requireManager();
   if (denied) return denied;
+  if (input.startMode === "copy" && !(input.copyFrom && GUID.test(input.copyFrom.sourceCampaignId))) {
+    return { ok: false, message: t.errors.generic };
+  }
 
-  const result = await call<CampaignDetail>("/api/campaigns", "POST", input);
+  // A copy's source and parts are only sent when copying, so a stray copyFrom never rides along with "scratch".
+  const body = input.startMode === "copy" ? input : { ...input, copyFrom: undefined };
+  const result = await call<CampaignDetail>("/api/campaigns", "POST", body);
   if (!result) return { ok: false, message: t.errors.unavailable };
   if (!result.ok) return toFailure(result.problem);
 
   // The campaign list in the top bar lives in the layout, so refresh it too.
   revalidatePath("/admin", "layout");
-  return { ok: true, data: { id: result.data.id } };
+  return { ok: true, data: { id: result.data.id, copyResults: result.data.copyResults ?? null } };
+}
+
+/** What a campaign has that a new one can copy, with counts, for the "copy from" checklist. */
+export async function loadCopyPreviewAction(sourceCampaignId: string): Promise<ActionResult<CopyPreview>> {
+  const denied = await requireManager();
+  if (denied) return denied;
+  // The id goes into a URL path, so refuse anything that is not a GUID.
+  if (!GUID.test(sourceCampaignId)) return { ok: false, message: t.errors.generic };
+
+  try {
+    const result = await apiRequest<CopyPreview>(`/api/campaigns/${sourceCampaignId}/copy-preview`, { method: "GET" });
+    if (!result.ok) return toFailure(result.problem);
+    return { ok: true, data: result.data };
+  } catch (error) {
+    if (error instanceof ApiUnavailableError) return { ok: false, message: t.errors.unavailable };
+    throw error;
+  }
 }
 
 export type SaveInfoData = Pick<CampaignDetail, "version" | "infoSavedAt" | "steps" | "progress">;
