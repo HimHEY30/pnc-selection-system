@@ -41,6 +41,21 @@ export function doneSession(overrides: Partial<InformationSession> = {}): Inform
   });
 }
 
+/** A session copied from another campaign: no date, times, person responsible or host yet. */
+export function unscheduledSession(overrides: Partial<InformationSession> = {}): InformationSession {
+  return sessionFixture({
+    id: "4e5f6a7b-8c9d-4e0f-8a1b-3c4d5e6f7081",
+    title: "Copied: visit to a high school",
+    date: null,
+    startTime: null,
+    endTime: null,
+    assignee: null,
+    host: null,
+    status: "Unscheduled",
+    ...overrides,
+  });
+}
+
 export function cancelledSession(overrides: Partial<InformationSession> = {}): InformationSession {
   return sessionFixture({
     id: "2c3d4e5f-6a7b-4c8d-8e9f-1a2b3c4d5e6f",
@@ -64,6 +79,7 @@ export function summaryOf(sessions: InformationSession[]): SessionSummary {
     actualFemale: female,
     actualMale: male,
     actualTotal: female + male,
+    unscheduled: counted.filter((s) => s.status === "Unscheduled").length,
   };
 }
 

@@ -17,7 +17,7 @@ function Card({ label, value, detail }: { label: string; value: number; detail: 
 export default function SummaryCards({ summary }: { summary: SessionSummary }) {
   return (
     <dl aria-label={text.label} className="grid gap-3 sm:grid-cols-3">
-      <Card label={text.sessions} value={summary.total} detail={text.sessionsDetail(summary.planned, summary.done, summary.cancelled)} />
+      <Card label={text.sessions} value={summary.total} detail={text.sessionsDetail(summary.planned, summary.done, summary.cancelled, summary.unscheduled)} />
       <Card label={text.expected} value={summary.expectedCandidates} detail={text.expectedDetail} />
       <Card label={text.attended} value={summary.actualTotal} detail={text.attendedDetail(summary.actualFemale, summary.actualMale)} />
     </dl>

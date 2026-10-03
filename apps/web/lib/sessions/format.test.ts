@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sessionFixture } from "@/test-utils/session-fixtures";
-import { canChangeDetails, canEnterNumbers, cambodiaToday, describeHost, formatDate, formatTimeRange, hasTakenPlace } from "./format";
+import { canChangeDetails, canEnterNumbers, cambodiaToday, describeHost, formatDate, formatTimeRange, hasTakenPlace, isUnscheduled } from "./format";
 
 describe("cambodiaToday", () => {
   it("is the date on the UTC+7 clock", () => {
@@ -33,12 +33,12 @@ describe("formatTimeRange", () => {
 
 describe("describeHost", () => {
   it("names the type and the host", () => {
-    expect(describeHost(sessionFixture().host)).toBe("Officer: Sokha Officer");
-    expect(describeHost({ ...sessionFixture().host, type: "Alumni", name: "Chenda Sok", userId: null })).toBe("Alumnus: Chenda Sok");
+    expect(describeHost(sessionFixture().host!)).toBe("Officer: Sokha Officer");
+    expect(describeHost({ ...sessionFixture().host!, type: "Alumni", name: "Chenda Sok", userId: null })).toBe("Alumnus: Chenda Sok");
   });
 
   it("adds a partner's kind", () => {
-    expect(describeHost({ ...sessionFixture().host, type: "Partner", name: "Hope School", partnerKind: "HighSchool" })).toBe(
+    expect(describeHost({ ...sessionFixture().host!, type: "Partner", name: "Hope School", partnerKind: "HighSchool" })).toBe(
       "Partner (High school): Hope School",
     );
   });
@@ -66,9 +66,28 @@ describe("what can be changed", () => {
     expect(canChangeDetails(session, editable, manage)).toBe(false);
   });
 
-  it("lets the numbers be entered on every session that is not cancelled", () => {
+  it("lets the numbers be entered on a session that has a date and is not cancelled", () => {
     expect(canEnterNumbers({ status: "Planned" })).toBe(true);
     expect(canEnterNumbers({ status: "Done" })).toBe(true);
     expect(canEnterNumbers({ status: "Cancelled" })).toBe(false);
+    expect(canEnterNumbers({ status: "Unscheduled" })).toBe(false);
+  });
+
+  it("lets a manager change, which is scheduling, a copy that has no date yet", () => {
+    expect(canChangeDetails({ status: "Unscheduled" }, true, true)).toBe(true);
+    expect(canChangeDetails({ status: "Unscheduled" }, true, false)).toBe(false);
+    expect(canChangeDetails({ status: "Unscheduled" }, false, true)).toBe(false);
+  });
+});
+
+describe("isUnscheduled", () => {
+  it("is true only for a copy that has not been scheduled", () => {
+    expect(isUnscheduled({ status: "Unscheduled" })).toBe(true);
+    expect(isUnscheduled({ status: "Planned" })).toBe(false);
+    expect(isUnscheduled({ status: "Cancelled" })).toBe(false);
+  });
+
+  it("is a session that has not taken place, since it has no date", () => {
+    expect(hasTakenPlace({ date: null }, "2027-03-10")).toBe(false);
   });
 });

@@ -1,7 +1,8 @@
 // Shapes of the backend's information session API (see Sessions.Application/Contracts.cs and
 // Identity.Api/StaffController.cs). Safe to import from client components: no server-only code.
 
-export type SessionStatus = "Planned" | "Done" | "Cancelled";
+/** Unscheduled: copied from another campaign, with no date, times, host or person responsible yet. */
+export type SessionStatus = "Planned" | "Done" | "Cancelled" | "Unscheduled";
 export type SessionFormat = "InPerson" | "Online" | "Hybrid";
 export type HostType = "Officer" | "Alumni" | "Partner";
 /** What a host in the directory can be: officers are staff, not directory records. */
@@ -42,18 +43,20 @@ export type InformationSession = {
   id: string;
   campaignId: string;
   title: string;
-  /** ISO date, yyyy-mm-dd, on the Cambodia calendar. */
-  date: string;
-  /** "HH:mm". */
-  startTime: string;
-  endTime: string;
+  /** ISO date, yyyy-mm-dd, on the Cambodia calendar. Null until the session is scheduled. */
+  date: string | null;
+  /** "HH:mm". Null until the session is scheduled. */
+  startTime: string | null;
+  endTime: string | null;
   format: SessionFormat;
   venue: string | null;
   meetingLink: string | null;
   province: ProvinceRef | null;
   notes: string | null;
-  assignee: Person;
-  host: SessionHost;
+  /** Null until the session is scheduled. */
+  assignee: Person | null;
+  /** Null until the session is scheduled. */
+  host: SessionHost | null;
   status: SessionStatus;
   cancelReason: string | null;
   expectedCandidates: number | null;
@@ -71,6 +74,8 @@ export type SessionSummary = {
   actualFemale: number;
   actualMale: number;
   actualTotal: number;
+  /** Copies with no date yet. Part of `total`, not of `planned`. */
+  unscheduled: number;
 };
 
 /** A campaign's sessions and what the page needs to show and change them. */

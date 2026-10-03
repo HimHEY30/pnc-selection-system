@@ -471,7 +471,7 @@ export const en = {
     directoryDown: "The staff list could not be loaded, so you can only choose yourself for now. Try again in a moment.",
 
     labels: {
-      status: { Planned: "Planned", Done: "Done", Cancelled: "Cancelled" },
+      status: { Planned: "Planned", Done: "Done", Cancelled: "Cancelled", Unscheduled: "Not scheduled" },
       format: { InPerson: "In person", Online: "Online", Hybrid: "Hybrid" },
       hostType: { Officer: "Officer", Alumni: "Alumnus", Partner: "Partner" },
       partnerKind: { Ngo: "NGO", HighSchool: "High school", University: "University", Other: "Other" },
@@ -481,8 +481,8 @@ export const en = {
     summary: {
       label: "Totals",
       sessions: "Sessions",
-      sessionsDetail: (planned: number, done: number, cancelled: number) =>
-        `${planned} planned · ${done} done${cancelled > 0 ? ` · ${cancelled} cancelled` : ""}`,
+      sessionsDetail: (planned: number, done: number, cancelled: number, unscheduled: number) =>
+        `${planned} planned · ${done} done${unscheduled > 0 ? ` · ${unscheduled} not scheduled` : ""}${cancelled > 0 ? ` · ${cancelled} cancelled` : ""}`,
       expected: "Expected candidates",
       expectedDetail: "Across sessions that are not cancelled",
       attended: "Attended",
@@ -525,6 +525,7 @@ export const en = {
       pageOf: (page: number, count: number) => `Page ${page} of ${count}`,
       rows: (from: number, to: number, total: number) => `${from}–${to} of ${total}`,
       notSet: "–",
+      notScheduled: "Not scheduled",
       actionsFor: (title: string) => `Actions for ${title}`,
     },
 
@@ -548,6 +549,10 @@ export const en = {
       attended: "Attended",
       notRecorded: "Not recorded",
       notSet: "Not set",
+      notScheduled: "Not scheduled yet",
+      notScheduledHint: "Copied from another campaign. Schedule it to give it a date, times, a person responsible and a host.",
+      notChosen: "Not chosen yet",
+      schedule: "Schedule",
       female: "female",
       male: "male",
       total: "total",
@@ -563,6 +568,8 @@ export const en = {
     form: {
       createTitle: "Add information session",
       editTitle: "Edit information session",
+      scheduleTitle: "Schedule information session",
+      scheduleIntro: "This session was copied from another campaign. Give it a date, times, a person responsible and who runs it.",
       intro: "Say when and where it takes place, who is responsible and who runs it.",
       title: "Title",
       titlePlaceholder: "e.g. Open day at Kampong Cham High School",
@@ -593,6 +600,7 @@ export const en = {
       save: "Save session",
       saving: "Saving…",
       create: "Add session",
+      scheduleSubmit: "Schedule session",
       choose: "Choose…",
       lockedNote: "Only a planned session can be edited.",
     },

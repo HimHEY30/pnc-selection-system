@@ -37,7 +37,7 @@ type Props = {
 
 type Filters = { status: "" | SessionStatus; hostType: "" | HostType; assignee: string };
 const NO_FILTERS: Filters = { status: "", hostType: "", assignee: "" };
-const STATUSES: SessionStatus[] = ["Planned", "Done", "Cancelled"];
+const STATUSES: SessionStatus[] = ["Planned", "Unscheduled", "Done", "Cancelled"];
 
 const text = t.sessions;
 
@@ -69,7 +69,7 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
 
   const assignees = useMemo(() => {
     const seen = new Map<string, string>();
-    for (const s of list.sessions) seen.set(s.assignee.id, s.assignee.name);
+    for (const s of list.sessions) if (s.assignee) seen.set(s.assignee.id, s.assignee.name);
     return [...seen].sort((a, b) => a[1].localeCompare(b[1]));
   }, [list.sessions]);
 
@@ -92,8 +92,8 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
     list.sessions.filter(
       (s) =>
         (!filters.status || s.status === filters.status) &&
-        (!filters.hostType || s.host.type === filters.hostType) &&
-        (!filters.assignee || s.assignee.id === filters.assignee) &&
+        (!filters.hostType || s.host?.type === filters.hostType) &&
+        (!filters.assignee || s.assignee?.id === filters.assignee) &&
         matchesSearch(s, search),
     ),
     direction,
@@ -101,7 +101,7 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
   const filtering = filters.status !== "" || filters.hostType !== "" || filters.assignee !== "" || search.trim() !== "";
   const current = pageOf(shown, page);
   const upcoming = useMemo(() => upcomingSessions(list.sessions, today), [list.sessions, today]);
-  const upcomingTotal = useMemo(() => list.sessions.filter((s) => s.status === "Planned" && s.date >= today).length, [list.sessions, today]);
+  const upcomingTotal = useMemo(() => list.sessions.filter((s) => s.status === "Planned" && s.date !== null && s.date >= today).length, [list.sessions, today]);
 
   const openNumbers = (s: InformationSession) => setNumbersId(s.id);
   const canChange = (s: InformationSession) => manageNow && canChangeDetails(s, list.isEditable, canManage);

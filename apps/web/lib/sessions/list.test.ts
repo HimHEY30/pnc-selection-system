@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancelledSession, doneSession, sessionFixture } from "@/test-utils/session-fixtures";
+import { cancelledSession, doneSession, sessionFixture, unscheduledSession } from "@/test-utils/session-fixtures";
 import { matchesSearch, pageOf, sortByStart, upcomingSessions } from "./list";
 
 const on = (date: string, startTime = "09:00", extra = {}) => sessionFixture({ id: `${date}-${startTime}`, date, startTime, ...extra });
@@ -33,6 +33,30 @@ describe("sortByStart", () => {
   it("orders by date, then start time, either way", () => {
     expect(sortByStart(sessions, "asc").map((s) => s.id)).toEqual(["2027-03-10-08:00", "2027-03-10-14:00", "2027-03-12-09:00"]);
     expect(sortByStart(sessions, "desc").map((s) => s.id)).toEqual(["2027-03-12-09:00", "2027-03-10-14:00", "2027-03-10-08:00"]);
+  });
+});
+
+describe("sessions with no date yet", () => {
+  const copy = (title: string) => unscheduledSession({ id: title, title });
+
+  it("are never coming up, and do not stop the dated ones being listed", () => {
+    const sessions = [copy("Copy"), on("2027-03-12")];
+
+    expect(upcomingSessions(sessions, "2027-03-10").map((s) => s.id)).toEqual(["2027-03-12-09:00"]);
+  });
+
+  it("come after the dated ones whichever way the list is ordered, by title", () => {
+    const sessions = [copy("Zebra visit"), on("2027-03-12"), copy("Alpha visit"), on("2027-03-10", "08:00")];
+
+    expect(sortByStart(sessions, "asc").map((s) => s.id)).toEqual(["2027-03-10-08:00", "2027-03-12-09:00", "Alpha visit", "Zebra visit"]);
+    expect(sortByStart(sessions, "desc").map((s) => s.id)).toEqual(["2027-03-12-09:00", "2027-03-10-08:00", "Alpha visit", "Zebra visit"]);
+  });
+
+  it("can still be found by their title, and have no host or person to match", () => {
+    const session = copy("Visit to Hope School");
+
+    expect(matchesSearch(session, "hope")).toBe(true);
+    expect(matchesSearch(session, "sokha")).toBe(false);
   });
 });
 

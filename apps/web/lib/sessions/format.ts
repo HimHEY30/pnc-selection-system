@@ -38,15 +38,23 @@ export function describeHost(host: SessionHost): string {
 
 /** Whether the session's date has arrived, so its attendance can be entered. The backend decides; this only shapes the form. */
 export function hasTakenPlace(session: Pick<InformationSession, "date">, today: string = cambodiaToday()): boolean {
-  return session.date <= today;
+  return session.date !== null && session.date <= today;
 }
 
-/** Details (and cancelling) are for a planned session, in a campaign that is not closed, for someone who may manage. */
+/**
+ * Details (and cancelling) are for a planned session, or a copy that is not scheduled yet (changing it is scheduling
+ * it), in a campaign that is not closed, for someone who may manage.
+ */
 export function canChangeDetails(session: Pick<InformationSession, "status">, campaignEditable: boolean, canManage: boolean): boolean {
-  return canManage && campaignEditable && session.status === "Planned";
+  return canManage && campaignEditable && (session.status === "Planned" || session.status === "Unscheduled");
 }
 
-/** The numbers can be entered on any session that is not cancelled, whatever the campaign's status. */
+/** The numbers can be entered on a session that has a date and is not cancelled, whatever the campaign's status. */
 export function canEnterNumbers(session: Pick<InformationSession, "status">): boolean {
-  return session.status !== "Cancelled";
+  return session.status === "Planned" || session.status === "Done";
+}
+
+/** Whether the session still has to be given a date, times, host and person responsible. */
+export function isUnscheduled(session: Pick<InformationSession, "status">): boolean {
+  return session.status === "Unscheduled";
 }

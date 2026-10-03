@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import Button from "@/components/ui/Button";
-import { formatDate, formatTimeRange } from "@/lib/sessions/format";
+import { formatDate, formatTimeRange, isUnscheduled } from "@/lib/sessions/format";
 import type { InformationSession, SessionStatus } from "@/lib/sessions/types";
 import { t } from "@/lib/messages";
 
@@ -25,6 +25,7 @@ const STATUS_TONE: Record<SessionStatus, string> = {
   Planned: "bg-warning-soft text-ink",
   Done: "bg-primary-soft text-primary",
   Cancelled: "bg-neutral-soft text-ink-muted",
+  Unscheduled: "bg-neutral-soft text-ink",
 };
 
 /** The label is always text, so the status never depends on colour alone. */
@@ -55,6 +56,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 /** One information session: when, where, who is responsible and who runs it, the numbers, and what can be done. */
 export default function SessionCard({ session, campaign, compact, canChange, canEnterNumbers, onEdit, onCancel, onNumbers }: Props) {
   const cancelled = session.status === "Cancelled";
+  const unscheduled = isUnscheduled(session);
   const titleId = `session-${session.id}`;
   const host = session.host;
   const attendance = session.attendance;
@@ -75,11 +77,16 @@ export default function SessionCard({ session, campaign, compact, canChange, can
             {session.title}
           </h3>
           <p className="mt-1 text-sm text-ink-muted">
-            {formatDate(session.date)} · {formatTimeRange(session.startTime, session.endTime)} · {t.sessions.labels.format[session.format]}
+            {session.date && session.startTime && session.endTime
+              ? `${formatDate(session.date)} · ${formatTimeRange(session.startTime, session.endTime)}`
+              : text.notScheduled}{" "}
+            · {t.sessions.labels.format[session.format]}
           </p>
         </div>
         <SessionStatusBadge status={session.status} />
       </div>
+
+      {unscheduled && <p className="mt-3 rounded-lg bg-neutral-soft px-3 py-2 text-sm text-ink">{text.notScheduledHint}</p>}
 
       {cancelled && session.cancelReason && (
         <p className="mt-3 rounded-lg bg-neutral-soft px-3 py-2 text-sm text-ink">{text.cancelReason(session.cancelReason)}</p>
@@ -95,29 +102,37 @@ export default function SessionCard({ session, campaign, compact, canChange, can
           </Detail>
         )}
         {session.province && <Detail label={text.province}>{session.province.name}</Detail>}
-        <Detail label={text.responsible}>{session.assignee.name}</Detail>
+        <Detail label={text.responsible}>
+          {session.assignee ? session.assignee.name : <span className="text-ink-muted">{text.notChosen}</span>}
+        </Detail>
         <Detail label={text.runBy}>
-          <span className="font-semibold">{host.name}</span>
-          <span className="text-ink-muted">
-            {" "}
-            · {t.sessions.labels.hostType[host.type]}
-            {host.partnerKind ? ` (${t.sessions.labels.partnerKind[host.partnerKind]})` : ""}
-          </span>
-          {!host.isActive && <span className="ml-2 rounded-full bg-neutral-soft px-2 py-0.5 text-xs font-semibold text-ink-muted">{text.hostOff}</span>}
-          {(host.phone || host.email) && (
-            <span className="mt-0.5 block text-sm text-ink-muted">
-              {host.phone && (
-                <a href={`tel:${host.phone.replace(/[^+\d]/g, "")}`} className="hover:underline focus-ring">
-                  {host.phone}
-                </a>
+          {host ? (
+            <>
+              <span className="font-semibold">{host.name}</span>
+              <span className="text-ink-muted">
+                {" "}
+                · {t.sessions.labels.hostType[host.type]}
+                {host.partnerKind ? ` (${t.sessions.labels.partnerKind[host.partnerKind]})` : ""}
+              </span>
+              {!host.isActive && <span className="ml-2 rounded-full bg-neutral-soft px-2 py-0.5 text-xs font-semibold text-ink-muted">{text.hostOff}</span>}
+              {(host.phone || host.email) && (
+                <span className="mt-0.5 block text-sm text-ink-muted">
+                  {host.phone && (
+                    <a href={`tel:${host.phone.replace(/[^+\d]/g, "")}`} className="hover:underline focus-ring">
+                      {host.phone}
+                    </a>
+                  )}
+                  {host.phone && host.email && " · "}
+                  {host.email && (
+                    <a href={`mailto:${host.email}`} className="hover:underline focus-ring">
+                      {host.email}
+                    </a>
+                  )}
+                </span>
               )}
-              {host.phone && host.email && " · "}
-              {host.email && (
-                <a href={`mailto:${host.email}`} className="hover:underline focus-ring">
-                  {host.email}
-                </a>
-              )}
-            </span>
+            </>
+          ) : (
+            <span className="text-ink-muted">{text.notChosen}</span>
           )}
         </Detail>
         <Detail label={text.expected}>
@@ -150,7 +165,11 @@ export default function SessionCard({ session, campaign, compact, canChange, can
               {text.numbers}
             </Button>
           )}
-          {canChange && onEdit && <Button onClick={() => onEdit(session)}>{text.edit}</Button>}
+          {canChange && onEdit && (
+            <Button variant={unscheduled ? "primary" : "secondary"} onClick={() => onEdit(session)}>
+              {unscheduled ? text.schedule : text.edit}
+            </Button>
+          )}
           {canChange && onCancel && <Button onClick={() => onCancel(session)}>{text.cancel}</Button>}
         </div>
       )}

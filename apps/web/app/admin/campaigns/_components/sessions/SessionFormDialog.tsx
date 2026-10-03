@@ -23,6 +23,7 @@ import {
   type InformationSession,
   type ProvinceRef,
 } from "@/lib/sessions/types";
+import { isUnscheduled } from "@/lib/sessions/format";
 import { t } from "@/lib/messages";
 import { createSessionAction, updateSessionAction } from "../../sessions-actions";
 import HostDialog, { type HostDialogTarget } from "./HostDialog";
@@ -44,12 +45,13 @@ const text = t.sessions.form;
 
 export default function SessionFormDialog({ target, campaignId, targetProvinces, hosts, assignable, onClose }: Props) {
   const [busy, setBusy] = useState(false);
+  const scheduling = target?.kind === "edit" && isUnscheduled(target.session);
 
   return (
     <FormDialog
       open={target !== null}
-      title={target?.kind === "edit" ? text.editTitle : text.createTitle}
-      description={text.intro}
+      title={scheduling ? text.scheduleTitle : target?.kind === "edit" ? text.editTitle : text.createTitle}
+      description={scheduling ? text.scheduleIntro : text.intro}
       busy={busy}
       onClose={onClose}
       size="lg"
@@ -81,8 +83,9 @@ function SessionFormBody({
   onClose,
 }: Omit<Props, "target" | "onClose"> & { target: SessionDialogTarget; onBusy: (busy: boolean) => void; onClose: () => void }) {
   const editing = target.kind === "edit" ? target.session : null;
+  const scheduling = editing !== null && isUnscheduled(editing);
   const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<SessionForm>(() => (editing ? formFromSession(editing) : emptySessionForm(assignable.me.id)));
+  const [form, setForm] = useState<SessionForm>(() => (editing ? formFromSession(editing, assignable.me.id) : emptySessionForm(assignable.me.id)));
   const [errors, setErrors] = useState<Partial<Record<SessionField, string>>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [hostTarget, setHostTarget] = useState<HostDialogTarget | null>(null);
@@ -99,7 +102,7 @@ function SessionFormBody({
       if (options.some((o) => o.id === member.id)) continue;
       options.push({ id: member.id, label: `${member.name} (${t.sessions.labels.role[member.role]})` });
     }
-    const named = editing ? [editing.assignee, editing.host.userId ? { id: editing.host.userId, name: editing.host.name } : null] : [];
+    const named = editing ? [editing.assignee, editing.host?.userId ? { id: editing.host.userId, name: editing.host.name } : null] : [];
     for (const person of named) {
       if (person && !options.some((o) => o.id === person.id)) options.push({ id: person.id, label: person.name });
     }
@@ -111,7 +114,7 @@ function SessionFormBody({
     if (form.hostType !== "Alumni" && form.hostType !== "Partner") return [];
     const all = [...hosts, ...added.filter((a) => !hosts.some((h) => h.id === a.id))];
     const options = all.filter((h) => h.type === form.hostType && h.isActive).map((h) => ({ id: h.id, label: h.name }));
-    if (editing?.host.hostId && editing.host.type === form.hostType && !options.some((o) => o.id === editing.host.hostId)) {
+    if (editing?.host?.hostId && editing.host.type === form.hostType && !options.some((o) => o.id === editing.host!.hostId)) {
       options.push({ id: editing.host.hostId, label: editing.host.name + text.hostSwitchedOff });
     }
     return options.sort((a, b) => a.label.localeCompare(b.label));
@@ -353,7 +356,7 @@ function SessionFormBody({
             {t.common.cancel}
           </Button>
           <Button type="submit" variant="primary" disabled={pending}>
-            {pending ? text.saving : editing ? text.save : text.create}
+            {pending ? text.saving : scheduling ? text.scheduleSubmit : editing ? text.save : text.create}
           </Button>
         </div>
       </form>

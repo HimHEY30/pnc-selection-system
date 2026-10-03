@@ -134,7 +134,7 @@ function NumbersBody({ session, onBusy, onClose }: { session: InformationSession
         {held ? (
           <p className="text-sm text-ink-muted">{text.actualHint}</p>
         ) : (
-          <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-ink">{text.notYet(formatDate(session.date))}</p>
+          <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-ink">{text.notYet(session.date ? formatDate(session.date) : "")}</p>
         )}
 
         <div className="grid gap-5 sm:grid-cols-2">

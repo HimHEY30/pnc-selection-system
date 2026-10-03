@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doneSession, sessionFixture } from "@/test-utils/session-fixtures";
+import { doneSession, sessionFixture, unscheduledSession } from "@/test-utils/session-fixtures";
 import {
   emptyHostForm,
   emptySessionForm,
@@ -48,6 +48,7 @@ describe("formFromSession", () => {
         notes: "Bring posters",
         host: { type: "Partner", name: "Hope School", userId: null, hostId: "h-1", partnerKind: "HighSchool", phone: null, email: null, isActive: true },
       }),
+      "officer-1",
     );
 
     expect(form).toMatchObject({
@@ -63,7 +64,7 @@ describe("formFromSession", () => {
   });
 
   it("uses empty text for what a session does not have", () => {
-    const form = formFromSession(sessionFixture({ format: "Online", venue: null, meetingLink: "https://meet.example.org/x" }));
+    const form = formFromSession(sessionFixture({ format: "Online", venue: null, meetingLink: "https://meet.example.org/x" }), "officer-1");
 
     expect(form.venue).toBe("");
     expect(form.provinceId).toBe("");
@@ -71,10 +72,30 @@ describe("formFromSession", () => {
     expect(form.meetingLink).toBe("https://meet.example.org/x");
   });
 
+  it("starts the form of a copy with no date, the usual times, and the person scheduling it", () => {
+    const form = formFromSession(
+      unscheduledSession({ title: "Copied visit", format: "InPerson", venue: "School hall", notes: "Bring posters" }),
+      "manager-1",
+    );
+
+    expect(form).toMatchObject({
+      title: "Copied visit",
+      venue: "School hall",
+      notes: "Bring posters",
+      date: "",
+      startTime: "09:00",
+      endTime: "11:00",
+      assigneeId: "manager-1",
+      hostType: "Officer",
+      hostUserId: "manager-1",
+      hostId: "",
+    });
+  });
+
   it("round-trips through the request unchanged", () => {
     const session = doneSession({ province: { id: 2, name: "Battambang" }, notes: "x" });
 
-    const request = toSessionRequest(formFromSession(session));
+    const request = toSessionRequest(formFromSession(session, "officer-1"));
 
     expect(request).toMatchObject({
       title: session.title,

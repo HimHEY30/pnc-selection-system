@@ -28,9 +28,13 @@ export default function MySessionsList({ sessions, today }: Props) {
     return <EmptyState compact title={text.empty} description={text.emptyDescription} />;
   }
 
-  const upcoming = sessions.filter((m) => m.session.status === "Planned" && m.session.date >= today);
+  // Sessions with no date yet are copies nobody is responsible for, so they are not on anyone's list; the date is
+  // checked anyway so a missing one can never break the page.
+  const upcoming = sessions.filter((m) => m.session.status === "Planned" && m.session.date !== null && m.session.date >= today);
   // Earlier ones, most recent first: the one that just happened is the one most likely to need its numbers.
-  const earlier = sessions.filter((m) => !upcoming.includes(m)).sort((a, b) => (a.session.date < b.session.date ? 1 : -1));
+  const earlier = sessions
+    .filter((m) => !upcoming.includes(m))
+    .sort((a, b) => ((a.session.date ?? "") < (b.session.date ?? "") ? 1 : -1));
   const selected = sessions.find((m) => m.session.id === numbersId)?.session ?? null;
 
   return (

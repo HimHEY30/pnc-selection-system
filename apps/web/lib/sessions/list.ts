@@ -11,28 +11,38 @@ export const UPCOMING_LIMIT = 3;
 
 export type SortDirection = "asc" | "desc";
 
-const byStart = (a: InformationSession, b: InformationSession) =>
+type Scheduled = InformationSession & { date: string; startTime: string };
+
+/** A session with a date has a start time too; one without is a copy still to be scheduled (or called off before that). */
+const isScheduled = (s: InformationSession): s is Scheduled => s.date !== null && s.startTime !== null;
+
+const byStart = (a: Scheduled, b: Scheduled) =>
   a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date);
 
 /** Planned sessions that have not happened yet, soonest first, at most `limit`. */
 export function upcomingSessions(sessions: InformationSession[], today: string, limit: number = UPCOMING_LIMIT): InformationSession[] {
   return sessions
+    .filter(isScheduled)
     .filter((s) => s.status === "Planned" && s.date >= today)
     .sort(byStart)
     .slice(0, limit);
 }
 
-/** A copy of the sessions ordered by when they start. */
+/**
+ * A copy of the sessions ordered by when they start. Sessions with no date yet come after the others whichever way
+ * the rest is ordered, by title, so they are easy to find and never get in the way of the dated ones.
+ */
 export function sortByStart(sessions: InformationSession[], direction: SortDirection): InformationSession[] {
-  const sorted = [...sessions].sort(byStart);
-  return direction === "asc" ? sorted : sorted.reverse();
+  const dated = sessions.filter(isScheduled).sort(byStart);
+  const undated = sessions.filter((s) => !isScheduled(s)).sort((a, b) => a.title.localeCompare(b.title));
+  return [...(direction === "asc" ? dated : dated.reverse()), ...undated];
 }
 
 /** Whether the title, venue, host or person responsible contains what was typed, ignoring case and outer spaces. */
 export function matchesSearch(session: InformationSession, search: string): boolean {
   const needle = search.trim().toLowerCase();
   if (!needle) return true;
-  return [session.title, session.venue ?? "", session.host.name, session.assignee.name].some((field) =>
+  return [session.title, session.venue ?? "", session.host?.name ?? "", session.assignee?.name ?? ""].some((field) =>
     field.toLowerCase().includes(needle),
   );
 }

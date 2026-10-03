@@ -1,5 +1,5 @@
 import RowActionsMenu from "@/components/ui/RowActionsMenu";
-import { formatDate, formatTimeRange } from "@/lib/sessions/format";
+import { formatDate, formatTimeRange, isUnscheduled } from "@/lib/sessions/format";
 import type { SortDirection } from "@/lib/sessions/list";
 import type { InformationSession } from "@/lib/sessions/types";
 import { t } from "@/lib/messages";
@@ -60,8 +60,14 @@ export default function SessionsTable({ sessions, direction, onToggleSort, canCh
             return (
               <tr key={session.id}>
                 <td className={`${CELL} whitespace-nowrap`}>
-                  <span className="font-semibold">{formatDate(session.date)}</span>
-                  <span className="block text-ink-muted">{formatTimeRange(session.startTime, session.endTime)}</span>
+                  {session.date && session.startTime && session.endTime ? (
+                    <>
+                      <span className="font-semibold">{formatDate(session.date)}</span>
+                      <span className="block text-ink-muted">{formatTimeRange(session.startTime, session.endTime)}</span>
+                    </>
+                  ) : (
+                    <span className="text-ink-muted">{text.notScheduled}</span>
+                  )}
                 </td>
                 <td className={`${CELL} max-w-64`}>
                   <span className={`font-semibold ${cancelled ? "text-ink-muted line-through" : ""}`}>{session.title}</span>
@@ -74,14 +80,20 @@ export default function SessionsTable({ sessions, direction, onToggleSort, canCh
                   )}
                 </td>
                 <td className={CELL}>
-                  <span className="font-semibold">{session.host.name}</span>
-                  <span className="block text-ink-muted">
-                    {t.sessions.labels.hostType[session.host.type]}
-                    {session.host.partnerKind ? ` (${t.sessions.labels.partnerKind[session.host.partnerKind]})` : ""}
-                    {!session.host.isActive ? ` · ${card.hostOff}` : ""}
-                  </span>
+                  {session.host ? (
+                    <>
+                      <span className="font-semibold">{session.host.name}</span>
+                      <span className="block text-ink-muted">
+                        {t.sessions.labels.hostType[session.host.type]}
+                        {session.host.partnerKind ? ` (${t.sessions.labels.partnerKind[session.host.partnerKind]})` : ""}
+                        {!session.host.isActive ? ` · ${card.hostOff}` : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-ink-muted">{text.notSet}</span>
+                  )}
                 </td>
-                <td className={CELL}>{session.assignee.name}</td>
+                <td className={CELL}>{session.assignee ? session.assignee.name : <span className="text-ink-muted">{text.notSet}</span>}</td>
                 <td className={CELL}>
                   <SessionStatusBadge status={session.status} />
                 </td>
@@ -105,7 +117,7 @@ export default function SessionsTable({ sessions, direction, onToggleSort, canCh
                       ...(numbers ? [{ label: card.numbers, onSelect: () => onNumbers(session) }] : []),
                       ...(changeable
                         ? [
-                            { label: card.edit, onSelect: () => onEdit(session) },
+                            { label: isUnscheduled(session) ? card.schedule : card.edit, onSelect: () => onEdit(session) },
                             { label: card.cancel, onSelect: () => onCancel(session) },
                           ]
                         : []),

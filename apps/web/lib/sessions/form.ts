@@ -46,21 +46,26 @@ export function emptySessionForm(meId: string): SessionForm {
   };
 }
 
-export function formFromSession(session: InformationSession): SessionForm {
+/**
+ * The form of a session being edited, or scheduled: a copy has no date, times, person or host, so those start as they do
+ * for a new session (no date, 09:00 to 11:00, the person scheduling it) and the manager changes what is not right.
+ */
+export function formFromSession(session: InformationSession, meId: string): SessionForm {
+  const blank = emptySessionForm(meId);
   return {
     title: session.title,
-    date: session.date,
-    startTime: session.startTime,
-    endTime: session.endTime,
+    date: session.date ?? blank.date,
+    startTime: session.startTime ?? blank.startTime,
+    endTime: session.endTime ?? blank.endTime,
     format: session.format,
     venue: session.venue ?? "",
     meetingLink: session.meetingLink ?? "",
     provinceId: session.province ? String(session.province.id) : "",
     notes: session.notes ?? "",
-    assigneeId: session.assignee.id,
-    hostType: session.host.type,
-    hostId: session.host.hostId ?? "",
-    hostUserId: session.host.userId ?? "",
+    assigneeId: session.assignee?.id ?? blank.assigneeId,
+    hostType: session.host?.type ?? blank.hostType,
+    hostId: session.host?.hostId ?? blank.hostId,
+    hostUserId: session.host ? (session.host.userId ?? "") : blank.hostUserId,
   };
 }
 
