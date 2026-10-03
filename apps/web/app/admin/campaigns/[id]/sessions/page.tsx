@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { loadCampaign } from "@/lib/campaigns/api";
 import { t } from "@/lib/messages";
 import { canManageCampaigns } from "@/lib/permissions";
+import { cambodiaToday } from "@/lib/sessions/format";
 import { loadAssignable, loadHosts, loadSessionList } from "@/lib/sessions/api";
 import SessionsManager from "../../_components/sessions/SessionsManager";
 import StepTabs from "../../_components/StepTabs";
@@ -35,7 +36,7 @@ export default async function SessionsPage({ params }: PageProps<"/admin/campaig
       <StepTabs steps={campaign.steps} current="InformationSessions" />
 
       {/* Keyed by id so moving between campaigns never carries one page's filters or open dialog into another. */}
-      <SessionsManager key={campaign.id} list={list} hosts={hosts} assignable={assignable} canManage={canManage} />
+      <SessionsManager key={campaign.id} list={list} today={cambodiaToday()} hosts={hosts} assignable={assignable} canManage={canManage} />
     </div>
   );
 }

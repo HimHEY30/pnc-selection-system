@@ -10,7 +10,7 @@ import {
   listFixture,
   sessionFixture,
 } from "@/test-utils/session-fixtures";
-import type { SessionList } from "@/lib/sessions/types";
+import type { InformationSession, SessionList } from "@/lib/sessions/types";
 
 vi.mock("../../sessions-actions", () => ({
   createSessionAction: vi.fn(),
@@ -23,6 +23,8 @@ vi.mock("../../sessions-actions", () => ({
 }));
 
 import SessionsManager from "./SessionsManager";
+
+const TODAY = "2027-01-01";
 
 const planned = sessionFixture();
 const done = doneSession();
@@ -41,24 +43,41 @@ function renderManager(list: SessionList, options: { canManage?: boolean; assign
   const view = render(
     <SessionsManager
       list={list}
+      today={TODAY}
       hosts={canManage ? HOSTS : []}
       assignable={canManage && options.assignable !== false ? assignableFixture() : null}
       canManage={canManage}
     />,
   );
   const rerender = (next: SessionList) =>
-    view.rerender(<SessionsManager list={next} hosts={HOSTS} assignable={assignableFixture()} canManage={canManage} />);
+    view.rerender(<SessionsManager list={next} today={TODAY} hosts={HOSTS} assignable={assignableFixture()} canManage={canManage} />);
   return { user, rerender };
 }
 
-const cardOf = (title: string) => screen.getByRole("listitem", { name: title });
+const table = () => screen.getByRole("table", { name: "Information sessions" });
+const rowOf = (title: string) => within(table()).getByRole("row", { name: new RegExp(title) });
+const tableTitles = () =>
+  within(table())
+    .getAllByRole("row")
+    .slice(1)
+    .map((row) => within(row).getAllByRole("cell")[1].querySelector("span")?.textContent);
+const upcomingList = () => screen.queryByRole("list", { name: "Coming up" });
+const cardOf = (title: string) => within(screen.getByRole("list", { name: "Coming up" })).getByRole("listitem", { name: title });
+
+/** `count` planned sessions, one a day from 2099-01-01, titled "Session 01", "Session 02" … */
+function manySessions(count: number): InformationSession[] {
+  return Array.from({ length: count }, (_, i) => {
+    const n = String(i + 1).padStart(2, "0");
+    return sessionFixture({ id: `id-${n}`, title: `Session ${n}`, date: `2099-01-${n}` });
+  });
+}
 
 describe("SessionsManager: what is shown", () => {
-  it("shows the totals and every session", () => {
+  it("shows the totals and every session in the table", () => {
     renderManager(listFixture([planned, done, cancelled]));
 
     expect(screen.getByLabelText("Totals")).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(within(table()).getAllByRole("row")).toHaveLength(1 + 3);
     expect(screen.getByText("Showing 3 of 3")).toBeInTheDocument();
   });
 
@@ -67,19 +86,19 @@ describe("SessionsManager: what is shown", () => {
 
     expect(screen.getByRole("button", { name: "Add session" })).toBeInTheDocument();
 
-    const plannedCard = within(cardOf(planned.title));
-    expect(plannedCard.getByRole("button", { name: "Enter numbers" })).toBeInTheDocument();
-    expect(plannedCard.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    expect(plannedCard.getByRole("button", { name: "Cancel session" })).toBeInTheDocument();
+    const plannedRow = within(rowOf(planned.title));
+    expect(plannedRow.getByRole("button", { name: `Enter numbers: ${planned.title}` })).toBeInTheDocument();
+    expect(plannedRow.getByRole("button", { name: `Edit: ${planned.title}` })).toBeInTheDocument();
+    expect(plannedRow.getByRole("button", { name: `Cancel session: ${planned.title}` })).toBeInTheDocument();
 
     // A done session can still have its numbers corrected, but not its details.
-    const doneCard = within(cardOf(done.title));
-    expect(doneCard.getByRole("button", { name: "Enter numbers" })).toBeInTheDocument();
-    expect(doneCard.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(doneCard.queryByRole("button", { name: "Cancel session" })).not.toBeInTheDocument();
+    const doneRow = within(rowOf(done.title));
+    expect(doneRow.getByRole("button", { name: /Enter numbers/ })).toBeInTheDocument();
+    expect(doneRow.queryByRole("button", { name: /Edit/ })).not.toBeInTheDocument();
+    expect(doneRow.queryByRole("button", { name: /Cancel session/ })).not.toBeInTheDocument();
 
     // A cancelled session has no actions at all.
-    expect(within(cardOf(cancelled.title)).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(rowOf(cancelled.title)).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("lets an officer see everything and enter numbers, but not add, edit or cancel", () => {
@@ -87,9 +106,10 @@ describe("SessionsManager: what is shown", () => {
 
     expect(screen.getByText(/Only a selection manager or a system admin can add or change sessions/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add session" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Cancel session" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Enter numbers" })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^Edit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Cancel session/ })).not.toBeInTheDocument();
+    // Both table rows, and the card of the one that is coming up.
+    expect(screen.getAllByRole("button", { name: /Enter numbers/ })).toHaveLength(3);
   });
 
   it("locks the details of a closed campaign but leaves the numbers open", () => {
@@ -97,9 +117,122 @@ describe("SessionsManager: what is shown", () => {
 
     expect(screen.getByText(/This campaign is closed, so sessions can no longer be added or changed/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add session" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Cancel session" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enter numbers" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Edit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Cancel session/ })).not.toBeInTheDocument();
+    expect(within(rowOf(planned.title)).getByRole("button", { name: /Enter numbers/ })).toBeInTheDocument();
+  });
+});
+
+describe("SessionsManager: coming up", () => {
+  it("shows the next three planned sessions as cards, soonest first", () => {
+    const sessions = manySessions(5);
+    renderManager(listFixture([...sessions].reverse()));
+
+    const cards = within(screen.getByRole("list", { name: "Coming up" })).getAllByRole("listitem");
+    expect(cards.map((li) => within(li).getByRole("heading").textContent)).toEqual(["Session 01", "Session 02", "Session 03"]);
+    expect(screen.getByText("2 more in the table below")).toBeInTheDocument();
+  });
+
+  it("leaves out sessions that are done, cancelled or already past", () => {
+    renderManager(listFixture([done, cancelled, sessionFixture({ id: "past", title: "Planned but past", date: "2026-12-31" }), planned]));
+
+    const cards = within(screen.getByRole("list", { name: "Coming up" })).getAllByRole("listitem");
+    expect(cards).toHaveLength(1);
+    expect(cardOf(planned.title)).toBeInTheDocument();
+    expect(screen.queryByText(/more in the table below/)).not.toBeInTheDocument();
+  });
+
+  it("says so when nothing is coming up, and still lists everything in the table", () => {
+    renderManager(listFixture([done, cancelled]));
+
+    expect(upcomingList()).not.toBeInTheDocument();
+    expect(screen.getByText("No planned sessions from today on.")).toBeInTheDocument();
+    expect(within(table()).getAllByRole("row")).toHaveLength(1 + 2);
+  });
+
+  it("does not follow the filters: it is what is next for the campaign", async () => {
+    const { user } = renderManager(listFixture([planned, done]));
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Done");
+
+    expect(cardOf(planned.title)).toBeInTheDocument();
+  });
+
+  it("opens the same dialogs from a card", async () => {
+    const { user } = renderManager(listFixture([planned]));
+
+    await user.click(within(cardOf(planned.title)).getByRole("button", { name: "Edit" }));
+
+    expect(screen.getByRole("dialog", { name: "Edit information session" })).toBeInTheDocument();
+  });
+});
+
+describe("SessionsManager: the table of a long list", () => {
+  it("shows ten sessions at a time and moves between pages", async () => {
+    const { user } = renderManager(listFixture(manySessions(25)));
+
+    expect(within(table()).getAllByRole("row")).toHaveLength(1 + 10);
+    expect(screen.getByText("1–10 of 25")).toBeInTheDocument();
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("11–20 of 25")).toBeInTheDocument();
+    expect(tableTitles()[0]).toBe("Session 11");
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("21–25 of 25")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+    expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+  });
+
+  it("lists the earliest first, and the latest first when the date heading is pressed", async () => {
+    const { user } = renderManager(listFixture(manySessions(12)));
+    expect(tableTitles()[0]).toBe("Session 01");
+
+    await user.click(screen.getByRole("button", { name: /^Date/ }));
+
+    expect(tableTitles()[0]).toBe("Session 12");
+    expect(screen.getByRole("columnheader", { name: /Date/ })).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("searches the title, venue, host and person responsible, and goes back to the first page", async () => {
+    const sessions = [...manySessions(25), withAlumnus];
+    const { user } = renderManager(listFixture(sessions));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Search"), "alumni talk");
+
+    expect(tableTitles()).toEqual(["Alumni talk"]);
+    expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 26")).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText("Search"));
+    await user.type(screen.getByLabelText("Search"), "vanna");
+    expect(tableTitles()).toEqual(["Alumni talk"]);
+  });
+
+  it("goes back to the first page when a filter narrows the list", async () => {
+    const { user } = renderManager(listFixture([...manySessions(25), done]));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    await user.selectOptions(screen.getByLabelText("Status"), "Done");
+
+    expect(tableTitles()).toEqual([done.title]);
+    expect(screen.getByText("1–1 of 1")).toBeInTheDocument();
+  });
+
+  it("shows a message instead of an empty table when the search matches nothing", async () => {
+    const { user } = renderManager(listFixture([planned]));
+
+    await user.type(screen.getByLabelText("Search"), "nothing like this");
+
+    expect(screen.getByText("No sessions match these filters")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });
 
@@ -134,7 +267,7 @@ describe("SessionsManager: dialogs", () => {
   it("opens the form for the session whose Edit was pressed, filled in", async () => {
     const { user } = renderManager(listFixture([planned, withAlumnus]));
 
-    await user.click(within(cardOf(withAlumnus.title)).getByRole("button", { name: "Edit" }));
+    await user.click(within(rowOf(withAlumnus.title)).getByRole("button", { name: /^Edit/ }));
 
     const dialog = within(screen.getByRole("dialog", { name: "Edit information session" }));
     expect(dialog.getByLabelText("Title")).toHaveValue("Alumni talk");
@@ -144,7 +277,7 @@ describe("SessionsManager: dialogs", () => {
   it("opens the cancel dialog for that session", async () => {
     const { user } = renderManager(listFixture([planned]));
 
-    await user.click(screen.getByRole("button", { name: "Cancel session" }));
+    await user.click(within(rowOf(planned.title)).getByRole("button", { name: /^Cancel session/ }));
 
     const dialog = screen.getByRole("dialog", { name: "Cancel this session?" });
     expect(within(dialog).getByText(/Open day at Kampong Cham High School will be marked as cancelled/)).toBeInTheDocument();
@@ -153,7 +286,7 @@ describe("SessionsManager: dialogs", () => {
   it("opens the numbers dialog for that session", async () => {
     const { user } = renderManager(listFixture([planned, done]));
 
-    await user.click(within(cardOf(done.title)).getByRole("button", { name: "Enter numbers" }));
+    await user.click(within(rowOf(done.title)).getByRole("button", { name: /Enter numbers/ }));
 
     const dialog = screen.getByRole("dialog", { name: "Enter numbers" });
     expect(within(dialog).getByLabelText("Females")).toHaveValue("18");
@@ -162,14 +295,14 @@ describe("SessionsManager: dialogs", () => {
   it("opens the numbers dialog for an officer too", async () => {
     const { user } = renderManager(listFixture([planned]), { canManage: false });
 
-    await user.click(screen.getByRole("button", { name: "Enter numbers" }));
+    await user.click(within(rowOf(planned.title)).getByRole("button", { name: /Enter numbers/ }));
 
     expect(screen.getByRole("dialog", { name: "Enter numbers" })).toBeInTheDocument();
   });
 
   it("closes a dialog whose session is gone after the page refreshes", async () => {
     const { user, rerender } = renderManager(listFixture([planned, withAlumnus]));
-    await user.click(within(cardOf(withAlumnus.title)).getByRole("button", { name: "Edit" }));
+    await user.click(within(rowOf(withAlumnus.title)).getByRole("button", { name: /^Edit/ }));
     expect(screen.getByRole("dialog", { name: "Edit information session" })).toBeInTheDocument();
 
     rerender(listFixture([planned]));
@@ -186,8 +319,7 @@ describe("SessionsManager: filters", () => {
 
     await user.selectOptions(screen.getByLabelText("Status"), "Done");
 
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect(screen.getByRole("listitem", { name: done.title })).toBeInTheDocument();
+    expect(tableTitles()).toEqual([done.title]);
     expect(screen.getByText("Showing 1 of 4")).toBeInTheDocument();
   });
 
@@ -196,7 +328,7 @@ describe("SessionsManager: filters", () => {
 
     await user.selectOptions(screen.getByLabelText("Run by"), "Alumni");
 
-    expect(screen.getAllByRole("listitem").map((li) => li.getAttribute("aria-labelledby"))).toEqual([`session-${withAlumnus.id}`]);
+    expect(tableTitles()).toEqual([withAlumnus.title]);
   });
 
   it("filters by who is responsible, listing each person once, by name", async () => {
@@ -206,8 +338,7 @@ describe("SessionsManager: filters", () => {
     expect(options).toEqual(["All", "Sokha Officer", "Vanna Officer"]);
 
     await user.selectOptions(screen.getByLabelText("Responsible"), "officer-2");
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect(screen.getByRole("listitem", { name: "Alumni talk" })).toBeInTheDocument();
+    expect(tableTitles()).toEqual(["Alumni talk"]);
   });
 
   it("combines filters, says when nothing matches, and clears them", async () => {
@@ -216,14 +347,24 @@ describe("SessionsManager: filters", () => {
     await user.selectOptions(screen.getByLabelText("Status"), "Done");
     await user.selectOptions(screen.getByLabelText("Run by"), "Alumni");
 
-    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.getByText("No sessions match these filters")).toBeInTheDocument();
     expect(screen.getByText("Showing 0 of 4")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
-    expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(within(table()).getAllByRole("row")).toHaveLength(1 + 4);
     expect(screen.queryByRole("button", { name: "Clear filters" })).not.toBeInTheDocument();
+  });
+
+  it("clears the search along with the filters", async () => {
+    const { user } = renderManager(all());
+
+    await user.type(screen.getByLabelText("Search"), "alumni");
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(screen.getByLabelText("Search")).toHaveValue("");
+    expect(within(table()).getAllByRole("row")).toHaveLength(1 + 4);
   });
 
   it("does not hide the totals when filtering: they are the campaign's", async () => {
