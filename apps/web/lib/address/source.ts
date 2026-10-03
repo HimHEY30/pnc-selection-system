@@ -10,8 +10,12 @@ const DEFAULT_URL = "https://pumi.onrender.com/pumi";
 
 /** The lists almost never change, so a copy is kept for a day. */
 const FRESH_MS = 24 * 60 * 60 * 1000;
-/** A free-tier host can take a while to wake up. Past this we give up and the form lets the person type instead. */
-const TIMEOUT_MS = 15_000;
+/**
+ * The public service runs on a free-tier host that goes to sleep when idle, and the first request after a quiet spell can
+ * take 20 seconds or more to wake it (seen on 2026-10-04; awake it answers in about 0.2 s). Past this we give up and the
+ * form lets the person type instead. See `warm`, which wakes it before anyone needs it.
+ */
+const TIMEOUT_MS = 40_000;
 
 export type PlacesResult = { ok: true; places: PlaceOption[] } | { ok: false };
 
@@ -50,23 +54,47 @@ export function createAddressSource(options: Options = {}) {
     }
   }
 
+  // Lists being asked for right now. Anyone who wants the same list joins the request instead of starting another, which
+  // matters when the service is slow to wake: the early `warm` and the form opening a moment later share one wait.
+  const asking = new Map<string, Promise<PlacesResult>>();
+
+  async function load(key: string, level: Level, parentId: string | null): Promise<PlacesResult> {
+    const have = kept.get(key);
+    const places = await ask(level, parentId);
+    if (places) {
+      // An empty list is a real answer only for a level that can be empty (a commune with no villages listed).
+      if (places.length === 0 && level === "provinces") return have ? { ok: true, places: have.places } : { ok: false };
+      kept.set(key, { at: now(), places });
+      return { ok: true, places };
+    }
+
+    return have ? { ok: true, places: have.places } : { ok: false };
+  }
+
+  function list(level: Level, parentId: string | null): Promise<PlacesResult> {
+    if (level !== "provinces" && !isPlaceId(parentId)) return Promise.resolve({ ok: false });
+
+    const key = `${level}:${parentId ?? ""}`;
+    const have = kept.get(key);
+    if (have && now() - have.at < freshMs) return Promise.resolve({ ok: true, places: have.places });
+
+    const running = asking.get(key);
+    if (running) return running;
+
+    const started = load(key, level, parentId).finally(() => asking.delete(key));
+    asking.set(key, started);
+    return started;
+  }
+
   return {
-    async list(level: Level, parentId: string | null): Promise<PlacesResult> {
-      if (level !== "provinces" && !isPlaceId(parentId)) return { ok: false };
+    list,
 
-      const key = `${level}:${parentId ?? ""}`;
-      const have = kept.get(key);
-      if (have && now() - have.at < freshMs) return { ok: true, places: have.places };
-
-      const places = await ask(level, parentId);
-      if (places) {
-        // An empty list is a real answer only for a level that can be empty (a commune with no villages listed).
-        if (places.length === 0 && level === "provinces") return have ? { ok: true, places: have.places } : { ok: false };
-        kept.set(key, { at: now(), places });
-        return { ok: true, places };
-      }
-
-      return have ? { ok: true, places: have.places } : { ok: false };
+    /**
+     * Asks for the provinces in the background, so the service is awake and the list is kept before anyone opens the form.
+     * Nothing waits for it and it never fails: if it cannot be reached, the form asks again when it is needed.
+     */
+    warm(): void {
+      void list("provinces", null);
     },
   };
 }

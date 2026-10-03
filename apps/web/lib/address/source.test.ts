@@ -55,7 +55,69 @@ describe("asking the address service", () => {
   });
 });
 
+describe("waking the service early", () => {
+  it("asks for the provinces in the background and keeps them, so the form does not have to ask", async () => {
+    fetchMock.mockImplementation(() => reply([rawPlace("12", "Phnom Penh")]));
+    const s = source();
+
+    expect(s.warm()).toBeUndefined();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(askedUrl()).toBe("https://geo.example/pumi/provinces");
+
+    await vi.waitFor(async () => expect(await s.list("provinces", null)).toMatchObject({ ok: true }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the form join a wake-up that is still waiting instead of asking a second time", async () => {
+    let arrive: (response: Response) => void = () => {};
+    fetchMock.mockImplementation(() => new Promise<Response>((resolve) => (arrive = resolve)));
+    const s = source();
+
+    s.warm();
+    const form = s.list("provinces", null);
+    arrive(Response.json([rawPlace("12", "Phnom Penh")]));
+
+    expect(await form).toEqual({ ok: true, places: [{ code: "12", name: "Phnom Penh", nameKm: "km-Phnom Penh" }] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("never fails loudly when the service cannot be reached, and the form still gets to ask later", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    fetchMock.mockImplementationOnce(() => reply([rawPlace("12", "Phnom Penh")]));
+    const s = source();
+
+    expect(() => s.warm()).not.toThrow();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let the failed wake-up finish
+
+    expect((await s.list("provinces", null)).ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("keeping what it has read", () => {
+  it("makes one request when the same list is asked for twice at once, and every asker gets the answer", async () => {
+    fetchMock.mockImplementation(() => reply([rawPlace("1", "X")]));
+    const s = source();
+
+    const [a, b] = await Promise.all([s.list("districts", "12"), s.list("districts", "12")]);
+
+    expect(a).toEqual(b);
+    expect(a.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a failed shared request be tried again afterwards", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    fetchMock.mockImplementationOnce(() => reply([rawPlace("1", "X")]));
+    const s = source();
+
+    const [a, b] = await Promise.all([s.list("districts", "12"), s.list("districts", "12")]);
+    expect([a, b]).toEqual([{ ok: false }, { ok: false }]);
+
+    expect((await s.list("districts", "12")).ok).toBe(true);
+  });
+
   it("does not ask again within the day, but does after it", async () => {
     fetchMock.mockImplementation(() => reply([rawPlace("1", "X")]));
     const s = source({ freshMs: 1_000 });
