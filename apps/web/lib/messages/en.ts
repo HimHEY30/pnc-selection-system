@@ -934,6 +934,27 @@ export const en = {
     failed: "That did not work. Please try again.",
   },
 
+  candidates: {
+    address: {
+      legend: "Address",
+      province: "Province or city",
+      district: "District",
+      commune: "Commune",
+      village: "Village",
+      choose: "Choose…",
+      chooseAbove: (level: string) => `Choose the ${level} first`,
+      loading: "Loading…",
+      loadFailed: (level: string) => `We could not load the list of ${level}.`,
+      typeInstead: "Type it instead",
+      typedHint: "Type the names as they are written on the candidate's papers.",
+      pickInstead: "Pick from the lists instead",
+      // Plural level names for "the list of ...".
+      plural: { provinces: "provinces", districts: "districts", communes: "communes", villages: "villages" },
+      // Singular level names for "Choose the ... first".
+      singular: { provinces: "province", districts: "district", communes: "commune", villages: "village" },
+    },
+  },
+
   errors: {
     pageTitle: "We could not load this page",
     pageBody: "Something went wrong on our side. Your saved work is safe.",
