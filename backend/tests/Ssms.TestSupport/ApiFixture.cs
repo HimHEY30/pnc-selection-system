@@ -30,6 +30,11 @@ public abstract class ApiFixture : IAsyncLifetime
     /// <summary>The running app's service container, for tests that call a service directly.</summary>
     public IServiceProvider Services => _factory!.Services;
 
+    /// <summary>A test project's chance to swap real services for fakes (for example the Keycloak staff list).</summary>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
+    }
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
@@ -55,6 +60,8 @@ public abstract class ApiFixture : IAsyncLifetime
                         options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
                     })
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+
+                ConfigureServices(services);
             });
         });
 

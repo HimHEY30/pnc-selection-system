@@ -65,6 +65,10 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+        // The staff list comes from Keycloak's admin API (see KeycloakStaffDirectory).
+        services.AddMemoryCache();
+        services.AddHttpClient<IStaffDirectory, KeycloakStaffDirectory>(client => client.Timeout = TimeSpan.FromSeconds(10));
+
         return services;
     }
 }

@@ -31,6 +31,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Campaigns.Tests/Campaigns.Tests.csproj" />
     <Project Path="tests/Eligibility.Tests/Eligibility.Tests.csproj" />
+    <Project Path="tests/Identity.Tests/Identity.Tests.csproj" />
     <Project Path="tests/Sessions.Tests/Sessions.Tests.csproj" />
     <Project Path="tests/Ssms.TestSupport/Ssms.TestSupport.csproj" />
   </Folder>

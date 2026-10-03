@@ -7,6 +7,9 @@ public enum ErrorType
     NotFound,
     Conflict,
     Forbidden,
+
+    /// <summary>Something this system depends on (such as the identity provider) did not answer.</summary>
+    Unavailable,
 }
 
 /// <summary>
@@ -28,4 +31,5 @@ public sealed record Error(
         new(code, message, ErrorType.Validation, fieldErrors);
     public static Error Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
     public static Error Forbidden(string code, string message) => new(code, message, ErrorType.Forbidden);
+    public static Error Unavailable(string code, string message) => new(code, message, ErrorType.Unavailable);
 }

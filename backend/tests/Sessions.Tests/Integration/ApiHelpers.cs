@@ -6,6 +6,14 @@ namespace Sessions.Tests.Integration;
 /// <summary>Short helpers so the tests read as what a person does on the page.</summary>
 public static class ApiHelpers
 {
+    /// <summary>Makes the client's user have this Keycloak subject (the id a session's assignee is matched on).</summary>
+    public static HttpClient AsUser(this HttpClient client, string subject)
+    {
+        client.DefaultRequestHeaders.Remove(TestAuthHandler.SubjectHeader);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.SubjectHeader, subject);
+        return client;
+    }
+
     /// <summary>Creates a campaign and completes Step 1, so it has target provinces (Battambang and Siem Reap).</summary>
     public static async Task<CampaignDetailDto> CreateCampaignAsync(this HttpClient client, params short[] provinces)
     {
