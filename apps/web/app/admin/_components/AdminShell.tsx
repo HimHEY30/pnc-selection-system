@@ -75,7 +75,7 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
                   <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">{group.title}</p>
                 )}
                 <ul className="space-y-1">
-                  {group.items.map(({ href, label, icon, disabled }) => {
+                  {group.items.map(({ href, label, icon, disabled, guide }) => {
                     const active = !disabled && (href === "/admin" ? pathname === href : pathname.startsWith(href));
                     const base = "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium";
                     return (
@@ -88,6 +88,7 @@ export default function AdminShell({ user, signOutAction, campaigns, canCreate, 
                         ) : (
                           <Link
                             href={href}
+                            data-guide={guide}
                             aria-current={active ? "page" : undefined}
                             onClick={() => setDrawerOpen(false)}
                             className={`${base} transition focus-ring ${

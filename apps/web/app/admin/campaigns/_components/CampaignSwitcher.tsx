@@ -47,7 +47,7 @@ export default function CampaignSwitcher({ campaigns }: Props) {
         : t.switcher.choose;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} data-guide="switcher" className="relative">
       <button
         ref={triggerRef}
         type="button"

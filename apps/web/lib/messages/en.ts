@@ -4,6 +4,8 @@
 //
 // Messages that need a value are functions. Wording follows the approved designs.
 
+import type { TourStep } from "@/lib/guide/guide";
+
 export const en = {
   common: {
     cancel: "Cancel",
@@ -50,6 +52,74 @@ export const en = {
       back: "Back",
       skip: "Skip the tour",
       done: "Got it",
+      // Each step after the first points at a real part of the screen (`target`, see data-guide) and says what it is for.
+      // `side` is where the card prefers to sit next to it.
+      manager: [
+        {
+          title: "Welcome to Student Selection",
+          body: "Let us show you around. It takes less than a minute, and you can read it all again in the Guide.",
+        },
+        {
+          target: "switcher",
+          side: "bottom",
+          title: "Choose a campaign, or create one",
+          body: 'A campaign is one selection cycle, such as "Selection 2027". Pick the one you are working on here. Create campaign is at the bottom of the list: start from scratch, or copy settings from an earlier campaign.',
+        },
+        {
+          target: "nav-campaigns",
+          side: "right",
+          title: "All your campaigns",
+          body: "Open a campaign to see its setup steps: campaign info, eligibility rules and information sessions. Candidates and the entrance exam are not open yet.",
+        },
+        {
+          target: "nav-sessions",
+          side: "right",
+          title: "Information sessions",
+          body: "The sessions you are responsible for or are hosting, and the directory of alumni and partner hosts. You add sessions to a campaign from its setup page.",
+        },
+        {
+          target: "profile",
+          side: "bottom",
+          title: "Your account",
+          body: "Your name and role are here. Log out from this menu when you are done.",
+        },
+        {
+          target: "nav-guide",
+          side: "right",
+          title: "Help is always here",
+          body: "Open the Guide to read how everything works, or to see this tour again.",
+        },
+      ] satisfies readonly TourStep[],
+      officer: [
+        {
+          title: "Welcome to Student Selection",
+          body: "Let us show you around. It takes less than a minute, and you can read it all again in the Guide.",
+        },
+        {
+          target: "switcher",
+          side: "bottom",
+          title: "Choose a campaign",
+          body: "Pick a campaign to look at its setup and sessions. Only selection managers and system admins can create or change campaigns.",
+        },
+        {
+          target: "nav-sessions",
+          side: "right",
+          title: "Your sessions",
+          body: "The information sessions you are responsible for or are hosting. You can record how many candidates are expected and, once a session has taken place, how many came.",
+        },
+        {
+          target: "profile",
+          side: "bottom",
+          title: "Your account",
+          body: "Your name and role are here. Log out from this menu when you are done.",
+        },
+        {
+          target: "nav-guide",
+          side: "right",
+          title: "Help is always here",
+          body: "Open the Guide to read how everything works, or to see this tour again.",
+        },
+      ] satisfies readonly TourStep[],
     },
     page: {
       title: "Guide",

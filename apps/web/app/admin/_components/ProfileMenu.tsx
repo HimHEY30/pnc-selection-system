@@ -30,7 +30,7 @@ export default function ProfileMenu({ name, email, roles, signOutAction }: Props
   const roleLabel = roles.map((r) => t.roles[r]).find(Boolean) ?? roles[0];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} data-guide="profile" className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

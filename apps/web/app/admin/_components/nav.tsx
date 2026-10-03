@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { TourTarget } from "@/lib/guide/guide";
 import { t } from "@/lib/messages";
 
 // Single source of truth for the sidebar. Adding a section means adding one entry here.
@@ -28,6 +29,8 @@ export type NavItem = {
   icon: ReactNode;
   /** Locked until a campaign has been set up. Shown, but not a link. */
   disabled?: boolean;
+  /** Lets the welcome tour point at this link. */
+  guide?: TourTarget;
 };
 
 export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
@@ -48,6 +51,7 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
       {
         href: "/admin/campaigns",
         label: t.nav.campaigns,
+        guide: "nav-campaigns",
         icon: (
           <Icon>
             <path d="M5 21V4M5 4h12l-2 4 2 4H5" />
@@ -57,6 +61,7 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
       {
         href: "/admin/sessions",
         label: t.nav.sessions,
+        guide: "nav-sessions",
         icon: (
           <Icon>
             <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -100,6 +105,7 @@ export const NAV_GROUPS: { title?: string; items: NavItem[] }[] = [
       {
         href: "/admin/guide",
         label: t.guide.nav,
+        guide: "nav-guide",
         icon: (
           <Icon>
             <circle cx="12" cy="12" r="9" />
