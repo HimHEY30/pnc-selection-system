@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { t } from "@/lib/messages";
+import ConfirmDialog from "./ConfirmDialog";
 
 type Props = {
   open: boolean;
@@ -9,6 +10,8 @@ type Props = {
   description?: string;
   /** A save is in flight: Escape, the backdrop and the close button must not throw the work away. */
   busy?: boolean;
+  /** Something was typed and not saved: Escape, the backdrop and the close button ask before discarding it. */
+  dirty?: boolean;
   onClose: () => void;
   /** "lg" for forms with two columns of fields. */
   size?: "md" | "lg";
@@ -20,9 +23,16 @@ type Props = {
  * behind inert, closes it on Escape and returns focus to what opened it. Its children are only mounted while
  * it is open, so a form inside starts empty every time without any reset code.
  */
-export default function FormDialog({ open, title, description, busy, onClose, size = "md", children }: Props) {
+export default function FormDialog({ open, title, description, busy, dirty, onClose, size = "md", children }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
+  // Every way of closing by hand (Escape, the X, the backdrop) comes through here.
+  const requestClose = () => {
+    if (dirty) setConfirmingDiscard(true);
+    else dialogRef.current?.close();
+  };
 
   // The `open` prop is the source of truth; the DOM dialog follows it.
   useEffect(() => {
@@ -43,11 +53,16 @@ export default function FormDialog({ open, title, description, busy, onClose, si
         if (event.target === event.currentTarget) onClose();
       }}
       onCancel={(event) => {
-        if (event.target === event.currentTarget && busy) event.preventDefault();
+        if (event.target !== event.currentTarget) return;
+        if (busy) event.preventDefault();
+        else if (dirty) {
+          event.preventDefault();
+          setConfirmingDiscard(true);
+        }
       }}
       // A click on the dialog element itself (not its content) is a click on the backdrop.
       onClick={(event) => {
-        if (event.target === dialogRef.current && !busy) dialogRef.current?.close();
+        if (event.target === dialogRef.current && !busy) requestClose();
       }}
       className={`m-auto w-[calc(100%-2rem)] rounded-2xl bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/60 ${
         size === "lg" ? "max-w-[720px]" : "max-w-[540px]"
@@ -64,7 +79,7 @@ export default function FormDialog({ open, title, description, busy, onClose, si
             </div>
             <button
               type="button"
-              onClick={() => dialogRef.current?.close()}
+              onClick={requestClose}
               disabled={busy}
               aria-label={t.common.close}
               className="-mr-2 -mt-1 rounded-lg p-2 text-ink-muted transition hover:bg-canvas focus-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -77,6 +92,19 @@ export default function FormDialog({ open, title, description, busy, onClose, si
           <div className="mt-5">{children}</div>
         </div>
       )}
+      <ConfirmDialog
+        open={open && confirmingDiscard}
+        title={t.common.discard.title}
+        description={t.common.discard.body}
+        confirmLabel={t.common.discard.confirm}
+        cancelLabel={t.common.discard.keep}
+        destructive
+        onConfirm={() => {
+          setConfirmingDiscard(false);
+          dialogRef.current?.close();
+        }}
+        onCancel={() => setConfirmingDiscard(false)}
+      />
     </dialog>
   );
 }

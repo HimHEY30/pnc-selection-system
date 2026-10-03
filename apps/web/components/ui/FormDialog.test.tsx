@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import FormDialog from "./FormDialog";
 
-function Harness({ busy = false, onClosed = () => {} }: { busy?: boolean; onClosed?: () => void }) {
+function Harness({ busy = false, dirty = false, onClosed = () => {} }: { busy?: boolean; dirty?: boolean; onClosed?: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -14,6 +14,7 @@ function Harness({ busy = false, onClosed = () => {} }: { busy?: boolean; onClos
         title="Add thing"
         description="Fill it in."
         busy={busy}
+        dirty={dirty}
         onClose={() => {
           setOpen(false);
           onClosed();
@@ -91,5 +92,75 @@ describe("FormDialog", () => {
     document.querySelector("dialog")!.dispatchEvent(escape);
 
     expect(escape.defaultPrevented).toBe(false);
+  });
+
+  describe("with unsaved changes", () => {
+    async function openDirty() {
+      const user = userEvent.setup();
+      const onClosed = vi.fn();
+      render(<Harness dirty onClosed={onClosed} />);
+      await user.click(screen.getByRole("button", { name: "Open" }));
+      return { user, onClosed };
+    }
+
+    it("asks before the close button throws the typing away, and keeps the form on Keep editing", async () => {
+      const { user, onClosed } = await openDirty();
+      await user.type(screen.getByLabelText("Name"), "typed");
+
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(screen.getByRole("dialog", { name: "Discard your changes?" })).toBeInTheDocument();
+      expect(onClosed).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole("button", { name: "Keep editing" }));
+
+      expect(screen.queryByRole("dialog", { name: "Discard your changes?" })).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Name")).toHaveValue("typed");
+      expect(onClosed).not.toHaveBeenCalled();
+    });
+
+    it("closes and forgets the typing on Discard", async () => {
+      const { user, onClosed } = await openDirty();
+      await user.type(screen.getByLabelText("Name"), "typed");
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      await user.click(screen.getByRole("button", { name: "Discard" }));
+
+      expect(onClosed).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("asks on a click on the backdrop too", async () => {
+      const { onClosed } = await openDirty();
+
+      fireEvent.click(document.querySelector("dialog")!);
+
+      expect(screen.getByRole("dialog", { name: "Discard your changes?" })).toBeInTheDocument();
+      expect(onClosed).not.toHaveBeenCalled();
+    });
+
+    it("holds Escape back and asks instead", async () => {
+      await openDirty();
+
+      const escape = new Event("cancel", { cancelable: true });
+      act(() => {
+        document.querySelector("dialog")!.dispatchEvent(escape);
+      });
+
+      expect(escape.defaultPrevented).toBe(true);
+      expect(screen.getByRole("dialog", { name: "Discard your changes?" })).toBeInTheDocument();
+    });
+
+    it("does not ask when nothing was changed", async () => {
+      const user = userEvent.setup();
+      const onClosed = vi.fn();
+      render(<Harness onClosed={onClosed} />);
+      await user.click(screen.getByRole("button", { name: "Open" }));
+
+      await user.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(onClosed).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 });

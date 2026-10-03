@@ -13,6 +13,12 @@ export const en = {
     loading: "Loading",
     comingSoon: "Coming soon",
     skipToContent: "Skip to content",
+    discard: {
+      title: "Discard your changes?",
+      body: "What you typed has not been saved and will be lost.",
+      confirm: "Discard",
+      keep: "Keep editing",
+    },
   },
 
   brand: {
