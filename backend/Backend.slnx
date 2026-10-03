@@ -22,9 +22,16 @@
     <Project Path="src/Modules/Eligibility/Eligibility.Domain/Eligibility.Domain.csproj" />
     <Project Path="src/Modules/Eligibility/Eligibility.Infrastructure/Eligibility.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Sessions/">
+    <Project Path="src/Modules/Sessions/Sessions.Api/Sessions.Api.csproj" />
+    <Project Path="src/Modules/Sessions/Sessions.Application/Sessions.Application.csproj" />
+    <Project Path="src/Modules/Sessions/Sessions.Domain/Sessions.Domain.csproj" />
+    <Project Path="src/Modules/Sessions/Sessions.Infrastructure/Sessions.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Campaigns.Tests/Campaigns.Tests.csproj" />
     <Project Path="tests/Eligibility.Tests/Eligibility.Tests.csproj" />
+    <Project Path="tests/Sessions.Tests/Sessions.Tests.csproj" />
     <Project Path="tests/Ssms.TestSupport/Ssms.TestSupport.csproj" />
   </Folder>
 </Solution>
