@@ -16,7 +16,25 @@ public sealed class FieldCatalogue
         _operators = operators.ToDictionary(o => o.Key, StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// The catalogue one campaign sees: the shared fields plus that campaign's exam subjects. The
+    /// total and the average are left out unless there are enough subjects for them to mean something.
+    /// </summary>
+    public static FieldCatalogue ForCampaign(
+        IEnumerable<FieldDefinition> sharedFields,
+        IEnumerable<FieldDefinition> subjects,
+        IEnumerable<OperatorDefinition> operators)
+    {
+        var subjectList = subjects.ToList();
+        var shared = sharedFields.Where(f => subjectList.Count >= ExamSubjects.MinForTotals || !ExamSubjects.IsTotalOrAverage(f));
+        return new FieldCatalogue(shared.Concat(subjectList), operators);
+    }
+
     public IReadOnlyCollection<FieldDefinition> Fields => _fields.Values;
+
+    /// <summary>The exam subject fields, in the order they were added.</summary>
+    public IEnumerable<FieldDefinition> Subjects =>
+        _fields.Values.Where(f => f.Derivation == FieldDerivation.ExamScore).OrderBy(f => f.Position);
     public IReadOnlyCollection<OperatorDefinition> Operators => _operators.Values;
 
     public FieldDefinition? FindField(string? key) =>

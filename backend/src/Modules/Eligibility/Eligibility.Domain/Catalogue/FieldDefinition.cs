@@ -49,9 +49,22 @@ public sealed class FieldDefinition
     public decimal? MaxValue { get; private set; }
     public int Position { get; private set; }
 
+    /// <summary>The campaign this field belongs to (an exam subject), or null for the shared catalogue.</summary>
+    public Guid? CampaignId { get; private set; }
+
+    /// <summary>The subject's name as typed ("Math"), or null for a field that is not an exam subject.</summary>
+    public string? SubjectName { get; private set; }
+
     public IReadOnlyCollection<FieldOption> Options => _options;
 
     private FieldDefinition() { }
+
+    /// <summary>Renames an exam subject. The label shown in the rule builder follows the name.</summary>
+    public void RenameSubject(string name)
+    {
+        SubjectName = name;
+        Label = ExamSubjects.LabelFor(name);
+    }
 
     public FieldDefinition(
         string key,
@@ -65,8 +78,12 @@ public sealed class FieldDefinition
         int decimals = 0,
         decimal? minValue = null,
         decimal? maxValue = null,
-        IEnumerable<(string Key, string Label)>? options = null)
+        IEnumerable<(string Key, string Label)>? options = null,
+        Guid? campaignId = null,
+        string? subjectName = null)
     {
+        CampaignId = campaignId;
+        SubjectName = subjectName;
         Key = key;
         Label = label;
         ValueType = valueType;

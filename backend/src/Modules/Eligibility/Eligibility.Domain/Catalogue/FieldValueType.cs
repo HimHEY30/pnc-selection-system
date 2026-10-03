@@ -29,6 +29,15 @@ public enum FieldDerivation : short
 
     /// <summary>Whole years completed between the date of birth and the campaign's reference date.</summary>
     AgeFromBirthDate = 1,
+
+    /// <summary>One exam subject's score. The candidate supplies it under the field's own key.</summary>
+    ExamScore = 2,
+
+    /// <summary>The sum of the campaign's exam subject scores. Missing if any subject is missing.</summary>
+    ExamTotal = 3,
+
+    /// <summary>The average of the campaign's exam subject scores. Missing if any subject is missing.</summary>
+    ExamAverage = 4,
 }
 
 /// <summary>How many values an operator takes. Stored as a smallint.</summary>

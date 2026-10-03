@@ -93,7 +93,10 @@ internal sealed class RuleConfiguration : IEntityTypeConfiguration<Rule>
 
         builder.HasIndex(r => r.FieldKey).HasDatabaseName("ix_rules_field_key");
 
-        builder.HasOne<FieldDefinition>().WithMany().HasForeignKey(r => r.FieldKey).OnDelete(DeleteBehavior.Restrict);
+        // The migration makes this key DEFERRABLE INITIALLY DEFERRED (EF cannot say so): a campaign's exam
+        // subjects are deleted with the campaign, and so are its rules, and a key checked at once would
+        // refuse to delete a subject before its rules had gone. A subject a rule uses is still refused, at commit.
+        builder.HasOne<FieldDefinition>().WithMany().HasForeignKey(r => r.FieldKey).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne<OperatorDefinition>().WithMany().HasForeignKey(r => r.OperatorKey).OnDelete(DeleteBehavior.Restrict);
     }
 }
@@ -104,7 +107,7 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<Eligibi
     {
         builder.ToTable("audit_log", table =>
         {
-            table.HasCheckConstraint("ck_audit_log_entity", "entity IN (0, 1, 2)");
+            table.HasCheckConstraint("ck_audit_log_entity", "entity IN (0, 1, 2, 3)");
             table.HasCheckConstraint("ck_audit_log_action", "action IN (0, 1, 2, 3, 4)");
         });
 

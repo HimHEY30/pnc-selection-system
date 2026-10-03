@@ -17,6 +17,9 @@ internal sealed class FieldConfiguration : IEntityTypeConfiguration<FieldDefinit
         {
             table.HasCheckConstraint("ck_fields_value_type", "value_type IN (1, 2, 3, 4)");
             table.HasCheckConstraint("ck_fields_decimals", "decimals >= 0");
+
+            // A campaign's exam subject has both a campaign and a name; a shared field has neither.
+            table.HasCheckConstraint("ck_fields_subject", "(campaign_id IS NULL) = (subject_name IS NULL)");
         });
 
         builder.HasKey(f => f.Key);
@@ -31,6 +34,14 @@ internal sealed class FieldConfiguration : IEntityTypeConfiguration<FieldDefinit
         builder.Property(f => f.MinValue).HasColumnName("min_value").HasPrecision(18, 4);
         builder.Property(f => f.MaxValue).HasColumnName("max_value").HasPrecision(18, 4);
         builder.Property(f => f.Position).HasColumnName("position");
+
+        // A foreign key to campaigns.campaigns is added by hand in the migration (another module's table).
+        builder.Property(f => f.CampaignId).HasColumnName("campaign_id");
+        builder.Property(f => f.SubjectName).HasColumnName("subject_name").HasMaxLength(ExamSubjects.NameMax);
+
+        // "This campaign's subjects" is asked every time the page opens. A unique index on the name
+        // (ignoring case) is added by hand in the migration: EF cannot describe an expression index.
+        builder.HasIndex(f => f.CampaignId).HasDatabaseName("ix_fields_campaign_id");
 
         builder.HasMany(f => f.Options)
             .WithOne()
@@ -52,6 +63,19 @@ internal sealed class FieldConfiguration : IEntityTypeConfiguration<FieldDefinit
             f.MaxValue,
             f.Position,
         }));
+    }
+}
+
+internal sealed class ExamSetupConfiguration : IEntityTypeConfiguration<ExamSetup>
+{
+    public void Configure(EntityTypeBuilder<ExamSetup> builder)
+    {
+        builder.ToTable("exam_setups");
+
+        // One row per campaign. The foreign key to campaigns.campaigns is added by hand in the migration.
+        builder.HasKey(s => s.CampaignId);
+        builder.Property(s => s.CampaignId).HasColumnName("campaign_id").ValueGeneratedNever();
+        builder.Property(s => s.CreatedAt).HasColumnName("created_at").IsRequired();
     }
 }
 

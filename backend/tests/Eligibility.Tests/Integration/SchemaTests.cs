@@ -47,6 +47,19 @@ public sealed class SchemaTests
         """,
         ("id", Guid.NewGuid()), ("g", groupId), ("f", field), ("o", op), ("v", values ?? ["female"]), ("t", type), ("m", message));
 
+    private async Task<string> InsertSubjectAsync(Guid campaignId, string name, int position = 20)
+    {
+        var key = "exam_" + Guid.NewGuid().ToString("N");
+        await _fixture.ExecuteAsync(
+            """
+            insert into eligibility.fields
+                (key, label, value_type, derivation, candidate_attribute, unit, decimals, min_value, max_value, position, campaign_id, subject_name)
+            values (@k, @l, 1, 2, @k, 'points', 2, 0, 100, @p, @c, @n)
+            """,
+            ("k", key), ("l", name + " score"), ("p", position), ("c", campaignId), ("n", name));
+        return key;
+    }
+
     private static async Task AssertViolationAsync(Task<int> statement, string constraintOrState)
     {
         var ex = await Assert.ThrowsAsync<PostgresException>(() => statement);
@@ -72,14 +85,17 @@ public sealed class SchemaTests
         }
 
         Assert.Equal(
-            ["__ef_migrations_history", "audit_log", "field_options", "fields", "operators", "rule_groups", "rule_sets", "rules"],
+            ["__ef_migrations_history", "audit_log", "exam_setups", "field_options", "fields", "operators", "rule_groups", "rule_sets", "rules"],
             tables);
     }
 
     [Fact]
-    public async Task TheCatalogueSeed_HasTheEightFieldsTheirOptionsAndTheOperators()
+    public async Task TheCatalogueSeed_HasTheEightFieldsTheTwoExamTotalsTheirOptionsAndTheOperators()
     {
-        Assert.Equal(8, await _fixture.ScalarAsync<long>("select count(*) from eligibility.fields"));
+        Assert.Equal(10, await _fixture.ScalarAsync<long>("select count(*) from eligibility.fields where campaign_id is null"));
+        Assert.Equal(2, await _fixture.ScalarAsync<long>(
+            "select count(*) from eligibility.fields where key in ('exam_total', 'exam_average') and derivation in (3, 4) and subject_name is null"));
+        Assert.Equal(100m, await _fixture.ScalarAsync<decimal>("select max_value from eligibility.fields where key = 'exam_average'"));
         Assert.Equal(17, await _fixture.ScalarAsync<long>("select count(*) from eligibility.field_options")); // 2 + 5 + 6 + 4
         Assert.Equal(15, await _fixture.ScalarAsync<long>("select count(*) from eligibility.operators"));
         Assert.Equal(1, await _fixture.ScalarAsync<long>(
@@ -162,6 +178,71 @@ public sealed class SchemaTests
             PostgresErrorCodes.ForeignKeyViolation);
     }
 
+    // ---------- Exam subjects ----------
+
+    [Fact]
+    public async Task ASubjectNeedsBothACampaignAndAName()
+    {
+        var campaign = await CampaignWithEmptyRuleSetAsync();
+
+        await AssertViolationAsync(
+            _fixture.ExecuteAsync(
+                """
+                insert into eligibility.fields (key, label, value_type, derivation, candidate_attribute, decimals, position, campaign_id)
+                values ('exam_nameless', 'x', 1, 2, 'exam_nameless', 2, 20, @c)
+                """, ("c", campaign)),
+            "ck_fields_subject");
+        await AssertViolationAsync(
+            _fixture.ExecuteAsync(
+                """
+                insert into eligibility.fields (key, label, value_type, derivation, candidate_attribute, decimals, position, subject_name)
+                values ('exam_homeless', 'x', 1, 2, 'exam_homeless', 2, 20, 'Math')
+                """),
+            "ck_fields_subject");
+    }
+
+    [Fact]
+    public async Task ACampaignCannotHaveTheSameSubjectNameTwice_IgnoringCaseAndOuterSpaces()
+    {
+        var campaign = await CampaignWithEmptyRuleSetAsync();
+        await InsertSubjectAsync(campaign, "Math");
+
+        await Assert.ThrowsAsync<PostgresException>(() => InsertSubjectAsync(campaign, "math"));
+        await Assert.ThrowsAsync<PostgresException>(() => InsertSubjectAsync(campaign, " MATH "));
+        await InsertSubjectAsync(await CampaignWithEmptyRuleSetAsync(), "Math"); // another campaign may use the name
+    }
+
+    [Fact]
+    public async Task ASubjectMustBelongToARealCampaign()
+    {
+        await Assert.ThrowsAsync<PostgresException>(() => InsertSubjectAsync(Guid.NewGuid(), "Math"));
+    }
+
+    [Fact]
+    public async Task ASubjectThatARuleUses_CannotBeDeleted()
+    {
+        var campaign = await CampaignWithEmptyRuleSetAsync();
+        var key = await InsertSubjectAsync(campaign, "Math");
+        await InsertRuleAsync(await GroupAsync(campaign), field: key, op: "at_least", values: ["50"]);
+
+        await AssertViolationAsync(
+            _fixture.ExecuteAsync("delete from eligibility.fields where key = @k", ("k", key)),
+            PostgresErrorCodes.ForeignKeyViolation);
+    }
+
+    [Fact]
+    public async Task TheAuditLog_AcceptsASubjectEntry()
+    {
+        var campaign = await CampaignWithEmptyRuleSetAsync();
+
+        await _fixture.ExecuteAsync(
+            """
+            insert into eligibility.audit_log (id, campaign_id, entity, entity_id, action, changed_by_id, changed_by_name, changed_at)
+            values (@id, @c, 3, @e, 0, 'u', 'U', now())
+            """,
+            ("id", Guid.NewGuid()), ("c", campaign), ("e", Guid.NewGuid()));
+    }
+
     // ---------- Cascade ----------
 
     [Fact]
@@ -179,6 +260,22 @@ public sealed class SchemaTests
         Assert.Equal(0, await _fixture.ScalarAsync<long>("select count(*) from eligibility.audit_log where campaign_id = @id", ("id", campaign.Id)));
         Assert.Equal(0, await _fixture.ScalarAsync<long>(
             "select count(*) from eligibility.rules r join eligibility.rule_groups g on g.id = r.group_id where g.campaign_id = @id", ("id", campaign.Id)));
+    }
+
+    [Fact]
+    public async Task DeletingACampaign_TakesItsExamSubjectsWithIt_EvenWhenARuleUsesOne()
+    {
+        var campaign = await CampaignWithEmptyRuleSetAsync();
+        var key = await InsertSubjectAsync(campaign, "Math");
+        await InsertRuleAsync(await GroupAsync(campaign), field: key, op: "at_least", values: ["50"]);
+        await _fixture.ExecuteAsync("insert into eligibility.exam_setups (campaign_id, created_at) values (@id, now())", ("id", campaign));
+
+        await _fixture.ExecuteAsync("delete from campaigns.campaigns where id = @id", ("id", campaign));
+
+        Assert.Equal(0, await _fixture.ScalarAsync<long>("select count(*) from eligibility.fields where campaign_id = @id", ("id", campaign)));
+        Assert.Equal(0, await _fixture.ScalarAsync<long>("select count(*) from eligibility.exam_setups where campaign_id = @id", ("id", campaign)));
+        Assert.Equal(0, await _fixture.ScalarAsync<long>("select count(*) from eligibility.rules where field_key = @k", ("k", key)));
+        Assert.Equal(10, await _fixture.ScalarAsync<long>("select count(*) from eligibility.fields where campaign_id is null"));
     }
 
     [Fact]

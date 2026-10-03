@@ -50,7 +50,18 @@ public static class LaunchCatalogue
             options: [("single", "Single"), ("married", "Married"), ("divorced", "Divorced"), ("widowed", "Widowed")]),
 
         new(AttendedInfoSession, "Attended an information session", FieldValueType.YesNo, position: 8),
+
+        // Worked out from the campaign's exam subjects (see ExamSubjects); only offered when a
+        // campaign has at least two of them.
+        new(ExamSubjects.TotalKey, "Total exam score", FieldValueType.Number, position: 90,
+            derivation: FieldDerivation.ExamTotal, unit: ExamSubjects.Unit, decimals: ExamSubjects.Decimals, minValue: 0),
+
+        new(ExamSubjects.AverageKey, "Average exam score", FieldValueType.Number, position: 91,
+            derivation: FieldDerivation.ExamAverage, unit: ExamSubjects.Unit, decimals: ExamSubjects.Decimals,
+            minValue: 0, maxValue: ExamSubjects.MaxScore),
     ];
 
-    public static FieldCatalogue Create() => new(Fields, OperatorDefinition.Defaults);
+    /// <summary>The catalogue of a campaign with the given exam subjects (none by default).</summary>
+    public static FieldCatalogue Create(params FieldDefinition[] subjects) =>
+        FieldCatalogue.ForCampaign(Fields, subjects, OperatorDefinition.Defaults);
 }

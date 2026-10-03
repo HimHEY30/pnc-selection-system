@@ -19,7 +19,45 @@ public sealed class FakeRepository : IEligibilityRepository
     /// <summary>Set to make the next save fail like a concurrent edit.</summary>
     public bool FailNextSave { get; set; }
 
+    public Dictionary<Guid, List<FieldDefinition>> Subjects { get; } = [];
+    public HashSet<Guid> Setups { get; } = [];
+
     public Task<FieldCatalogue> GetCatalogueAsync(CancellationToken ct) => Task.FromResult(LaunchCatalogue.Create());
+
+    public Task<FieldCatalogue> GetCatalogueAsync(Guid campaignId, CancellationToken ct) =>
+        Task.FromResult(LaunchCatalogue.Create([.. SubjectsOf(campaignId)]));
+
+    public Task<List<FieldDefinition>> GetSubjectsAsync(Guid campaignId, CancellationToken ct) =>
+        Task.FromResult(SubjectsOf(campaignId).OrderBy(s => s.Position).ToList());
+
+    public Task<bool> HasExamSetupAsync(Guid campaignId, CancellationToken ct) => Task.FromResult(Setups.Contains(campaignId));
+
+    public Task<IReadOnlyDictionary<string, int>> CountRulesByFieldAsync(
+        Guid campaignId, IReadOnlyCollection<string> fieldKeys, CancellationToken ct)
+    {
+        var rules = RuleSets.GetValueOrDefault(campaignId)?.Groups.SelectMany(g => g.Rules) ?? [];
+        IReadOnlyDictionary<string, int> counts = rules
+            .Where(r => fieldKeys.Contains(r.FieldKey))
+            .GroupBy(r => r.FieldKey)
+            .ToDictionary(g => g.Key, g => g.Count());
+        return Task.FromResult(counts);
+    }
+
+    public void AddExamSetup(ExamSetup setup) => Setups.Add(setup.CampaignId);
+
+    public void AddSubject(FieldDefinition subject) => SubjectsOf(subject.CampaignId!.Value).Add(subject);
+
+    public void RemoveSubject(FieldDefinition subject) => SubjectsOf(subject.CampaignId!.Value).Remove(subject);
+
+    public List<FieldDefinition> SubjectsOf(Guid campaignId)
+    {
+        if (!Subjects.TryGetValue(campaignId, out var list))
+        {
+            Subjects[campaignId] = list = [];
+        }
+
+        return list;
+    }
 
     public Task<RuleSet?> GetRuleSetAsync(Guid campaignId, CancellationToken ct) =>
         Task.FromResult(RuleSets.GetValueOrDefault(campaignId));

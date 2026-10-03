@@ -14,6 +14,7 @@ public sealed class EligibilityDbContext : DbContext
     public DbSet<FieldDefinition> Fields => Set<FieldDefinition>();
     public DbSet<FieldOption> FieldOptions => Set<FieldOption>();
     public DbSet<OperatorDefinition> Operators => Set<OperatorDefinition>();
+    public DbSet<ExamSetup> ExamSetups => Set<ExamSetup>();
     public DbSet<RuleSet> RuleSets => Set<RuleSet>();
     public DbSet<RuleGroup> Groups => Set<RuleGroup>();
     public DbSet<Rule> Rules => Set<Rule>();

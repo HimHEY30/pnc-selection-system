@@ -209,7 +209,7 @@ public sealed class TestEndpointTests
     // ---------- Catalogue ----------
 
     [Fact]
-    public async Task TheCatalogue_ListsTheEightFields_WithTheirOperatorsAndOptions()
+    public async Task TheSharedCatalogue_ListsTheEightFields_WithTheirOperatorsAndOptions()
     {
         var catalogue = (await _client.GetFromJsonAsync<CatalogueDto>("/api/eligibility/catalogue"))!;
 

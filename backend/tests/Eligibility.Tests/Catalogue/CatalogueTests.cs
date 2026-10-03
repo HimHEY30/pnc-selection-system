@@ -7,11 +7,22 @@ public sealed class CatalogueTests
     private static readonly FieldCatalogue Catalogue = LaunchCatalogue.Create();
 
     [Fact]
-    public void LaunchCatalogue_HasTheEightAgreedFields()
+    public void LaunchCatalogue_HasTheEightAgreedFields_AndTheTwoExamTotals()
     {
         Assert.Equal(
-            ["age", "gender", "province", "highest_grade", "grade12_result", "family_income", "marital_status", "attended_info_session"],
+            [
+                "age", "gender", "province", "highest_grade", "grade12_result", "family_income", "marital_status",
+                "attended_info_session", "exam_total", "exam_average",
+            ],
             LaunchCatalogue.Fields.OrderBy(f => f.Position).Select(f => f.Key));
+    }
+
+    [Fact]
+    public void ACampaignWithoutSubjects_DoesNotSeeTheExamTotals()
+    {
+        Assert.Null(Catalogue.FindField("exam_total"));
+        Assert.Null(Catalogue.FindField("exam_average"));
+        Assert.Equal(8, Catalogue.Fields.Count);
     }
 
     [Fact]

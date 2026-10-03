@@ -7,6 +7,9 @@ public enum AuditEntity
     RuleSet,
     Group,
     Rule,
+
+    /// <summary>An exam subject of the campaign, added, renamed or removed.</summary>
+    Subject,
 }
 
 public enum AuditAction
