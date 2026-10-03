@@ -38,6 +38,7 @@ public static class DependencyInjection
 
         services.TryAddSingleton<IClock, SystemClock>();
         services.AddScoped<IEligibilityRepository, EligibilityRepository>();
+        services.AddScoped<IExamSubjectService, ExamSubjectService>();
         services.AddScoped<IEligibilityService, EligibilityService>();
 
         return services;

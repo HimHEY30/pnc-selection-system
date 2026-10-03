@@ -142,10 +142,12 @@ public sealed class ServiceHarness
     public FakeCurrentUser User { get; } = new();
     public FakeClock Clock { get; } = new();
     public EligibilityService Service { get; }
+    public ExamSubjectService Subjects { get; }
 
     public ServiceHarness()
     {
-        Service = new EligibilityService(Repository, Gateway, User, Clock);
+        Subjects = new ExamSubjectService(Repository, Gateway, User, Clock);
+        Service = new EligibilityService(Repository, Gateway, Subjects, User, Clock);
     }
 
     public static RuleInput Rule(

@@ -27,6 +27,8 @@ public sealed record RuleSetRequest(DateOnly? AgeReferenceDate, List<GroupInput>
 
 public sealed record TestRequest(RuleSetRequest? RuleSet, Dictionary<string, string?>? Candidate);
 
+public sealed record SubjectRequest(string? Name);
+
 // ---------- Responses ----------
 
 public sealed record RuleDto(Guid Id, string FieldKey, string OperatorKey, string[] Values, string Type, string Message, bool IsActive);
@@ -76,6 +78,15 @@ public sealed record FieldDto(
     List<OperatorDto> Operators);
 
 public sealed record CatalogueDto(List<FieldDto> Fields);
+
+/// <summary>One exam subject. <paramref name="Key"/> is the field key rules use; <paramref name="RuleCount"/> is how many saved rules use it.</summary>
+public sealed record SubjectDto(string Key, string Name, int RuleCount);
+
+/// <summary>
+/// A campaign's exam subjects and the catalogue that results from them (the shared fields, the subjects, and
+/// the total and average when there are enough subjects). The page replaces its catalogue with this one.
+/// </summary>
+public sealed record ExamSetupDto(List<SubjectDto> Subjects, int MaxSubjects, CatalogueDto Catalogue);
 
 public sealed record TestRuleResultDto(Guid RuleId, Guid GroupId, string FieldKey, string Type, string Outcome, string? Message, bool DataMissing);
 

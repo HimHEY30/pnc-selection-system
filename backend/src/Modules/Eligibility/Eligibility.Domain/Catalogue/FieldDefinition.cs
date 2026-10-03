@@ -59,6 +59,9 @@ public sealed class FieldDefinition
 
     private FieldDefinition() { }
 
+    /// <summary>Moves an exam subject to a place in the list, so the subjects stay numbered one after another.</summary>
+    public void Place(int position) => Position = position;
+
     /// <summary>Renames an exam subject. The label shown in the rule builder follows the name.</summary>
     public void RenameSubject(string name)
     {

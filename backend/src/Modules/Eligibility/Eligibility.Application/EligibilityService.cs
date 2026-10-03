@@ -33,17 +33,20 @@ public sealed class EligibilityService : IEligibilityService
 {
     private readonly IEligibilityRepository _repository;
     private readonly ICampaignSetupGateway _campaigns;
+    private readonly IExamSubjectService _subjects;
     private readonly ICurrentUserService _currentUser;
     private readonly IClock _clock;
 
     public EligibilityService(
         IEligibilityRepository repository,
         ICampaignSetupGateway campaigns,
+        IExamSubjectService subjects,
         ICurrentUserService currentUser,
         IClock clock)
     {
         _repository = repository;
         _campaigns = campaigns;
+        _subjects = subjects;
         _currentUser = currentUser;
         _clock = clock;
     }
@@ -77,7 +80,7 @@ public sealed class EligibilityService : IEligibilityService
             return Result.Failure<TestResultDto>(CampaignErrors.NotFound);
         }
 
-        var catalogue = await _repository.GetCatalogueAsync(ct);
+        var catalogue = await _repository.GetCatalogueAsync(campaignId, ct);
         var validated = RuleSetValidator.Validate(
             request.RuleSet ?? new RuleSetRequest(null, [], null), catalogue, context.TargetProvinces, ValidationMode.Test);
         if (!validated.IsValid)
@@ -126,7 +129,15 @@ public sealed class EligibilityService : IEligibilityService
             return Result.Failure(EligibilityErrors.NothingToCopy);
         }
 
-        var copy = WithNewIds(source.ToContent());
+        // Rules on an exam subject name the subject's own field key, which belongs to the source campaign.
+        // The target gets the same subjects (new keys), and the copied rules are pointed at them.
+        var subjectKeys = await _subjects.CopySubjectsAsync(sourceCampaignId, context, user, ct);
+        if (subjectKeys.IsFailure)
+        {
+            return Result.Failure(subjectKeys.Error);
+        }
+
+        var copy = WithNewIds(source.ToContent(), subjectKeys.Value);
         var now = _clock.UtcNow;
         var target = await _repository.GetRuleSetAsync(targetCampaignId, ct);
         if (target is null)
@@ -173,7 +184,7 @@ public sealed class EligibilityService : IEligibilityService
             return Result.Failure<RuleSetDto>(EligibilityErrors.ConcurrentEdit);
         }
 
-        var catalogue = await _repository.GetCatalogueAsync(ct);
+        var catalogue = await _repository.GetCatalogueAsync(campaignId, ct);
         var validated = RuleSetValidator.Validate(request, catalogue, context.TargetProvinces, mode);
         if (!validated.IsValid)
         {
@@ -230,13 +241,15 @@ public sealed class EligibilityService : IEligibilityService
         ruleSet?.UpdatedAt,
         ruleSet?.UpdatedByName);
 
-    private static RuleSetContent WithNewIds(RuleSetContent content) => content with
+    private static RuleSetContent WithNewIds(RuleSetContent content, IReadOnlyDictionary<string, string> fieldKeys) => content with
     {
         Groups = content.Groups
             .Select(g => g with
             {
                 Id = Guid.NewGuid(),
-                Rules = g.Rules.Select(r => r with { Id = Guid.NewGuid() }).ToList(),
+                Rules = g.Rules
+                    .Select(r => r with { Id = Guid.NewGuid(), FieldKey = fieldKeys.GetValueOrDefault(r.FieldKey, r.FieldKey) })
+                    .ToList(),
             })
             .ToList(),
     };
