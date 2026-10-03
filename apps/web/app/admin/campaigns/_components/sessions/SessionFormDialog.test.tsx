@@ -321,6 +321,22 @@ describe("SessionFormDialog: who runs it", () => {
     expect(within(screen.getByLabelText("Choose alumnus")).getAllByRole("option").map((o) => o.textContent)).toContain("Chenda Sok");
     expect(screen.getByRole("dialog", { name: "Add information session" })).toBeInTheDocument();
   });
+
+  it("keeps the session form, and what was typed in it, when the host dialog closes", async () => {
+    createHost.mockResolvedValue({ ok: true, data: PARTNER });
+    const { user, onClose } = renderDialog({ kind: "create" }, { hosts: [ALUMNUS] });
+    await fillBasics(user);
+    await user.selectOptions(screen.getByLabelText("Run by"), "Partner");
+
+    await user.click(screen.getByRole("button", { name: "Add partner" }));
+    const dialog = screen.getByRole("dialog", { name: "Add partner" });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    // The host dialog's close must not be taken for the session form's own.
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Title")).toHaveValue("Open day at Kampong Cham High School");
+    expect(screen.getByLabelText("Venue")).toHaveValue("School hall");
+  });
 });
 
 describe("SessionFormDialog: editing", () => {

@@ -36,9 +36,14 @@ export default function FormDialog({ open, title, description, busy, onClose, si
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // React passes a dialog's close and cancel events up to the dialogs around it, though the browser does not.
+      // Without the target check, closing a dialog opened from inside this one (add a host while writing a
+      // session) would close this one too and throw away what was typed.
+      onClose={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
       onCancel={(event) => {
-        if (busy) event.preventDefault();
+        if (event.target === event.currentTarget && busy) event.preventDefault();
       }}
       // A click on the dialog element itself (not its content) is a click on the backdrop.
       onClick={(event) => {
