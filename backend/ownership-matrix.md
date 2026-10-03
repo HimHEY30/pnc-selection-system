@@ -32,12 +32,41 @@ Owns (schema `campaigns` in the `ssms` database):
 Publishes:
 - HTTP API: `/api/campaigns`, `/api/campaigns/{id}`, `/api/campaigns/{id}/info[/draft]`, `/api/provinces`
 - `ICampaignService` (Campaigns.Application), for modules that later need campaign data
+- `ICampaignSetupGateway` (Campaigns.Application): what a setup step needs to know about its campaign (status, start
+  date, target provinces, every step's status) and the way to report its own step's status. Eligibility, and later
+  Sessions, Candidates and Exam, use this instead of reading the campaign tables.
 
 Consumes:
 - Identity: `ICurrentUserService` (creator's id and display name), `AuthorizationPolicies`
   (`OperationsTier` to read, `ManagementTier` to create and edit)
 
 Not owned: users (Keycloak). `created_by_name` is a snapshot, not a reference.
+
+---
+
+## Eligibility
+
+Owns (schema `eligibility` in the `ssms` database):
+- The field catalogue: `fields`, `field_options`, `operators` (seeded by the first migration). A field is a row, so a
+  new field needs no change to the rule builder. A new operator also needs code in the evaluator.
+- `RuleSet` (one per campaign) with its `RuleGroup`s and `Rule`s, and the append-only `audit_log` of who changed what
+- `EligibilityEvaluator` (Eligibility.Domain): decides whether a candidate is eligible under a rule set and returns
+  the result of every rule. Pure (no database, no web request), so the Candidates step can call it for every candidate.
+- Rule validation, contradiction and duplicate detection, the suggested starter rules (Eligibility.Domain / Application)
+
+Publishes:
+- HTTP API: `/api/eligibility/catalogue`, `/api/campaigns/{id}/eligibility[/draft|/test|/suggested]`
+- `IEligibilityService` (Eligibility.Application), including `CopyRulesAsync` for the Create dialog's future
+  "copy settings" option
+- `EligibilityEvaluator`, `RuleSetContent`, `CandidateData`, `EligibilityResult` (Eligibility.Domain), for the
+  Candidates step
+
+Consumes:
+- Campaigns: `ICampaignSetupGateway` (is the campaign a draft, its target provinces and start date; set Step 2's status)
+- Identity: `ICurrentUserService`, `AuthorizationPolicies` (`OperationsTier` to read and test, `ManagementTier` to save)
+
+Written by hand: the foreign keys from `rule_sets` and `audit_log` to `campaigns.campaigns` (that table belongs to
+another module's context, so EF cannot model them). The Host runs the Campaigns migrations first for that reason.
 
 ---
 
