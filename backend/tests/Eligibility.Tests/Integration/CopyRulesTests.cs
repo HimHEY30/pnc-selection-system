@@ -9,8 +9,8 @@ using static Eligibility.Tests.Integration.ApiHelpers;
 namespace Eligibility.Tests.Integration;
 
 /// <summary>
-/// Copying another campaign's rules. There is no screen for it yet (the Create dialog's "copy
-/// settings" option is disabled), so this is proved through the real service and database.
+/// Copying another campaign's rules, proved through the real service and database. The create-from-copy
+/// request that uses it is covered in <see cref="CopyOnCreateTests"/>.
 /// </summary>
 [Collection(EligibilityApiCollection.Name)]
 public sealed class CopyRulesTests

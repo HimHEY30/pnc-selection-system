@@ -18,8 +18,7 @@ public interface IEligibilityService
 
     /// <summary>
     /// Copies another campaign's rules into this one (new ids, same content) and marks the step
-    /// In progress. Not reachable from the UI yet: it is for the Create dialog's "copy settings"
-    /// option once campaigns can be completed.
+    /// In progress. Used by <see cref="EligibilityCopyPart"/> when a campaign is created from a copy.
     /// </summary>
     Task<Result> CopyRulesAsync(Guid sourceCampaignId, Guid targetCampaignId, CancellationToken ct);
 }

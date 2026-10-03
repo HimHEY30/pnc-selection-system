@@ -1,3 +1,4 @@
+using Campaigns.Application;
 using Eligibility.Application;
 using Eligibility.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IEligibilityRepository, EligibilityRepository>();
         services.AddScoped<IExamSubjectService, ExamSubjectService>();
         services.AddScoped<IEligibilityService, EligibilityService>();
+        services.AddScoped<ICampaignCopyPart, EligibilityCopyPart>();
 
         return services;
     }
