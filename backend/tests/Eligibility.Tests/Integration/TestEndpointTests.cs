@@ -226,6 +226,12 @@ public sealed class TestEndpointTests
         Assert.Equal(["grade_9", "grade_10", "grade_11", "grade_12", "diploma_or_higher"], grade.Options.Select(o => o.Key));
         Assert.Equal(["is", "is_not", "is_one_of", "is_none_of"], grade.Operators.Select(o => o.Key));
 
+        Assert.Equal("AgeFromBirthDate", age.Derivation);
+        Assert.Equal("date_of_birth", age.CandidateAttribute);
+        var gender = catalogue.Fields.Single(f => f.Key == "gender");
+        Assert.Equal("None", gender.Derivation);
+        Assert.Equal("gender", gender.CandidateAttribute);
+
         Assert.Equal("CampaignProvinces", catalogue.Fields.Single(f => f.Key == "province").OptionsSource);
         Assert.Equal("USD", catalogue.Fields.Single(f => f.Key == "family_income").Unit);
         Assert.Equal(["is_yes", "is_no"], catalogue.Fields.Single(f => f.Key == "attended_info_session").Operators.Select(o => o.Key));

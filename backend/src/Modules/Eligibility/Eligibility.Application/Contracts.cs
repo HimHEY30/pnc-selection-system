@@ -56,12 +56,18 @@ public sealed record OperatorDto(string Key, string Label, string Arity);
 
 public sealed record FieldOptionDto(string Key, string Label);
 
-/// <summary>One field with everything the rule builder needs, including the operators it allows.</summary>
+/// <summary>
+/// One field with everything the rule builder needs, including the operators it allows.
+/// <paramref name="Derivation"/> says when a field is worked out from another attribute (age comes from the
+/// date of birth), and <paramref name="CandidateAttribute"/> is the attribute a sample candidate supplies.
+/// </summary>
 public sealed record FieldDto(
     string Key,
     string Label,
     string ValueType,
     string? OptionsSource,
+    string Derivation,
+    string CandidateAttribute,
     string? Unit,
     int Decimals,
     decimal? MinValue,
@@ -100,6 +106,8 @@ public static class Mapping
                 field.Label,
                 field.ValueType.ToString(),
                 field.OptionsSource?.ToString(),
+                field.Derivation.ToString(),
+                field.CandidateAttribute,
                 field.Unit,
                 field.Decimals,
                 field.MinValue,

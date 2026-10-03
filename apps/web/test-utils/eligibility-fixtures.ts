@@ -29,6 +29,8 @@ export const DATE_OPS: CatalogueOperator[] = [
 
 const field = (f: Partial<CatalogueField> & Pick<CatalogueField, "key" | "label" | "valueType" | "operators">): CatalogueField => ({
   optionsSource: null,
+  derivation: "None",
+  candidateAttribute: f.key,
   unit: null,
   decimals: 0,
   minValue: null,
@@ -39,7 +41,7 @@ const field = (f: Partial<CatalogueField> & Pick<CatalogueField, "key" | "label"
 
 export const CATALOGUE: Catalogue = {
   fields: [
-    field({ key: "age", label: "Age", valueType: "Number", operators: NUMBER_OPS, unit: "years", minValue: 0, maxValue: 120 }),
+    field({ key: "age", label: "Age", valueType: "Number", operators: NUMBER_OPS, unit: "years", minValue: 0, maxValue: 120, derivation: "AgeFromBirthDate", candidateAttribute: "date_of_birth" }),
     field({
       key: "gender", label: "Gender", valueType: "Choice", operators: CHOICE_OPS, optionsSource: "Fixed",
       options: [{ key: "female", label: "Female" }, { key: "male", label: "Male" }],

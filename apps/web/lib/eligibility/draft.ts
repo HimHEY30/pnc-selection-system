@@ -166,7 +166,7 @@ export function createDraftReducer(env: DraftEnvironment) {
 
       case "addRule": {
         const rule = newRule(env, ctx);
-        const withDate = ensureReferenceDate(state, rule.fieldKey, env.campaignStartDate);
+        const withDate = ensureReferenceDate(state, fieldOf(rule.fieldKey), env.campaignStartDate);
         return {
           ...withDate,
           groups: state.groups.map((g) => (g.id === action.groupId ? { ...g, rules: [...g.rules, rule] } : g)),
@@ -175,7 +175,7 @@ export function createDraftReducer(env: DraftEnvironment) {
 
       case "updateRule": {
         let next: DraftState = { ...state, groups: mapRules((r) => (r.id === action.ruleId ? applyPatch(r, action.patch, fieldOf, ctx) : r)) };
-        if (action.patch.fieldKey) next = ensureReferenceDate(next, action.patch.fieldKey, env.campaignStartDate);
+        if (action.patch.fieldKey) next = ensureReferenceDate(next, fieldOf(action.patch.fieldKey), env.campaignStartDate);
         return next;
       }
 
@@ -265,9 +265,9 @@ function newRule(env: DraftEnvironment, ctx: PhraseContext): DraftRule {
   return { ...base, message: defaultMessage(base, ctx), customMessage: false };
 }
 
-/** Age needs a reference date; the first time it is used, suggest the campaign's start date. */
-function ensureReferenceDate(state: DraftState, fieldKey: string, campaignStartDate: string | null): DraftState {
-  return fieldKey === "age" && !state.ageReferenceDate && campaignStartDate
+/** A field worked out from the date of birth (age) needs a reference date; the first time one is used, suggest the campaign's start date. */
+function ensureReferenceDate(state: DraftState, field: CatalogueField | undefined, campaignStartDate: string | null): DraftState {
+  return field?.derivation === "AgeFromBirthDate" && !state.ageReferenceDate && campaignStartDate
     ? { ...state, ageReferenceDate: campaignStartDate }
     : state;
 }

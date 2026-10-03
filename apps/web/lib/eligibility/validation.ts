@@ -119,7 +119,7 @@ export function validateRuleSet(
     const rules = content.groups.flatMap((g) => g.rules).filter((r) => r.isActive);
     if (!rules.some((r) => r.type === "Mandatory")) errors.rules = v.needMandatory;
 
-    const usesAge = rules.some((r) => r.fieldKey === "age");
+    const usesAge = rules.some((r) => fieldOf(r.fieldKey)?.derivation === "AgeFromBirthDate");
     if (usesAge && !content.ageReferenceDate) errors.ageReferenceDate = v.needReferenceDate;
   }
 

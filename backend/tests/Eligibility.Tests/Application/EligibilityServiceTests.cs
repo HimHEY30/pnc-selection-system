@@ -480,6 +480,8 @@ public sealed class EligibilityServiceTests
         Assert.Equal(8, catalogue.Fields.Count);
         var age = catalogue.Fields.Single(f => f.Key == "age");
         Assert.Equal("Number", age.ValueType);
+        Assert.Equal("AgeFromBirthDate", age.Derivation);
+        Assert.Equal("date_of_birth", age.CandidateAttribute);
         Assert.Equal(["equals", "less_than", "at_most", "greater_than", "at_least", "between"], age.Operators.Select(o => o.Key));
         Assert.Equal("Two", age.Operators.Single(o => o.Key == "between").Arity);
         Assert.Equal(5, catalogue.Fields.Single(f => f.Key == "highest_grade").Options.Count);

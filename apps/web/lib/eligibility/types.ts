@@ -4,6 +4,8 @@
 export type ValueType = "Number" | "Choice" | "YesNo" | "Date";
 export type Arity = "None" | "One" | "Two" | "List";
 export type OptionsSource = "Fixed" | "CampaignProvinces";
+/** "AgeFromBirthDate": the field is worked out from the date of birth rather than entered. */
+export type Derivation = "None" | "AgeFromBirthDate";
 
 export type CatalogueOperator = { key: string; label: string; arity: Arity };
 export type CatalogueOption = { key: string; label: string };
@@ -14,6 +16,9 @@ export type CatalogueField = {
   label: string;
   valueType: ValueType;
   optionsSource: OptionsSource | null;
+  derivation: Derivation;
+  /** The attribute a sample candidate supplies for this field (the date of birth, for age). */
+  candidateAttribute: string;
   unit: string | null;
   decimals: number;
   minValue: number | null;
@@ -90,6 +95,3 @@ export type TestResult = {
   groups: TestGroupResult[];
   rules: TestRuleResult[];
 };
-
-/** The candidate attribute the age field is calculated from. */
-export const DATE_OF_BIRTH = "date_of_birth";
