@@ -39,7 +39,7 @@ makes that possible later).
 | English name | Required, up to 100 characters, letters, spaces, hyphen, apostrophe and full stop only. |
 | Gender | Required: female or male. |
 | Date of birth | Required, a real date, not in the future, age 10 to 80 on the day it is entered. |
-| Phone | Required. Cambodian number, stored as digits in one form (`0` or `+855` prefix normalised), 8 to 10 digits after the prefix. **One phone per campaign:** a second candidate with the same phone in the same campaign is refused and the screen names the existing one. |
+| Phone | Required. Cambodian number, typed with `0`, `+855` or `00855` in front (spaces, dashes and brackets allowed) and stored in one form: `0` followed by 8 or 9 digits. **One phone per campaign:** a second candidate with the same phone in the same campaign is refused and the screen names the existing one. |
 | Address | Province, district, commune each a code and a name (both required together); village code and name both given or both empty. Or, in fallback mode, the three names typed and `codes = null`. |
 | Came from high school | Either a partner host from the directory (stored by id, and its name copied at that moment) or "Other" with a typed name up to 150 characters. Exactly one of the two. |
 | Information session | Optional. Must be a session of **the same campaign**. A Cancelled session is not offered; if a chosen session is cancelled later the link stays and is shown as cancelled. |
