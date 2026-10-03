@@ -13,6 +13,10 @@ COPY src/Modules/Campaigns/Campaigns.Domain/Campaigns.Domain.csproj src/Modules/
 COPY src/Modules/Campaigns/Campaigns.Application/Campaigns.Application.csproj src/Modules/Campaigns/Campaigns.Application/
 COPY src/Modules/Campaigns/Campaigns.Infrastructure/Campaigns.Infrastructure.csproj src/Modules/Campaigns/Campaigns.Infrastructure/
 COPY src/Modules/Campaigns/Campaigns.Api/Campaigns.Api.csproj src/Modules/Campaigns/Campaigns.Api/
+COPY src/Modules/Eligibility/Eligibility.Domain/Eligibility.Domain.csproj src/Modules/Eligibility/Eligibility.Domain/
+COPY src/Modules/Eligibility/Eligibility.Application/Eligibility.Application.csproj src/Modules/Eligibility/Eligibility.Application/
+COPY src/Modules/Eligibility/Eligibility.Infrastructure/Eligibility.Infrastructure.csproj src/Modules/Eligibility/Eligibility.Infrastructure/
+COPY src/Modules/Eligibility/Eligibility.Api/Eligibility.Api.csproj src/Modules/Eligibility/Eligibility.Api/
 COPY src/Host/Host.csproj src/Host/
 RUN dotnet restore src/Host/Host.csproj
 

@@ -1,4 +1,5 @@
 using Campaigns.Infrastructure;
+using Eligibility.Infrastructure;
 using Identity.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddControllers()
     .AddApplicationPart(typeof(Identity.Api.AuthController).Assembly)
-    .AddApplicationPart(typeof(Campaigns.Api.CampaignsController).Assembly);
+    .AddApplicationPart(typeof(Campaigns.Api.CampaignsController).Assembly)
+    .AddApplicationPart(typeof(Eligibility.Api.EligibilityController).Assembly);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -18,6 +20,7 @@ builder.Services.AddOpenApi();
 // composes modules together — it must never contain module-specific logic.
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 builder.Services.AddCampaignsInfrastructure();
+builder.Services.AddEligibilityInfrastructure();
 
 builder.Services.AddCors(options =>
 {
@@ -34,7 +37,9 @@ var app = builder.Build();
 // Database:MigrateOnStartup=false when migrations are applied by the pipeline instead.
 if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
 {
+    // Order matters: Eligibility's tables point at the campaigns table, so Campaigns goes first.
     await CampaignsDatabaseInitializer.InitializeAsync(app.Services);
+    await EligibilityDatabaseInitializer.InitializeAsync(app.Services);
 }
 
 // Configure the HTTP request pipeline.

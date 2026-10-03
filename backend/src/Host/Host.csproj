@@ -15,6 +15,8 @@
     <ProjectReference Include="..\Modules\Identity\Identity.Infrastructure\Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Campaigns\Campaigns.Api\Campaigns.Api.csproj" />
     <ProjectReference Include="..\Modules\Campaigns\Campaigns.Infrastructure\Campaigns.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Eligibility\Eligibility.Api\Eligibility.Api.csproj" />
+    <ProjectReference Include="..\Modules\Eligibility\Eligibility.Infrastructure\Eligibility.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
