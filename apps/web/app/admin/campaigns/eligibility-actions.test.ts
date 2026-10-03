@@ -14,9 +14,17 @@ vi.mock("next/cache", () => ({ revalidatePath: (...args: unknown[]) => revalidat
 
 import { ApiUnavailableError } from "@/lib/api/client";
 import type { SaveRequest } from "@/lib/eligibility/types";
-import { loadSuggestedRulesAction, saveEligibilityAction, testEligibilityAction } from "./eligibility-actions";
+import {
+  addSubjectAction,
+  loadSuggestedRulesAction,
+  removeSubjectAction,
+  renameSubjectAction,
+  saveEligibilityAction,
+  testEligibilityAction,
+} from "./eligibility-actions";
 
 const ID = "6f1c1d2e-3a4b-4c5d-8e9f-0a1b2c3d4e5f";
+const SUBJECT = "exam_0123456789abcdef0123456789abcdef";
 const request: SaveRequest = { ageReferenceDate: "2026-11-02", groups: [], version: 3 };
 
 const signedInAs = (...roles: string[]) => auth.mockResolvedValue({ roles });
@@ -217,5 +225,109 @@ describe("loadSuggestedRulesAction", () => {
 
     backendRefuses(404, "This campaign does not exist.");
     expect(await loadSuggestedRulesAction(ID)).toEqual({ ok: false, message: "This campaign does not exist." });
+  });
+});
+
+describe("exam subject actions", () => {
+  const setup = { subjects: [{ key: SUBJECT, name: "Math", ruleCount: 0 }], maxSubjects: 12, catalogue: { fields: [] } };
+  const base = `/api/campaigns/${ID}/eligibility/exam-subjects`;
+
+  it("adds a subject by posting its name, and hands back the whole new list", async () => {
+    signedInAs("selection-manager");
+    backendReplies(setup);
+
+    const result = await addSubjectAction(ID, "Physics");
+
+    expect(result).toEqual({ ok: true, data: setup });
+    expect(apiRequest).toHaveBeenCalledWith(base, { method: "POST", body: { name: "Physics" } });
+  });
+
+  it("renames a subject with a PUT to its own address", async () => {
+    signedInAs("system-admin");
+    backendReplies(setup);
+
+    await renameSubjectAction(ID, SUBJECT, "Mathematics");
+
+    expect(apiRequest).toHaveBeenCalledWith(`${base}/${SUBJECT}`, { method: "PUT", body: { name: "Mathematics" } });
+  });
+
+  it("removes a subject with a DELETE and no body", async () => {
+    signedInAs("selection-manager");
+    backendReplies(setup);
+
+    await removeSubjectAction(ID, SUBJECT);
+
+    expect(apiRequest).toHaveBeenCalledWith(`${base}/${SUBJECT}`, { method: "DELETE", body: undefined });
+  });
+
+  it.each([["selection-officer"], ["committee-user"]])("refuses a %s for all three, without calling the backend", async (role) => {
+    signedInAs(role);
+
+    const results = [
+      await addSubjectAction(ID, "Physics"),
+      await renameSubjectAction(ID, SUBJECT, "Mathematics"),
+      await removeSubjectAction(ID, SUBJECT),
+    ];
+
+    for (const result of results) expect(result).toEqual({ ok: false, message: "You do not have permission to do this." });
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("refuses a campaign id or subject key that is not the right shape, so neither can become part of another URL", async () => {
+    signedInAs("selection-manager");
+
+    const results = [
+      await addSubjectAction("../../admin", "Physics"),
+      await renameSubjectAction("nope", SUBJECT, "X"),
+      await renameSubjectAction(ID, "../../gender", "X"),
+      await renameSubjectAction(ID, "gender", "X"),
+      await removeSubjectAction(ID, `${SUBJECT}/../x`),
+      await removeSubjectAction(ID, "exam_total"),
+    ];
+
+    for (const result of results) expect(result.ok).toBe(false);
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("hands back a problem with the name under the key name", async () => {
+    signedInAs("selection-manager");
+    backendRefuses(400, "This campaign already has a subject with this name.", {
+      name: ["This campaign already has a subject with this name."],
+    });
+
+    expect(await addSubjectAction(ID, "math")).toEqual({
+      ok: false,
+      message: "This campaign already has a subject with this name.",
+      fieldErrors: { name: "This campaign already has a subject with this name." },
+    });
+  });
+
+  it("passes on that a subject is in use as a plain message", async () => {
+    signedInAs("selection-manager");
+    backendRefuses(409, "Math is used by 1 saved rule. Remove that rule first.");
+
+    expect(await removeSubjectAction(ID, SUBJECT)).toEqual({
+      ok: false,
+      message: "Math is used by 1 saved rule. Remove that rule first.",
+    });
+  });
+
+  it("says so when the backend cannot be reached", async () => {
+    signedInAs("selection-manager");
+    apiRequest.mockRejectedValue(new ApiUnavailableError());
+
+    expect(await addSubjectAction(ID, "Physics")).toEqual({
+      ok: false,
+      message: "We could not reach the server. Check your connection and try again.",
+    });
+  });
+
+  it("does not refresh any page: the subjects are read again by the page that shows them", async () => {
+    signedInAs("selection-manager");
+    backendReplies(setup);
+
+    await addSubjectAction(ID, "Physics");
+
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

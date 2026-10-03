@@ -4,8 +4,11 @@
 export type ValueType = "Number" | "Choice" | "YesNo" | "Date";
 export type Arity = "None" | "One" | "Two" | "List";
 export type OptionsSource = "Fixed" | "CampaignProvinces";
-/** "AgeFromBirthDate": the field is worked out from the date of birth rather than entered. */
-export type Derivation = "None" | "AgeFromBirthDate";
+/**
+ * How a field's value is got. "AgeFromBirthDate": worked out from the date of birth. "ExamScore": one exam
+ * subject's score. "ExamTotal" and "ExamAverage": worked out from every subject's score.
+ */
+export type Derivation = "None" | "AgeFromBirthDate" | "ExamScore" | "ExamTotal" | "ExamAverage";
 
 export type CatalogueOperator = { key: string; label: string; arity: Arity };
 export type CatalogueOption = { key: string; label: string };
@@ -28,6 +31,12 @@ export type CatalogueField = {
 };
 
 export type Catalogue = { fields: CatalogueField[] };
+
+/** One exam subject of a campaign. `key` is the field key rules use; `ruleCount` is how many saved rules use it. */
+export type Subject = { key: string; name: string; ruleCount: number };
+
+/** A campaign's exam subjects and the catalogue that results from them (the rule builder uses this one). */
+export type ExamSetup = { subjects: Subject[]; maxSubjects: number; catalogue: Catalogue };
 
 export type RuleType = "Mandatory" | "Optional";
 export type GroupLogic = "All" | "Any";

@@ -42,7 +42,7 @@ export class ApiError extends Error {
   }
 }
 
-type RequestOptions = { method?: "GET" | "POST" | "PUT"; body?: unknown };
+type RequestOptions = { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const session = await auth();

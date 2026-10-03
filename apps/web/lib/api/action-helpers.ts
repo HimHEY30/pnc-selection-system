@@ -25,7 +25,11 @@ export async function requireRole(allowed: (roles: readonly string[]) => boolean
 }
 
 /** Calls the backend. Returns null (not a throw) when it cannot be reached, so the action can say so. */
-export async function callApi<T>(path: string, method: "GET" | "POST" | "PUT", body?: unknown): Promise<ApiResult<T> | null> {
+export async function callApi<T>(
+  path: string,
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  body?: unknown,
+): Promise<ApiResult<T> | null> {
   try {
     return await apiRequest<T>(path, { method, body });
   } catch (error) {
