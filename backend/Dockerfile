@@ -21,6 +21,10 @@ COPY src/Modules/Sessions/Sessions.Domain/Sessions.Domain.csproj src/Modules/Ses
 COPY src/Modules/Sessions/Sessions.Application/Sessions.Application.csproj src/Modules/Sessions/Sessions.Application/
 COPY src/Modules/Sessions/Sessions.Infrastructure/Sessions.Infrastructure.csproj src/Modules/Sessions/Sessions.Infrastructure/
 COPY src/Modules/Sessions/Sessions.Api/Sessions.Api.csproj src/Modules/Sessions/Sessions.Api/
+COPY src/Modules/Candidates/Candidates.Domain/Candidates.Domain.csproj src/Modules/Candidates/Candidates.Domain/
+COPY src/Modules/Candidates/Candidates.Application/Candidates.Application.csproj src/Modules/Candidates/Candidates.Application/
+COPY src/Modules/Candidates/Candidates.Infrastructure/Candidates.Infrastructure.csproj src/Modules/Candidates/Candidates.Infrastructure/
+COPY src/Modules/Candidates/Candidates.Api/Candidates.Api.csproj src/Modules/Candidates/Candidates.Api/
 COPY src/Host/Host.csproj src/Host/
 RUN dotnet restore src/Host/Host.csproj
 
