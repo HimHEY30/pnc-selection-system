@@ -49,11 +49,18 @@ describe("the loaders", () => {
   });
 
   it("returns null for a campaign that does not exist, and throws for any other failure", async () => {
-    apiRequest.mockResolvedValue({ ok: false, problem: { status: 404, title: "x" } });
+    apiRequest.mockResolvedValue({ ok: false, problem: { status: 404, code: "campaign.not_found", title: "This campaign does not exist." } });
     expect(await loadCandidateList(ID, {})).toBeNull();
 
     apiRequest.mockResolvedValue({ ok: false, problem: { status: 500, title: "x" } });
     await expect(loadCandidateList(ID, {})).rejects.toThrow();
+  });
+
+  it("does not take a plain 404 for a missing campaign: a backend without the candidates route also answers 404", async () => {
+    apiRequest.mockResolvedValue({ ok: false, problem: { status: 404, title: "Not Found" } });
+
+    await expect(loadCandidateList(ID, {})).rejects.toThrow();
+    await expect(loadSessionChoices(ID)).rejects.toThrow();
   });
 
   it("loads session choices, and none for an unknown campaign", async () => {
@@ -61,7 +68,7 @@ describe("the loaders", () => {
     expect(await loadSessionChoices(ID)).toEqual([{ id: "s1" }]);
     expect(apiRequest).toHaveBeenCalledWith(`/api/campaigns/${ID}/candidates/session-choices`);
 
-    apiRequest.mockResolvedValue({ ok: false, problem: { status: 404, title: "x" } });
+    apiRequest.mockResolvedValue({ ok: false, problem: { status: 404, code: "campaign.not_found", title: "x" } });
     expect(await loadSessionChoices(ID)).toEqual([]);
   });
 

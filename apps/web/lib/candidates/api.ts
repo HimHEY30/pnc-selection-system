@@ -1,5 +1,5 @@
 import "server-only";
-import { apiRequest, ApiError } from "@/lib/api/client";
+import { apiRequest, ApiError, type ApiProblem } from "@/lib/api/client";
 import { PAGE_SIZE, type CandidateFilters, type CandidateList, type SchoolChoice, type SessionChoice } from "./types";
 
 // Read-side calls used by server components. Writes go through the server actions
@@ -17,11 +17,20 @@ export function listQuery(filters: CandidateFilters): string {
   return params.toString();
 }
 
+/** The code the backend gives when the campaign itself does not exist (Campaigns.Domain.CampaignErrors.NotFound). */
+const CAMPAIGN_NOT_FOUND = "campaign.not_found";
+
+/**
+ * True only for "this campaign does not exist". A plain 404 can also mean the route is missing (a backend that is older
+ * than this page), which must not be shown as a missing campaign: that sends people looking for the wrong problem.
+ */
+const campaignIsMissing = (problem: ApiProblem): boolean => problem.status === 404 && problem.code === CAMPAIGN_NOT_FOUND;
+
 /** One page of a campaign's candidates, or null when the campaign does not exist (so the page can say "not found"). */
 export async function loadCandidateList(campaignId: string, filters: CandidateFilters): Promise<CandidateList | null> {
   const result = await apiRequest<CandidateList>(`/api/campaigns/${encodeURIComponent(campaignId)}/candidates?${listQuery(filters)}`);
   if (result.ok) return result.data;
-  if (result.problem.status === 404) return null;
+  if (campaignIsMissing(result.problem)) return null;
   throw new ApiError(result.problem);
 }
 
@@ -29,7 +38,7 @@ export async function loadCandidateList(campaignId: string, filters: CandidateFi
 export async function loadSessionChoices(campaignId: string): Promise<SessionChoice[]> {
   const result = await apiRequest<SessionChoice[]>(`/api/campaigns/${encodeURIComponent(campaignId)}/candidates/session-choices`);
   if (result.ok) return result.data;
-  if (result.problem.status === 404) return [];
+  if (campaignIsMissing(result.problem)) return [];
   throw new ApiError(result.problem);
 }
 
