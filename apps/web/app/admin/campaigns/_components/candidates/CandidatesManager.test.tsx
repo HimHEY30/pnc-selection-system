@@ -283,3 +283,56 @@ describe("CandidatesManager: delete", () => {
     expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Edit"]);
   });
 });
+
+describe("CandidatesManager: feedback and recovery", () => {
+  it("says the candidate was deleted, and the notice can be dismissed", async () => {
+    deleteCandidate.mockResolvedValue({ ok: true, data: null });
+    const { user } = renderManager();
+    await user.click(screen.getByRole("button", { name: "Actions for Vann Dara" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Delete Vann Dara?" })).getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Candidate deleted.");
+
+    await user.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("does not say deleted when the delete is refused", async () => {
+    deleteCandidate.mockResolvedValue({ ok: false, message: "Closed." });
+    const { user } = renderManager();
+    await user.click(screen.getByRole("button", { name: "Actions for Vann Dara" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Delete Vann Dara?" })).getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Closed.");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("offers Clear filters when a search leaves nothing, and clears the search box and the address", async () => {
+    const { user } = renderManager({ list: { items: [], totalCount: 0, totalPages: 0 }, filters: { q: "zzz" } });
+
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(replace).toHaveBeenLastCalledWith(PATH);
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+  });
+
+  it("keeps the small-screen Filters button honest about how many filters are set", async () => {
+    const { user } = renderManager({ filters: { province: "Battambang", ngo: "yes" } });
+
+    const toggle = screen.getByRole("button", { name: "Filters (2)" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("shows the table's column names against each value on small screens, without repeating the content", () => {
+    renderManager();
+
+    const phone = within(rowOf("Sok Chenda")).getByText("012345678");
+    expect(phone).toHaveAttribute("data-label", "Phone");
+    expect(screen.getAllByText("012345678")).toHaveLength(1);
+  });
+});
