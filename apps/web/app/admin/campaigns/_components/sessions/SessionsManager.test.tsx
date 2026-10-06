@@ -426,7 +426,7 @@ describe("SessionsManager: needs attention", () => {
 describe("SessionsManager: feedback and small screens", () => {
   it("confirms a cancelled session, and the notice can be dismissed", async () => {
     const actions = await import("../../sessions-actions");
-    vi.mocked(actions.cancelSessionAction).mockResolvedValue({ ok: true });
+    vi.mocked(actions.cancelSessionAction).mockResolvedValue({ ok: true, data: cancelled });
     const { user } = renderManager(listFixture([planned]));
 
     await openMenu(user, planned.title);
