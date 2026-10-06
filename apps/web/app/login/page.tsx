@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { signIn } from "@/auth";
 import { buttonClasses } from "@/components/ui/Button";
 import { AutoSubmit } from "./AutoSubmit";
@@ -20,7 +21,11 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-4">
-      <p role="status" className="text-sm text-ink-muted">Redirecting to sign in…</p>
+      <Image src="/icon.png" alt="PNC" width={40} height={40} className="rounded-lg" />
+      <p role="status" className="flex items-center gap-2 text-sm text-ink-muted">
+        <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-primary-line border-t-brand-blue" />
+        Redirecting to sign in…
+      </p>
       <form
         id={FORM_ID}
         action={async () => {
