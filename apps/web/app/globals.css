@@ -67,6 +67,34 @@
   }
 }
 
+/* Short entrances (150-250 ms). The reduced-motion rule at the bottom shortens them to nothing. */
+@keyframes pnc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes pnc-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* For something that appears in place: a message, a step's content, a panel. */
+@utility motion-rise {
+  animation: pnc-rise 200ms ease-out;
+}
+
+/* A dialog fades and settles in; its backdrop fades. */
+dialog[open] {
+  animation: pnc-rise 200ms ease-out;
+}
+
+dialog[open]::backdrop {
+  animation: pnc-fade 200ms ease-out;
+}
+
 /* The application is light-only: every screen is built from the light tokens above. */
 :root {
   color-scheme: light;

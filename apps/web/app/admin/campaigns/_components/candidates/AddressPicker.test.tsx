@@ -268,3 +268,61 @@ describe("when a list cannot be loaded", () => {
     expect(fetchPlaces).not.toHaveBeenCalled();
   });
 });
+
+describe("guiding the person through the levels", () => {
+  it("says how far along they are and what comes next, then that the address is complete", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await waitFor(() => expect(field(/province or city/i)).toBeEnabled());
+
+    expect(screen.getByText(/0 of 3 required levels chosen · Next: choose the province/)).toBeInTheDocument();
+
+    await user.selectOptions(field(/province or city/i), "12");
+    await waitFor(() => expect(field(/^district/i)).toBeEnabled());
+    expect(screen.getByText(/1 of 3 required levels chosen · Next: choose the district/)).toBeInTheDocument();
+
+    await user.selectOptions(field(/^district/i), "1201");
+    await waitFor(() => expect(field(/^commune/i)).toBeEnabled());
+    await user.selectOptions(field(/^commune/i), "120101");
+
+    expect(screen.getByText("Address complete")).toBeInTheDocument();
+  });
+
+  it("tells assistive technology each step's number and state, not just its colour", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await waitFor(() => expect(field(/province or city/i)).toBeEnabled());
+
+    expect(screen.getByText("Step 1 of 4, choose now")).toBeInTheDocument();
+    expect(screen.getByText("Step 2 of 4, waiting")).toBeInTheDocument();
+
+    await user.selectOptions(field(/province or city/i), "12");
+    expect(screen.getByText("Step 1 of 4, chosen")).toBeInTheDocument();
+  });
+
+  it("shows the retry panel beside the level that failed, and asks again when Try again is pressed", async () => {
+    const user = userEvent.setup();
+    fetchPlaces.mockResolvedValueOnce(null);
+    render(<Harness />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("We could not load the list of provinces.");
+    expect(screen.getByText("Step 1 of 4, could not load")).toBeInTheDocument();
+
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => expect(field(/province or city/i)).toBeEnabled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(fetchPlaces).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks typing by hand so the person knows the lists are not in use", async () => {
+    const user = userEvent.setup();
+    fetchPlaces.mockResolvedValue(null);
+    render(<Harness />);
+
+    await user.click(await screen.findByRole("button", { name: "Type it instead" }));
+
+    expect(screen.getByText("Typing by hand")).toBeInTheDocument();
+  });
+});
