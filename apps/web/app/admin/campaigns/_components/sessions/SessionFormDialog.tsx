@@ -40,11 +40,13 @@ type Props = {
   hosts: Host[];
   assignable: AssignableStaff;
   onClose: () => void;
+  /** Called once the server has accepted the session, just before the dialog closes. */
+  onSaved?: (kind: "created" | "updated") => void;
 };
 
 const text = t.sessions.form;
 
-export default function SessionFormDialog({ target, campaignId, targetProvinces, hosts, assignable, onClose }: Props) {
+export default function SessionFormDialog({ target, campaignId, targetProvinces, hosts, assignable, onClose, onSaved }: Props) {
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const scheduling = target?.kind === "edit" && isUnscheduled(target.session);
@@ -69,6 +71,7 @@ export default function SessionFormDialog({ target, campaignId, targetProvinces,
           onBusy={setBusy}
           onDirty={setDirty}
           onClose={onClose}
+          onSaved={onSaved}
         />
       )}
     </FormDialog>
@@ -86,6 +89,7 @@ function SessionFormBody({
   onBusy,
   onDirty,
   onClose,
+  onSaved,
 }: Omit<Props, "target" | "onClose"> & {
   target: SessionDialogTarget;
   onBusy: (busy: boolean) => void;
@@ -161,6 +165,7 @@ function SessionFormBody({
         : await createSessionAction(campaignId, request);
       onBusy(false);
       if (result.ok) {
+        onSaved?.(editing ? "updated" : "created");
         onClose();
         return;
       }

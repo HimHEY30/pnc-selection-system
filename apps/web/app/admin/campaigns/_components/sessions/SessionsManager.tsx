@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import { Select, TextInput } from "@/components/ui/inputs";
@@ -40,14 +40,18 @@ type Filters = { status: "" | SessionStatus; hostType: "" | HostType; assignee: 
 const NO_FILTERS: Filters = { status: "", hostType: "", assignee: "" };
 const STATUSES: SessionStatus[] = ["Planned", "Unscheduled", "Done", "Cancelled"];
 
+/** How long a "saved" notice stays before it goes by itself. */
+const NOTICE_MS = 6000;
+
 const text = t.sessions;
+const FILTER_LABEL = "text-xs font-semibold text-ink-muted";
 
 /**
- * A campaign's information sessions: the totals, the next three as cards, then every session in a table with
- * filters, search and pages (a campaign can have 60 or more), and the dialogs to add, change, cancel and enter
- * numbers. It holds no copy of the sessions: every change goes through a server action that refreshes the page, so
- * what is shown always comes from the server. The dialogs are told which session by id, so they follow the
- * refreshed data.
+ * A campaign's information sessions: the totals, what needs attention, the next three as cards, then every session in
+ * a table (cards on a phone) with filters, search and pages (a campaign can have 60 or more), and the dialogs to
+ * add, change, cancel and enter numbers. It holds no copy of the sessions: every change goes through a server action
+ * that refreshes the page, so what is shown always comes from the server. The dialogs are told which session by id,
+ * so they follow the refreshed data.
  */
 export default function SessionsManager({ list, today, hosts, assignable, canManage }: Props) {
   const [filters, setFiltersState] = useState<Filters>(NO_FILTERS);
@@ -57,6 +61,15 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
   const [form, setForm] = useState<{ kind: "create" } | { kind: "edit"; id: string } | null>(null);
   const [numbersId, setNumbersId] = useState<string | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // A notice goes by itself, so it never sits there after the moment has passed.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   const manageNow = canManage && list.isEditable && assignable !== null;
   const byId = (id: string | null) => list.sessions.find((s) => s.id === id) ?? null;
@@ -88,6 +101,10 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
     setSearchState("");
     setPage(1);
   };
+  const toggleSort = () => {
+    setDirection((d) => (d === "asc" ? "desc" : "asc"));
+    setPage(1);
+  };
 
   const shown = sortByStart(
     list.sessions.filter(
@@ -99,7 +116,8 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
     ),
     direction,
   );
-  const filtering = filters.status !== "" || filters.hostType !== "" || filters.assignee !== "" || search.trim() !== "";
+  const activeFilters = [filters.status, filters.hostType, filters.assignee].filter((value) => value !== "").length;
+  const filtering = activeFilters > 0 || search.trim() !== "";
   const current = pageOf(shown, page);
   const upcoming = useMemo(() => upcomingSessions(list.sessions, today), [list.sessions, today]);
   const upcomingTotal = useMemo(() => list.sessions.filter((s) => s.status === "Planned" && s.date !== null && s.date >= today).length, [list.sessions, today]);
@@ -114,6 +132,20 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
       )}
       {canManage && !list.isEditable && (
         <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-ink">{text.readOnlyClosed}</p>
+      )}
+
+      {notice && (
+        <div role="status" className="motion-rise flex items-center justify-between gap-3 rounded-lg border border-primary-line bg-primary-soft px-4 py-3 text-sm font-medium text-ink">
+          <span className="flex items-center gap-2">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+            {notice}
+          </span>
+          <button type="button" onClick={() => setNotice(null)} className="rounded-md px-2 py-1 text-xs font-semibold text-primary hover:bg-surface focus-ring">
+            {text.saved.dismiss}
+          </button>
+        </div>
       )}
 
       <SummaryCards summary={list.summary} />
@@ -159,30 +191,62 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
         </section>
 
         <section aria-labelledby="sessions-list-title" className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="sessions-list-title" className="text-[17px] font-bold text-ink">
               {text.table.title}
             </h2>
+            {/* The table's own date heading is hidden on a phone, so sorting is offered here instead. */}
+            <Button onClick={toggleSort} className="px-3 py-1.5 text-sm md:hidden">
+              {direction === "asc" ? text.filters.sortEarliest : text.filters.sortLatest}
+            </Button>
           </div>
 
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div role="group" aria-label={text.filters.label} className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                {text.table.search}
-                <TextInput
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={text.table.searchPlaceholder}
-                  className="min-w-52 py-2 text-sm"
-                />
+          <div role="group" aria-label={text.filters.label} className="rounded-2xl border border-line bg-surface p-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
+                <span className="sr-only">{text.table.search}</span>
+                <span className="relative">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3.5-3.5" />
+                  </svg>
+                  <TextInput
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={text.table.searchPlaceholder}
+                    className="py-2 pl-9 text-sm"
+                  />
+                </span>
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                {text.filters.status}
+
+              <Button
+                aria-expanded={filtersOpen}
+                aria-controls="session-filters"
+                onClick={() => setFiltersOpen((open) => !open)}
+                className="md:hidden"
+              >
+                {text.filters.toggle(activeFilters)}
+              </Button>
+
+              {manageNow && (
+                <Button variant="primary" onClick={() => setForm({ kind: "create" })} className="max-md:w-full md:ml-auto">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  {text.add}
+                </Button>
+              )}
+            </div>
+
+            {/* Always shown from `md` up; on a phone they stay behind the Filters button until it is pressed. */}
+            <div id="session-filters" className={`${filtersOpen ? "grid" : "hidden"} mt-3 gap-3 border-t border-line pt-3 sm:grid-cols-3 md:grid md:grid-cols-[repeat(3,minmax(0,1fr))_auto] md:items-end`}>
+              <label className="flex flex-col gap-1">
+                <span className={FILTER_LABEL}>{text.filters.status}</span>
                 <Select
                   value={filters.status}
                   onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value as Filters["status"] }))}
-                  className="min-w-36 py-2 text-sm"
+                  className="py-2 text-sm"
                 >
                   <option value="">{text.filters.all}</option>
                   {STATUSES.map((status) => (
@@ -192,12 +256,12 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
                   ))}
                 </Select>
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                {text.filters.hostType}
+              <label className="flex flex-col gap-1">
+                <span className={FILTER_LABEL}>{text.filters.hostType}</span>
                 <Select
                   value={filters.hostType}
                   onChange={(e) => setFilters((f) => ({ ...f, hostType: e.target.value as Filters["hostType"] }))}
-                  className="min-w-36 py-2 text-sm"
+                  className="py-2 text-sm"
                 >
                   <option value="">{text.filters.all}</option>
                   {HOST_TYPES.map((type) => (
@@ -207,12 +271,12 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
                   ))}
                 </Select>
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                {text.filters.assignee}
+              <label className="flex flex-col gap-1">
+                <span className={FILTER_LABEL}>{text.filters.assignee}</span>
                 <Select
                   value={filters.assignee}
                   onChange={(e) => setFilters((f) => ({ ...f, assignee: e.target.value }))}
-                  className="min-w-44 py-2 text-sm"
+                  className="py-2 text-sm"
                 >
                   <option value="">{text.filters.all}</option>
                   {assignees.map(([id, name]) => (
@@ -224,12 +288,6 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
               </label>
               {filtering && <Button onClick={clearAll}>{text.filters.clear}</Button>}
             </div>
-
-            {manageNow && (
-              <Button variant="primary" onClick={() => setForm({ kind: "create" })}>
-                {text.add}
-              </Button>
-            )}
           </div>
 
           <p aria-live="polite" className="text-sm text-ink-muted">
@@ -240,16 +298,18 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
             <div className="rounded-2xl border border-line bg-surface px-6 py-10 text-center">
               <p className="text-[17px] font-bold text-ink">{text.empty.filteredTitle}</p>
               <p className="mt-1 text-sm text-ink-muted">{text.empty.filteredDescription}</p>
+              {filtering && (
+                <Button className="mt-4" onClick={clearAll}>
+                  {text.empty.clearFilters}
+                </Button>
+              )}
             </div>
           ) : (
             <>
               <SessionsTable
                 sessions={current.items}
                 direction={direction}
-                onToggleSort={() => {
-                  setDirection((d) => (d === "asc" ? "desc" : "asc"));
-                  setPage(1);
-                }}
+                onToggleSort={toggleSort}
                 canChange={canChange}
                 canEnterNumbers={canEnterNumbers}
                 onEdit={(s) => setForm({ kind: "edit", id: s.id })}
@@ -284,10 +344,11 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
           hosts={hosts}
           assignable={assignable}
           onClose={() => setForm(null)}
+          onSaved={(kind) => setNotice(kind === "created" ? text.saved.created : text.saved.updated)}
         />
       )}
       <NumbersDialog session={byId(numbersId)} onClose={() => setNumbersId(null)} />
-      <CancelDialog session={byId(cancelId)} onClose={() => setCancelId(null)} />
+      <CancelDialog session={byId(cancelId)} onClose={() => setCancelId(null)} onCancelled={() => setNotice(text.saved.cancelled)} />
     </div>
   );
 }

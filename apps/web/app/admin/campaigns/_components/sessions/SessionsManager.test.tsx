@@ -422,3 +422,66 @@ describe("SessionsManager: needs attention", () => {
     expect(screen.getByText("Everything is in order. Nothing needs doing right now.")).toBeInTheDocument();
   });
 });
+
+describe("SessionsManager: feedback and small screens", () => {
+  it("confirms a cancelled session, and the notice can be dismissed", async () => {
+    const actions = await import("../../sessions-actions");
+    vi.mocked(actions.cancelSessionAction).mockResolvedValue({ ok: true });
+    const { user } = renderManager(listFixture([planned]));
+
+    await openMenu(user, planned.title);
+    await user.click(screen.getByRole("menuitem", { name: "Cancel session" }));
+    const dialog = screen.getByRole("dialog", { name: "Cancel this session?" });
+    await user.type(within(dialog).getByLabelText("Reason"), "Venue closed");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel session" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Session cancelled.");
+    await user.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("Session cancelled.")).not.toBeInTheDocument();
+  });
+
+  it("does not confirm anything when the server refuses", async () => {
+    const actions = await import("../../sessions-actions");
+    vi.mocked(actions.cancelSessionAction).mockResolvedValue({ ok: false, message: "Not allowed." });
+    const { user } = renderManager(listFixture([planned]));
+
+    await openMenu(user, planned.title);
+    await user.click(screen.getByRole("menuitem", { name: "Cancel session" }));
+    const dialog = screen.getByRole("dialog", { name: "Cancel this session?" });
+    await user.type(within(dialog).getByLabelText("Reason"), "Venue closed");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel session" }));
+
+    expect(await within(dialog).findByText("Not allowed.")).toBeInTheDocument();
+    expect(screen.queryByText("Session cancelled.")).not.toBeInTheDocument();
+  });
+
+  it("counts the filters in use on the button that shows them on a phone", async () => {
+    const { user } = renderManager(listFixture([planned, done]));
+    const toggle = screen.getByRole("button", { name: "Filters" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await user.selectOptions(screen.getByLabelText("Status"), "Done");
+
+    expect(screen.getByRole("button", { name: "Filters (1)" })).toBeInTheDocument();
+  });
+
+  it("offers a way back to every session when the filters match nothing", async () => {
+    const { user } = renderManager(listFixture([planned]));
+    await user.selectOptions(screen.getByLabelText("Status"), "Cancelled");
+
+    await user.click(screen.getByRole("button", { name: "Show all sessions" }));
+
+    expect(screen.getByText("Showing 1 of 1")).toBeInTheDocument();
+  });
+
+  it("sorts from the button shown on a phone as well as from the date heading", async () => {
+    const { user } = renderManager(listFixture(manySessions(12)));
+
+    await user.click(screen.getByRole("button", { name: "Sort by date, earliest first" }));
+
+    expect(tableTitles()[0]).toBe("Session 12");
+    expect(screen.getByRole("button", { name: "Sort by date, latest first" })).toBeInTheDocument();
+  });
+});

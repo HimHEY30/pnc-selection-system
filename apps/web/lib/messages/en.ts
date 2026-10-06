@@ -745,6 +745,16 @@ export const en = {
       all: "All",
       clear: "Clear filters",
       showing: (shown: number, total: number) => `Showing ${shown} of ${total}`,
+      toggle: (active: number) => (active > 0 ? `Filters (${active})` : "Filters"),
+      sortEarliest: "Sort by date, earliest first",
+      sortLatest: "Sort by date, latest first",
+    },
+
+    saved: {
+      created: "Session added.",
+      updated: "Session saved.",
+      cancelled: "Session cancelled.",
+      dismiss: "Dismiss",
     },
 
     upcoming: {
@@ -784,6 +794,7 @@ export const en = {
       readOnly: "No sessions have been planned for this campaign yet.",
       filteredTitle: "No sessions match these filters",
       filteredDescription: "Change or clear the filters to see the rest.",
+      clearFilters: "Show all sessions",
     },
 
     card: {

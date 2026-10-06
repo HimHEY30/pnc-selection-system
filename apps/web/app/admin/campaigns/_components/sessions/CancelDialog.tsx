@@ -15,12 +15,14 @@ type Props = {
   /** The session to cancel, or null while the dialog is closed. */
   session: InformationSession | null;
   onClose: () => void;
+  /** Called once the server has cancelled the session, just before the dialog closes. */
+  onCancelled?: () => void;
 };
 
 const text = t.sessions.cancel;
 
 /** Cancelling is final and needs a reason, so it asks for one instead of a bare "Are you sure?". */
-export default function CancelDialog({ session, onClose }: Props) {
+export default function CancelDialog({ session, onClose, onCancelled }: Props) {
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -33,7 +35,7 @@ export default function CancelDialog({ session, onClose }: Props) {
       dirty={dirty}
       onClose={onClose}
     >
-      {session && <CancelBody session={session} onBusy={setBusy} onDirty={setDirty} onClose={onClose} />}
+      {session && <CancelBody session={session} onBusy={setBusy} onDirty={setDirty} onClose={onClose} onCancelled={onCancelled} />}
     </FormDialog>
   );
 }
@@ -43,9 +45,10 @@ type CancelBodyProps = {
   onBusy: (busy: boolean) => void;
   onDirty: (dirty: boolean) => void;
   onClose: () => void;
+  onCancelled?: () => void;
 };
 
-function CancelBody({ session, onBusy, onDirty, onClose }: CancelBodyProps) {
+function CancelBody({ session, onBusy, onDirty, onClose, onCancelled }: CancelBodyProps) {
   const [reason, setReason] = useState("");
   useReportDirty(reason.trim() !== "", onDirty);
   const [error, setError] = useState<string>();
@@ -73,6 +76,7 @@ function CancelBody({ session, onBusy, onDirty, onClose }: CancelBodyProps) {
       const result = await cancelSessionAction(session.campaignId, session.id, trimmed);
       onBusy(false);
       if (result.ok) {
+        onCancelled?.();
         onClose();
       } else if (result.fieldErrors?.reason) {
         setError(result.fieldErrors.reason);
