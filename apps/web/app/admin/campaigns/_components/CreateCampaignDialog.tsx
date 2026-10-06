@@ -32,8 +32,8 @@ type PreviewState =
 const text = t.create;
 
 // Selected and unselected look of a "how to start" card.
-const SELECTED = "border-2 border-primary bg-primary-soft";
-const UNSELECTED = "border border-line";
+const SELECTED = "border border-primary bg-primary-soft ring-1 ring-primary";
+const UNSELECTED = "border border-line transition-colors duration-150 hover:border-primary/50";
 
 /**
  * "Create campaign" as a native <dialog> opened with showModal(). The browser then
@@ -270,7 +270,7 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
                   <legend className="mb-1.5 text-sm font-semibold">{text.howToStart}</legend>
                   <div className="flex flex-col gap-2">
                     <label
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl px-4 py-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
                         startMode === "scratch" ? SELECTED : UNSELECTED
                       }`}
                     >
@@ -289,7 +289,7 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
                     </label>
 
                     <label
-                      className={`flex items-start gap-3 rounded-lg px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
+                      className={`flex items-start gap-3 rounded-xl px-4 py-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${
                         canCopy ? `cursor-pointer ${startMode === "copy" ? SELECTED : UNSELECTED}` : `cursor-not-allowed ${UNSELECTED}`
                       }`}
                     >
@@ -315,7 +315,7 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
                 </fieldset>
 
                 {startMode === "copy" && (
-                  <div className="flex flex-col gap-5 rounded-lg border border-line bg-canvas px-4 py-4">
+                  <div className="motion-rise flex flex-col gap-5 rounded-xl border border-line bg-canvas px-4 py-4">
                     <FormField label={text.copyFrom} error={errors["copyFrom.sourceCampaignId"]}>
                       {(control) => (
                         <Select
@@ -394,7 +394,7 @@ export default function CreateCampaignDialog({ open, onClose, copySources = [] }
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-line px-8 py-5">
+        <div className="flex flex-col-reverse gap-3 border-t border-line px-6 py-5 sm:flex-row sm:justify-end sm:px-8">
           {created ? (
             <Button type="button" variant="primary" onClick={openCreated} autoFocus>
               {text.created.open}
@@ -433,7 +433,12 @@ function CopyResults({ created }: { created: CreatedCampaign }) {
   return (
     <ul aria-label={text.created.listLabel} className="mt-6 flex flex-col gap-2">
       {(created.copyResults ?? []).map((result) => (
-        <li key={result.part} className="rounded-lg border border-line px-4 py-3">
+        <li
+          key={result.part}
+          className={`rounded-xl border px-4 py-3 ${
+            result.outcome === "Copied" ? "border-line" : result.outcome === "Partly" ? "border-brand-orange bg-warning-soft" : "border-danger bg-danger-soft"
+          }`}
+        >
           <p className="text-[15px] font-semibold">
             {text.copyPartLabels[result.part]}
             {result.outcome !== "Failed" && <span className="font-normal text-ink-muted"> · {text.copyCount[result.part](result.count)}</span>}
