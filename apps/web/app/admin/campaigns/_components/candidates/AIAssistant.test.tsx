@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { AssistantContext, AssistantRequest, CandidateAssistantService } from "@/lib/ai/assistant";
+import type { AssistantContext, CandidateAssistantService } from "@/lib/ai/assistant";
 import AIAssistant from "./AIAssistant";
 
 const context: AssistantContext = {
@@ -37,7 +37,7 @@ describe("AIAssistant", () => {
   it("sends the chosen question with the current context, shows thinking, then the answer", async () => {
     const user = userEvent.setup();
     let finish: (value: { text: string }) => void = () => {};
-    const ask = vi.fn((_request: AssistantRequest) => new Promise<{ text: string }>((resolve) => (finish = resolve)));
+    const ask = vi.fn<CandidateAssistantService["ask"]>(() => new Promise((resolve) => (finish = resolve)));
     render(<AIAssistant getContext={() => context} service={fakeService(ask)} />);
     await open(user);
 
@@ -54,7 +54,7 @@ describe("AIAssistant", () => {
 
   it("asks a typed question with Enter and does not submit the form around it", async () => {
     const user = userEvent.setup();
-    const ask = vi.fn(async (_request: AssistantRequest) => ({ text: "ok" }));
+    const ask = vi.fn<CandidateAssistantService["ask"]>(async () => ({ text: "ok" }));
     const submitted = vi.fn((e: React.FormEvent) => e.preventDefault());
     render(
       <form onSubmit={submitted}>
@@ -86,7 +86,7 @@ describe("AIAssistant", () => {
 
   it("Retry repeats the last question", async () => {
     const user = userEvent.setup();
-    const ask = vi.fn(async (_request: AssistantRequest) => ({ text: "Answer" }));
+    const ask = vi.fn<CandidateAssistantService["ask"]>(async () => ({ text: "Answer" }));
     render(<AIAssistant getContext={() => context} service={fakeService(ask)} />);
     await open(user);
     await user.click(screen.getByRole("button", { name: "What should I complete next?" }));
@@ -113,9 +113,9 @@ describe("AIAssistant", () => {
   it("cancels a question still being answered when it is hidden", async () => {
     const user = userEvent.setup();
     let signal: AbortSignal | undefined;
-    const ask = vi.fn((_request: AssistantRequest, s?: AbortSignal) => {
+    const ask = vi.fn<CandidateAssistantService["ask"]>((_request, s) => {
       signal = s;
-      return new Promise<{ text: string }>(() => {});
+      return new Promise(() => {});
     });
     render(<AIAssistant getContext={() => context} service={fakeService(ask)} />);
     await open(user);
