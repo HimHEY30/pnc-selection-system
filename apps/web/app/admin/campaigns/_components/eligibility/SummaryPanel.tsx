@@ -13,7 +13,7 @@ export default function SummaryPanel({ groups, ctx }: Props) {
   const text = t.eligibility.summary;
 
   return (
-    <section aria-labelledby="summary-title" className="rounded-xl border border-line bg-surface p-6">
+    <section aria-labelledby="summary-title" className="rounded-2xl border border-line bg-surface p-6 shadow-card">
       <h2 id="summary-title" className="text-[17px] font-bold text-ink">
         {text.title}
       </h2>

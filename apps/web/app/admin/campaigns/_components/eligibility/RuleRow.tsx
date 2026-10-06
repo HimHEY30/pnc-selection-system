@@ -87,7 +87,7 @@ export default function RuleRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`rounded-xl border bg-surface ${errors.length > 0 ? "border-danger" : "border-line"} ${isDragging ? "z-10 shadow-lg" : ""} ${
+      className={`rounded-xl border bg-surface transition-shadow duration-150 hover:shadow-card ${errors.length > 0 ? "border-danger" : "border-line"} ${isDragging ? "z-10 shadow-lg" : ""} ${
         rule.isActive ? "" : "bg-canvas"
       }`}
     >

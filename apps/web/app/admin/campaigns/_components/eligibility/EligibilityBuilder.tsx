@@ -304,9 +304,16 @@ export default function EligibilityBuilder({ campaignId, initial, examSetup, ste
             </>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-6 py-5">
+          <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/95 px-6 py-4 shadow-overlay backdrop-blur">
             <p role="status" aria-live="polite" className="text-sm text-ink-muted" suppressHydrationWarning>
-              {savedTime && t.info.draftSaved(savedTime)}
+              {canEdit && dirty ? (
+                <span className="inline-flex items-center gap-2 font-medium text-ink">
+                  <span aria-hidden="true" className="size-2 rounded-full bg-brand-orange" />
+                  {t.info.unsaved}
+                </span>
+              ) : (
+                savedTime && t.info.draftSaved(savedTime)
+              )}
             </p>
 
             {canEdit ? (
@@ -335,7 +342,7 @@ export default function EligibilityBuilder({ campaignId, initial, examSetup, ste
             prepare={prepareTest}
             runTest={(request, candidate) => testEligibilityAction(campaignId, request, candidate)}
           />
-          <aside className="rounded-xl bg-warning-soft p-5">
+          <aside className="rounded-2xl bg-warning-soft p-5">
             <h2 className="text-[15px] font-bold text-ink">{ui.tip.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-ink">{ui.tip.body}</p>
           </aside>

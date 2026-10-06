@@ -214,6 +214,16 @@ describe("EligibilityBuilder: editing the rules", () => {
     expect(screen.getByText(/highest grade completed is Grade 12, AND age is between 17 and 23/)).toBeInTheDocument();
   });
 
+  it("says there are unsaved changes once a rule is added", async () => {
+    const { initial } = start();
+    const { user } = setup(initial);
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Add rule" }));
+
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+  });
+
   it("adds a rule to a group, and a second group", async () => {
     const { initial } = start();
     const { user } = setup(initial);
