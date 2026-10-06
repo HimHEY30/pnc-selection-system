@@ -1027,8 +1027,8 @@ export const en = {
       title: "AI Assistant",
       demo: "Demo",
       demoNote: "Demo answers only. The real AI service is not connected yet.",
-      open: "AI assistant",
-      close: "Close AI assistant",
+      open: "Open",
+      hide: "Hide",
       intro: "How can I help?",
       actions: {
         explain: "Explain required fields",
