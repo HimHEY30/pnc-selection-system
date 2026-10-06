@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import FormDialog from "@/components/ui/FormDialog";
 import FormField from "@/components/ui/FormField";
 import { Select, TextInput } from "@/components/ui/inputs";
+import { buildAssistantContext } from "@/lib/ai/assistant";
 import {
   CANDIDATE_FIELD_ORDER,
   NAME_MAX,
@@ -21,12 +22,15 @@ import {
   type CandidateField,
   type CandidateForm,
 } from "@/lib/candidates/form";
+import { formProgress, type SectionId } from "@/lib/candidates/progress";
 import { GENDERS, type Candidate, type SchoolChoice, type SessionChoice } from "@/lib/candidates/types";
 import { useReportDirty } from "@/lib/hooks/useReportDirty";
 import { t } from "@/lib/messages";
 import { cambodiaToday, formatDate } from "@/lib/sessions/format";
 import { createCandidateAction, updateCandidateAction } from "../../candidates-actions";
 import AddressPicker from "./AddressPicker";
+import AIAssistant from "./AIAssistant";
+import { FormProgressHeader, FormSection, sectionElementId } from "./CandidateFormSections";
 
 export type CandidateDialogTarget = { kind: "create" } | { kind: "edit"; candidate: Candidate };
 
@@ -39,11 +43,13 @@ type Props = {
   /** The active high schools in the partner directory. */
   schools: SchoolChoice[];
   onClose: () => void;
+  /** Called once a candidate was added or changed, just before the dialog closes. */
+  onSaved?: (kind: "created" | "updated") => void;
 };
 
 const text = t.candidates.form;
 
-export default function CandidateFormDialog({ target, campaignId, sessions, schools, onClose }: Props) {
+export default function CandidateFormDialog({ target, campaignId, sessions, schools, onClose, onSaved }: Props) {
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -66,6 +72,7 @@ export default function CandidateFormDialog({ target, campaignId, sessions, scho
           onBusy={setBusy}
           onDirty={setDirty}
           onClose={onClose}
+          onSaved={onSaved}
         />
       )}
     </FormDialog>
@@ -82,11 +89,13 @@ function CandidateFormBody({
   onBusy,
   onDirty,
   onClose,
-}: Omit<Props, "target" | "onClose"> & {
+  onSaved,
+}: Omit<Props, "target" | "onClose" | "onSaved"> & {
   target: CandidateDialogTarget;
   onBusy: (busy: boolean) => void;
   onDirty: (dirty: boolean) => void;
   onClose: () => void;
+  onSaved?: (kind: "created" | "updated") => void;
 }) {
   const editing = target.kind === "edit" ? target.candidate : null;
   const formRef = useRef<HTMLFormElement>(null);
@@ -148,6 +157,7 @@ function CandidateFormBody({
         : await createCandidateAction(campaignId, request);
       onBusy(false);
       if (result.ok) {
+        onSaved?.(editing ? "updated" : "created");
         onClose();
         return;
       }
@@ -160,161 +170,164 @@ function CandidateFormBody({
     });
   }
 
+  /** Brings a section into view from the progress header. Smooth scrolling is skipped for people who asked for less motion. */
+  function jumpTo(id: SectionId) {
+    const quiet = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(sectionElementId(id))?.scrollIntoView?.({ behavior: quiet ? "auto" : "smooth", block: "start" });
+  }
+
+  const progress = formProgress(form);
+  const section = (id: SectionId) => progress.sections.find((s) => s.id === id)!;
   const otherSchool = form.school === OTHER_SCHOOL;
 
   return (
-    <form ref={formRef} onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={submit} noValidate className="flex flex-col gap-6">
+      <FormProgressHeader title={t.candidates.form.progress.title} progress={progress} onJump={jumpTo} />
+
+      <p className="-mt-2 text-[13px] text-ink-muted">{t.candidates.form.progress.required}</p>
+
       {message && (
-        <p role="alert" className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger-text">
+        <p role="alert" className="motion-rise rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger-text">
           {message}
         </p>
       )}
 
-      <h3 className="text-sm font-bold uppercase tracking-wider text-ink-muted">{text.sectionPerson}</h3>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField label={text.nameKm} error={errors.nameKm}>
-          {(control) => (
-            <TextInput
-              {...control}
-              name="nameKm"
-              lang="km"
-              value={form.nameKm}
-              onChange={(e) => set("nameKm", e.target.value)}
-              maxLength={NAME_MAX}
-              autoComplete="off"
-            />
-          )}
-        </FormField>
-        <FormField label={text.nameEn} error={errors.nameEn}>
-          {(control) => (
-            <TextInput {...control} name="nameEn" value={form.nameEn} onChange={(e) => set("nameEn", e.target.value)} maxLength={NAME_MAX} autoComplete="off" />
-          )}
-        </FormField>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-3">
-        <FormField label={text.gender} error={errors.gender}>
-          {(control) => (
-            <Select {...control} name="gender" value={form.gender} onChange={(e) => set("gender", e.target.value as CandidateForm["gender"])}>
-              <option value="">{text.choose}</option>
-              {GENDERS.map((gender) => (
-                <option key={gender} value={gender}>
-                  {text.genders[gender]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </FormField>
-        <FormField label={text.dateOfBirth} error={errors.dateOfBirth}>
-          {(control) => (
-            <TextInput {...control} name="dateOfBirth" type="date" max={cambodiaToday()} value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
-          )}
-        </FormField>
-        <FormField label={text.phone} hint={text.phoneHint} error={errors.phone}>
-          {(control) => (
-            <TextInput {...control} name="phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={20} autoComplete="off" />
-          )}
-        </FormField>
-      </div>
-
-      <div className="border-t border-line pt-5">
-        <AddressPicker
-          value={form.address}
-          errors={errors}
-          onChange={(address) => {
-            setForm((f) => ({ ...f, address }));
-            setErrors((e) => ({ ...e, province: undefined, district: undefined, commune: undefined, village: undefined }));
-          }}
-        />
-      </div>
-
-      <h3 className="border-t border-line pt-5 text-sm font-bold uppercase tracking-wider text-ink-muted">{text.sectionSchool}</h3>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <FormField label={text.school} error={errors.school}>
-          {(control) => (
-            <Select {...control} name="school" value={form.school} onChange={(e) => set("school", e.target.value)}>
-              <option value="">{text.choose}</option>
-              {schoolOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-              <option value={OTHER_SCHOOL}>{text.schoolOther}</option>
-            </Select>
-          )}
-        </FormField>
-
-        {otherSchool && (
-          <FormField label={text.schoolName} hint={text.schoolNameHint} error={errors.schoolName}>
-            {(control) => (
-              <TextInput
-                {...control}
-                name="schoolName"
-                value={form.schoolName}
-                onChange={(e) => set("schoolName", e.target.value)}
-                maxLength={SCHOOL_NAME_MAX}
-                autoComplete="off"
-              />
-            )}
-          </FormField>
-        )}
-      </div>
-
-      <FormField label={text.session} optional hint={text.sessionHint} error={errors.sessionId}>
-        {(control) => (
-          <Select {...control} name="sessionId" value={form.sessionId} onChange={(e) => set("sessionId", e.target.value)}>
-            <option value="">{text.sessionNone}</option>
-            {sessionOptions.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        )}
-      </FormField>
-
-      <h3 className="border-t border-line pt-5 text-sm font-bold uppercase tracking-wider text-ink-muted">{text.sectionSupport}</h3>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <fieldset>
-          <legend className="mb-1.5 text-sm font-semibold">{text.ngo}</legend>
-          <div className="flex gap-6">
-            {(["yes", "no"] as const).map((answer) => (
-              <label key={answer} className="flex cursor-pointer items-center gap-2 text-[15px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary">
-                <input
-                  type="radio"
-                  name="ngo"
-                  value={answer}
-                  checked={form.ngo === answer}
-                  onChange={() => {
-                    // Saying "No" forgets the name, so it can never be sent by mistake.
-                    setForm((f) => ({ ...f, ngo: answer, ngoName: answer === "no" ? "" : f.ngoName }));
-                    setErrors((e) => ({ ...e, ngoName: undefined }));
-                  }}
-                  className="size-4 accent-primary"
-                />
-                {answer === "yes" ? text.ngoYes : text.ngoNo}
-              </label>
-            ))}
+      <div className="flex flex-col gap-6">
+        <FormSection id="person" section={section("person")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label={text.nameKm} error={errors.nameKm}>
+              {(control) => (
+                <TextInput {...control} name="nameKm" lang="km" value={form.nameKm} onChange={(e) => set("nameKm", e.target.value)} maxLength={NAME_MAX} autoComplete="off" />
+              )}
+            </FormField>
+            <FormField label={text.nameEn} error={errors.nameEn}>
+              {(control) => (
+                <TextInput {...control} name="nameEn" value={form.nameEn} onChange={(e) => set("nameEn", e.target.value)} maxLength={NAME_MAX} autoComplete="off" />
+              )}
+            </FormField>
           </div>
-        </fieldset>
 
-        {form.ngo === "yes" && (
-          <FormField label={text.ngoName} error={errors.ngoName}>
-            {(control) => (
-              <TextInput {...control} name="ngoName" value={form.ngoName} onChange={(e) => set("ngoName", e.target.value)} maxLength={NGO_NAME_MAX} autoComplete="off" />
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <FormField label={text.gender} error={errors.gender}>
+              {(control) => (
+                <Select {...control} name="gender" value={form.gender} onChange={(e) => set("gender", e.target.value as CandidateForm["gender"])}>
+                  <option value="">{text.choose}</option>
+                  {GENDERS.map((gender) => (
+                    <option key={gender} value={gender}>
+                      {text.genders[gender]}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </FormField>
+            <FormField label={text.dateOfBirth} error={errors.dateOfBirth}>
+              {(control) => (
+                <TextInput {...control} name="dateOfBirth" type="date" max={cambodiaToday()} value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
+              )}
+            </FormField>
+            <FormField label={text.phone} hint={text.phoneHint} error={errors.phone}>
+              {(control) => (
+                <TextInput {...control} name="phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={20} autoComplete="off" />
+              )}
+            </FormField>
+          </div>
+        </FormSection>
+
+        <FormSection id="location" section={section("location")}>
+          <AddressPicker
+            value={form.address}
+            errors={errors}
+            onChange={(address) => {
+              setForm((f) => ({ ...f, address }));
+              setErrors((e) => ({ ...e, province: undefined, district: undefined, commune: undefined, village: undefined }));
+            }}
+          />
+        </FormSection>
+
+        <FormSection id="school" section={section("school")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label={text.school} error={errors.school}>
+              {(control) => (
+                <Select {...control} name="school" value={form.school} onChange={(e) => set("school", e.target.value)}>
+                  <option value="">{text.choose}</option>
+                  {schoolOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                  <option value={OTHER_SCHOOL}>{text.schoolOther}</option>
+                </Select>
+              )}
+            </FormField>
+
+            {otherSchool && (
+              <FormField className="motion-rise" label={text.schoolName} hint={text.schoolNameHint} error={errors.schoolName}>
+                {(control) => (
+                  <TextInput {...control} name="schoolName" value={form.schoolName} onChange={(e) => set("schoolName", e.target.value)} maxLength={SCHOOL_NAME_MAX} autoComplete="off" />
+                )}
+              </FormField>
             )}
-          </FormField>
-        )}
+          </div>
+        </FormSection>
+
+        <FormSection id="support" section={section("support")}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label={text.session} optional hint={text.sessionHint} error={errors.sessionId} className="sm:col-span-2">
+              {(control) => (
+                <Select {...control} name="sessionId" value={form.sessionId} onChange={(e) => set("sessionId", e.target.value)}>
+                  <option value="">{text.sessionNone}</option>
+                  {sessionOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </FormField>
+
+            <fieldset>
+              <legend className="mb-1.5 text-sm font-semibold text-ink">{text.ngo}</legend>
+              <div className="flex flex-wrap gap-2">
+                {(["yes", "no"] as const).map((answer) => (
+                  <label
+                    key={answer}
+                    className="flex min-w-24 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-[15px] text-ink transition-colors duration-150 hover:bg-canvas has-[:checked]:border-brand-blue has-[:checked]:bg-primary-soft has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-blue"
+                  >
+                    <input
+                      type="radio"
+                      name="ngo"
+                      value={answer}
+                      checked={form.ngo === answer}
+                      onChange={() => {
+                        setForm((f) => ({ ...f, ngo: answer, ngoName: answer === "no" ? "" : f.ngoName }));
+                        setErrors((e) => ({ ...e, ngoName: undefined }));
+                      }}
+                      className="size-4 accent-primary"
+                    />
+                    {answer === "yes" ? text.ngoYes : text.ngoNo}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {form.ngo === "yes" && (
+              <FormField className="motion-rise" label={text.ngoName} error={errors.ngoName}>
+                {(control) => (
+                  <TextInput {...control} name="ngoName" value={form.ngoName} onChange={(e) => set("ngoName", e.target.value)} maxLength={NGO_NAME_MAX} autoComplete="off" />
+                )}
+              </FormField>
+            )}
+          </div>
+        </FormSection>
       </div>
 
-      <div className="flex justify-end gap-3 border-t border-line pt-5">
-        <Button onClick={onClose} disabled={pending}>
+      <AIAssistant getContext={() => buildAssistantContext(form, editing ? "edit" : "create")} />
+
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-3 border-t border-line bg-surface px-6 py-4 sm:-mx-8 sm:-mb-6 sm:flex-row sm:justify-end sm:px-8">
+        <Button onClick={onClose} disabled={pending} className="w-full sm:w-auto">
           {t.common.cancel}
         </Button>
-        <Button type="submit" variant="primary" disabled={pending}>
+        <Button type="submit" variant="primary" disabled={pending} className="w-full sm:w-auto">
           {pending ? text.saving : editing ? text.save : text.create}
         </Button>
       </div>

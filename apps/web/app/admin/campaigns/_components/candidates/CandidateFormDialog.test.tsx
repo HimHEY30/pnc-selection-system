@@ -433,3 +433,89 @@ describe("CandidateFormDialog: unsaved changes", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CandidateFormDialog: progress and guidance", () => {
+  const progressbar = () => screen.getByRole("progressbar", { name: "Candidate information" });
+
+  it("starts at 0% pointing at the personal information, and groups the fields into four sections", () => {
+    renderDialog();
+
+    expect(progressbar()).toHaveAttribute("aria-valuenow", "0");
+    expect(screen.getByText("Next: Complete the required personal information before continuing.")).toBeInTheDocument();
+    for (const name of ["Personal information", "Location", "Education", "Support"]) {
+      expect(screen.getByRole("region", { name })).toBeInTheDocument();
+    }
+    // The information session sits under Support, and the school under Education.
+    expect(within(screen.getByRole("region", { name: "Support" })).getByLabelText(/information session attended/i)).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Education" })).getByLabelText("Came from high school")).toBeInTheDocument();
+  });
+
+  it("moves with what is filled in, completing sections and moving the next step along", async () => {
+    const { user } = renderDialog();
+
+    await user.type(field("Name in Khmer"), "សុខ ចិន្តា");
+    await user.type(field("Name in English"), "Sok Chenda");
+    await user.selectOptions(field("Gender"), "Female");
+    await user.type(field("Date of birth"), "2009-05-20");
+    await user.type(field("Phone number"), "012 345 678");
+
+    expect(progressbar()).toHaveAttribute("aria-valuenow", "56"); // 5 of 9 required fields
+    expect(screen.getByRole("button", { name: "Go to Personal information, complete" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to Location, next to complete" })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText("Next: Choose the province, district and commune.")).toBeInTheDocument();
+
+    await pickAddress(user);
+    await user.selectOptions(field("Came from high school"), SCHOOLS[0].id);
+
+    expect(progressbar()).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByText("All required information is complete. You can save now.")).toBeInTheDocument();
+  });
+
+  it("asks for the NGO's name in the progress only when Yes is chosen", async () => {
+    const { user } = renderDialog({ kind: "edit", candidate: candidateFixture({ schoolHostId: SCHOOLS[0].id, schoolName: SCHOOLS[0].name }) });
+    expect(progressbar()).toHaveAttribute("aria-valuenow", "100");
+
+    await user.click(screen.getByRole("radio", { name: "Yes" }));
+
+    expect(progressbar()).toHaveAttribute("aria-valuenow", "90"); // 9 of 10 required fields
+    expect(screen.getByText("Next: Enter the name of the NGO that supports the candidate.")).toBeInTheDocument();
+  });
+
+  it("offers the AI assistant, and answering does not save or close the form", async () => {
+    const { user, onClose } = renderDialog();
+
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole("button", { name: "Check missing information" }));
+
+    expect(await screen.findByText(/9 required fields are still empty/)).toBeInTheDocument();
+    expect(createCandidate).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("tells the list once a candidate was added", async () => {
+    const onSaved = vi.fn();
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    createCandidate.mockResolvedValue({ ok: true });
+    render(<CandidateFormDialog target={{ kind: "create" }} campaignId={CAMPAIGN_ID} sessions={SESSIONS} schools={SCHOOLS} onClose={onClose} onSaved={onSaved} />);
+    await fillEverything(user);
+
+    await submit(user);
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith("created"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("does not say saved when the server refuses", async () => {
+    const onSaved = vi.fn();
+    const user = userEvent.setup();
+    createCandidate.mockResolvedValue({ ok: false, message: "No.", fieldErrors: {} });
+    render(<CandidateFormDialog target={{ kind: "create" }} campaignId={CAMPAIGN_ID} sessions={SESSIONS} schools={SCHOOLS} onClose={vi.fn()} onSaved={onSaved} />);
+    await fillEverything(user);
+
+    await submit(user);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No.");
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+});

@@ -971,6 +971,9 @@ export const en = {
         next: (guidance: string) => `Next: ${guidance}`,
         jumpTo: (section: string) => `Go to ${section}`,
         stateLabel: { complete: "complete", current: "next to complete", todo: "not started" },
+        sectionDone: "Complete",
+        sectionLeft: (n: number) => `${n} to do`,
+        sectionOptional: "Optional",
         sections: { person: "Personal information", location: "Location", school: "Education", support: "Support" },
         descriptions: {
           person: "Who the candidate is and how to reach them.",
