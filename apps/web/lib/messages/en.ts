@@ -750,6 +750,33 @@ export const en = {
       sortLatest: "Sort by date, latest first",
     },
 
+    assistant: {
+      title: "AI Assistant",
+      demo: "Demo",
+      demoNote: "Demo answers only. The real AI service is not connected yet.",
+      launch: "Ask the AI Assistant",
+      close: "Close assistant",
+      intro: "How can I help with these sessions?",
+      actions: {
+        summarize: "Summarize this campaign's sessions",
+        attention: "What needs attention?",
+        next: "What should I do next?",
+        statuses: "Explain the statuses",
+      },
+      askLabel: "Ask anything",
+      askPlaceholder: "Ask anything…",
+      send: "Send",
+      thinking: "Thinking…",
+      you: "You asked",
+      answer: "Assistant",
+      copy: "Copy",
+      copied: "Copied",
+      retry: "Retry",
+      errorTitle: "I couldn't complete that request.",
+      errorBody: "Please try again.",
+      privacy: "Only counts are shared. Session titles, venues, links, people and contact details are never sent.",
+    },
+
     saved: {
       created: "Session added.",
       updated: "Session saved.",

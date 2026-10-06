@@ -15,12 +15,14 @@ import {
   type SessionList,
   type SessionStatus,
 } from "@/lib/sessions/types";
+import { buildSessionsContext } from "@/lib/ai/sessionsAssistant";
 import { t } from "@/lib/messages";
 import AttentionPanel from "./AttentionPanel";
 import CancelDialog from "./CancelDialog";
 import NumbersDialog from "./NumbersDialog";
 import SessionCard from "./SessionCard";
 import SessionFormDialog, { type SessionDialogTarget } from "./SessionFormDialog";
+import SessionsAssistant from "./SessionsAssistant";
 import SessionsTable from "./SessionsTable";
 import SummaryCards from "./SummaryCards";
 
@@ -126,7 +128,8 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
   const canChange = (s: InformationSession) => manageNow && canChangeDetails(s, list.isEditable, canManage);
 
   return (
-    <div className="flex flex-col gap-6">
+    // The bottom padding keeps the floating assistant button from covering the pager.
+    <div className="flex flex-col gap-6 pb-16">
       {!canManage && (
         <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-ink">{text.readOnlyOfficer}</p>
       )}
@@ -347,6 +350,18 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
           onSaved={(kind) => setNotice(kind === "created" ? text.saved.created : text.saved.updated)}
         />
       )}
+      <SessionsAssistant
+        getContext={() =>
+          buildSessionsContext({
+            campaignStatus: list.campaignStatus,
+            isEditable: list.isEditable,
+            canManage,
+            summary: list.summary,
+            sessions: list.sessions,
+            today,
+          })
+        }
+      />
       <NumbersDialog session={byId(numbersId)} onClose={() => setNumbersId(null)} />
       <CancelDialog session={byId(cancelId)} onClose={() => setCancelId(null)} onCancelled={() => setNotice(text.saved.cancelled)} />
     </div>
