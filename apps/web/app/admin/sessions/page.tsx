@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 import { cambodiaToday } from "@/lib/sessions/format";
 import { loadMySessions } from "@/lib/sessions/api";
 import { t } from "@/lib/messages";
@@ -13,15 +14,15 @@ export default async function MySessionsPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-ink">{t.sessions.mine.title}</h1>
-          <p className="mt-1 text-[15px] text-ink-muted">{t.sessions.mine.subtitle}</p>
-        </div>
-        <Link href="/admin/sessions/hosts" className={buttonClasses("secondary")}>
-          {t.sessions.mine.hosts}
-        </Link>
-      </div>
+      <PageHeader
+        title={t.sessions.mine.title}
+        description={t.sessions.mine.subtitle}
+        actions={
+          <Link href="/admin/sessions/hosts" className={buttonClasses("secondary")}>
+            {t.sessions.mine.hosts}
+          </Link>
+        }
+      />
 
       <MySessionsList sessions={sessions} today={cambodiaToday()} />
     </div>

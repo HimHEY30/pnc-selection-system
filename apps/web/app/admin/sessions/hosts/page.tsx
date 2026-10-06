@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { auth } from "@/auth";
+import PageHeader from "@/components/ui/PageHeader";
 import { loadHosts } from "@/lib/sessions/api";
 import { canManageCampaigns } from "@/lib/permissions";
 import { t } from "@/lib/messages";
@@ -13,13 +13,7 @@ export default async function HostsPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <div>
-        <Link href="/admin/sessions" className="text-sm font-semibold text-primary hover:underline focus-ring">
-          {t.sessions.hosts.back}
-        </Link>
-        <h1 className="mt-3 text-[28px] font-bold tracking-tight text-ink">{t.sessions.hosts.title}</h1>
-        <p className="mt-1 text-[15px] text-ink-muted">{t.sessions.hosts.subtitle}</p>
-      </div>
+      <PageHeader title={t.sessions.hosts.title} description={t.sessions.hosts.subtitle} back={{ href: "/admin/sessions", label: t.sessions.hosts.back }} />
 
       <HostsManager hosts={hosts} canManage={canManageCampaigns(session?.roles ?? [])} />
     </div>

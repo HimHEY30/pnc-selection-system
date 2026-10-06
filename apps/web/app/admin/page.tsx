@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { loadCampaigns } from "@/lib/campaigns/api";
 import { STEP_KEYS } from "@/lib/campaigns/types";
 import { stepTitle } from "@/lib/campaigns/steps";
@@ -26,10 +27,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div>
-        <h1 className="text-[28px] font-bold tracking-tight text-ink">{t.dashboard.welcome(firstName)}</h1>
-        <p className="mt-1 text-[15px] text-ink-muted">{t.dashboard.subtitle}</p>
-      </div>
+      <PageHeader title={t.dashboard.welcome(firstName)} description={t.dashboard.subtitle} />
 
       <EmptyState
         title={t.dashboard.emptyTitle}

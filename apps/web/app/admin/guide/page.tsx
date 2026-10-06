@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import PageHeader from "@/components/ui/PageHeader";
 import { guideFor } from "@/lib/guide/guide";
 import { t } from "@/lib/messages";
 import ShowTourButton from "./ShowTourButton";
@@ -13,13 +14,7 @@ export default async function GuidePage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-ink">{t.guide.page.title}</h1>
-          <p className="mt-1 text-[15px] text-ink-muted">{t.guide.page.subtitle}</p>
-        </div>
-        <ShowTourButton />
-      </div>
+      <PageHeader title={t.guide.page.title} description={t.guide.page.subtitle} actions={<ShowTourButton />} />
 
       <section aria-labelledby="guide-intro" className="rounded-2xl border border-line bg-surface p-6">
         <p className="text-xs font-semibold uppercase tracking-wider text-primary">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
+import PageHeader from "@/components/ui/PageHeader";
 import { loadCampaign } from "@/lib/campaigns/api";
 import { t } from "@/lib/messages";
 import { canManageCampaigns } from "@/lib/permissions";
@@ -20,21 +20,12 @@ export default async function CampaignSetupPage({ params }: PageProps<"/admin/ca
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div>
-        <nav aria-label={t.setup.breadcrumbs} className="text-xs text-ink-muted">
-          <ol className="flex items-center gap-1.5">
-            <li>
-              <Link href="/admin/campaigns" className="hover:underline focus-ring">
-                {t.setup.campaigns}
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page">{campaign.name}</li>
-          </ol>
-        </nav>
-        <h1 className="mt-2 text-[28px] font-bold tracking-tight text-ink">{t.setup.title}</h1>
-        <p className="mt-1 text-[15px] text-ink-muted">{t.setup.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.setup.title}
+        description={t.setup.subtitle}
+        breadcrumbsLabel={t.setup.breadcrumbs}
+        breadcrumbs={[{ label: t.setup.campaigns, href: "/admin/campaigns" }, { label: campaign.name, current: true }]}
+      />
 
       {!canEdit && (
         <p className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-ink">
