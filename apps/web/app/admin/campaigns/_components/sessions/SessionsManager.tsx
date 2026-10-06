@@ -16,6 +16,7 @@ import {
   type SessionStatus,
 } from "@/lib/sessions/types";
 import { t } from "@/lib/messages";
+import AttentionPanel from "./AttentionPanel";
 import CancelDialog from "./CancelDialog";
 import NumbersDialog from "./NumbersDialog";
 import SessionCard from "./SessionCard";
@@ -126,6 +127,8 @@ export default function SessionsManager({ list, today, hosts, assignable, canMan
         />
       ) : (
         <>
+        <AttentionPanel sessions={list.sessions} today={today} />
+
         <section aria-labelledby="upcoming-title" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="upcoming-title" className="text-[17px] font-bold text-ink">

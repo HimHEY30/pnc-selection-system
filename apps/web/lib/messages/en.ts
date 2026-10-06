@@ -728,6 +728,15 @@ export const en = {
       attendedDetail: (female: number, male: number) => `${female} female · ${male} male`,
     },
 
+    attention: {
+      title: "Needs attention",
+      allGood: "Everything is in order. Nothing needs doing right now.",
+      missingAttendance: (count: number) => (count === 1 ? "1 session has taken place with no attendance entered" : `${count} sessions have taken place with no attendance entered`),
+      unscheduled: (count: number) => (count === 1 ? "1 session still needs a date, host and person responsible" : `${count} sessions still need a date, host and person responsible`),
+      missingExpected: (count: number) => (count === 1 ? "1 coming session has no expected number" : `${count} coming sessions have no expected number`),
+      examples: (titles: string[]) => titles.join(", "),
+    },
+
     filters: {
       label: "Filter sessions",
       status: "Status",

@@ -404,3 +404,21 @@ describe("SessionsManager: filters", () => {
     expect(within(screen.getByLabelText("Totals")).getByText("Sessions").nextElementSibling).toHaveTextContent("3");
   });
 });
+
+describe("SessionsManager: needs attention", () => {
+  it("names what needs doing, with the sessions it is about", () => {
+    // `planned` is ahead with no expected number; `withAlumnus` too.
+    renderManager(listFixture([planned, withAlumnus]));
+
+    const panel = screen.getByRole("region", { name: "Needs attention" });
+    expect(within(panel).getByText("2 coming sessions have no expected number")).toBeInTheDocument();
+    expect(within(panel).getByText(`${planned.title}, ${withAlumnus.title}`)).toBeInTheDocument();
+  });
+
+  it("says nothing needs doing when the sessions are in order", () => {
+    renderManager(listFixture([done, cancelled]));
+
+    expect(screen.queryByRole("region", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.getByText("Everything is in order. Nothing needs doing right now.")).toBeInTheDocument();
+  });
+});
