@@ -38,7 +38,7 @@ export default function SetupStepList({ campaignId, steps, canEdit }: Props) {
         return (
           <li
             key={step.step}
-            className={`flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-surface px-5 py-4 ${
+            className={`flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border bg-surface px-5 py-4 shadow-card transition-shadow duration-200 hover:shadow-overlay ${
               highlighted ? "border-brand-blue ring-1 ring-brand-blue" : "border-line"
             }`}
           >

@@ -11,12 +11,15 @@ export default function SetupProgressCard({ campaign }: Props) {
   const summary = `${t.setup.stepsComplete(complete, total)}, ${t.setup.stepsInProgress(inProgress)}`;
 
   return (
-    <aside aria-labelledby="setup-progress-title" className="rounded-xl border border-line bg-surface p-6">
+    <aside aria-labelledby="setup-progress-title" className="rounded-2xl border border-line bg-surface p-6 shadow-card lg:sticky lg:top-24">
       <h2 id="setup-progress-title" className="text-[17px] font-bold text-ink">
         {t.setup.progress}
       </h2>
 
-      <div className="mt-4 flex items-baseline justify-between gap-3 text-sm text-ink-muted">
+      <p className="mt-4 text-3xl font-bold tracking-tight text-ink" aria-hidden="true">
+        {total > 0 ? Math.round((complete / total) * 100) : 0}%
+      </p>
+      <div className="mt-1 flex items-baseline justify-between gap-3 text-sm text-ink-muted">
         <span>{t.setup.stepsComplete(complete, total)}</span>
         <span>{t.setup.stepsInProgress(inProgress)}</span>
       </div>

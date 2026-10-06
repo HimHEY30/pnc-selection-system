@@ -17,7 +17,7 @@ export default function StepTabs({ steps, current }: Props) {
           <li
             key={step.step}
             aria-current={isCurrent ? "step" : undefined}
-            className={`rounded-lg border border-line border-t-[3px] bg-surface px-4 py-3 ${
+            className={`rounded-xl border border-line border-t-[3px] bg-surface px-4 py-3 shadow-card ${
               isCurrent ? "border-t-primary" : "border-t-line-strong"
             }`}
           >
