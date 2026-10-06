@@ -70,6 +70,8 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
   const [pending, startTransition] = useTransition();
 
   const [values, setValues] = useState<InfoFormValues>(() => initialValues(campaign));
+  // What was last saved, so the form can say plainly when it holds changes that are not saved yet.
+  const [baseline, setBaseline] = useState<InfoFormValues>(() => initialValues(campaign));
   const [version, setVersion] = useState(campaign.version);
   const [savedAt, setSavedAt] = useState(campaign.infoSavedAt);
   const [steps, setSteps] = useState<CampaignStep[]>(campaign.steps);
@@ -126,6 +128,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
       const result = await saveCampaignInfoAction(campaign.id, mode, toInfoInput(values, version));
 
       if (result.ok) {
+        setBaseline(values);
         setVersion(result.data.version);
         setSavedAt(result.data.infoSavedAt);
         setSteps(result.data.steps);
@@ -141,6 +144,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
   }
 
   const savedTime = formatSavedTime(savedAt);
+  const unsaved = canEdit && JSON.stringify(values) !== JSON.stringify(baseline);
 
   return (
     <div className="flex flex-col gap-6">
@@ -155,10 +159,10 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
             event.preventDefault();
             if (canEdit) save("complete");
           }}
-          className="rounded-xl border border-line bg-surface"
+          className="rounded-2xl border border-line bg-surface shadow-card"
         >
           {!canEdit && (
-            <p className="rounded-t-xl bg-warning-soft px-6 py-3 text-sm text-ink">
+            <p className="rounded-t-2xl bg-warning-soft px-6 py-3 text-sm text-ink">
               {campaign.status === "Draft" ? t.info.readOnly : t.info.notDraft}
             </p>
           )}
@@ -173,7 +177,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
           <fieldset disabled={!canEdit} className="min-w-0 border-0 p-0">
             <div className="flex flex-col gap-8 p-6">
               <section aria-labelledby="identity-title" className="flex flex-col gap-5">
-                <h2 id="identity-title" className="text-lg font-bold text-ink">
+                <h2 id="identity-title" className="flex items-center gap-2 text-lg font-bold text-ink before:h-5 before:w-1 before:rounded-full before:bg-brand-blue">
                   {t.info.identity}
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -222,7 +226,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
               </section>
 
               <section aria-labelledby="dates-title" className="flex flex-col gap-5 border-t border-line pt-8">
-                <h2 id="dates-title" className="text-lg font-bold text-ink">
+                <h2 id="dates-title" className="flex items-center gap-2 text-lg font-bold text-ink before:h-5 before:w-1 before:rounded-full before:bg-brand-blue">
                   {t.info.dates}
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -254,7 +258,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
               </section>
 
               <section aria-labelledby="targets-title" className="flex flex-col gap-5 border-t border-line pt-8">
-                <h2 id="targets-title" className="text-lg font-bold text-ink">
+                <h2 id="targets-title" className="flex items-center gap-2 text-lg font-bold text-ink before:h-5 before:w-1 before:rounded-full before:bg-brand-blue">
                   {t.info.targets}
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -312,9 +316,16 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
             </div>
           </fieldset>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-6 py-5">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-4 rounded-b-2xl border-t border-line bg-surface/95 px-6 py-4 backdrop-blur">
             <p role="status" aria-live="polite" className="text-sm text-ink-muted" suppressHydrationWarning>
-              {savedTime && t.info.draftSaved(savedTime)}
+              {unsaved ? (
+                <span className="inline-flex items-center gap-2 font-medium text-ink">
+                  <span aria-hidden="true" className="size-2 rounded-full bg-brand-orange" />
+                  {t.info.unsaved}
+                </span>
+              ) : (
+                savedTime && t.info.draftSaved(savedTime)
+              )}
             </p>
 
             {canEdit ? (
@@ -336,7 +347,7 @@ export default function CampaignInfoForm({ campaign, provinces, canEdit }: Props
 
         <div className="flex flex-col gap-4">
           <TimelinePreview startDate={values.startDate} endDate={values.endDate} />
-          <aside className="rounded-xl bg-warning-soft p-5">
+          <aside className="rounded-2xl bg-warning-soft p-5">
             <h2 className="text-[15px] font-bold text-ink">{t.tip.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-ink">{t.tip.body}</p>
           </aside>

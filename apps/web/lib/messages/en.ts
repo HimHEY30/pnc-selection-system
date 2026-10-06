@@ -404,6 +404,7 @@ export const en = {
     saveContinue: "Save and continue to Step 2",
     savingContinue: "Saving…",
     draftSaved: (time: string) => `Draft saved at ${time}`,
+    unsaved: "Unsaved changes",
     justSaved: "Draft saved",
     fixErrors: "Some fields need your attention. They are marked below.",
     saveFailed: "We could not save your changes. Check your connection and try again.",

@@ -121,6 +121,25 @@ describe("CampaignInfoForm: inline date validation and timeline", () => {
   });
 });
 
+describe("CampaignInfoForm: unsaved changes", () => {
+  it("says so once something is changed, and goes back to the saved time after saving", async () => {
+    saveAction.mockResolvedValue({ ok: true, data: SAVED });
+    const user = setup();
+    expect(screen.getByRole("status")).not.toHaveTextContent("Unsaved changes");
+
+    await user.type(screen.getByLabelText("Expected candidates"), "1500");
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Draft saved at 10:30 AM"));
+  });
+
+  it("does not say it on a read-only form", () => {
+    setup({ canEdit: false });
+    expect(screen.getByRole("status")).not.toHaveTextContent("Unsaved changes");
+  });
+});
+
 describe("CampaignInfoForm: Save draft", () => {
   it("sends whatever is filled in, with the version it last read, and keeps the step in progress", async () => {
     saveAction.mockResolvedValue({ ok: true, data: SAVED });
